@@ -120,27 +120,63 @@ def dumptxaddr_csv(csvwb, rawtx, protocol, host):
     elif protocol == "Mastercoin":
       PropertyID= rawtx['result']['propertyid']
       AddressTxIndex=0
+      AddressRole="sender"
       type=get_TxType(rawtx['result']['type'])
+      Address = rawtx['result']['sendingaddress']
+      BalanceAvailableCreditDebit=""
+      BalanceResForOfferCreditDebit=""
+      BalanceResForAcceptCreditDebit=""
 
       if rawtx['result']['divisible']:
         value=int(rawtx['result']['amount']*1e8)
       else:
         value=int(rawtx['result']['amount'])
+      value_neg=(value*-1)
 
-      #Simple Send
       if type == 0:
-        Sender = rawtx['result']['sendingaddress']
-        Reciever = rawtx['result']['referenceaddress']
+        #Simple Send
 
+	#debit the sender
+        row={'Address': Address, 'PropertyID': PropertyID, 'TxHash': TxHash, 'protocol': protocol, 'AddressTxIndex': AddressTxIndex,
+               'AddressRole': AddressRole, 'BalanceAvailableCreditDebit': value_neg}
+        csvwb.writerow(row)
 
-    address
-    #TxDBSerialNum  - initially empty for csv, will need to add relevant calls for sql
-    AddressTxIndex
-    AddressRole
-    BalanceAvailableCreditDebit
-    BalanceResForOfferCreditDebit
-    BalanceResForAcceptCreditDebit
-    protocol
+	#credit the reciever
+        Address = rawtx['result']['referenceaddress']
+        BalanceAvailableCreditDebit=value
+
+      elif type == 2:
+	#Restricted Send does nothing yet?
+
+      elif type == 3:
+        #Send To Owners
+	#Do something smart
+
+      elif type == 20:
+        #DEx Sell Offer
+        #Move the amount from Available balance to reserved for Offer
+        ##Sell offer cancel doesn't display an amount from core, not sure what we do here yet
+        BalanceAvailableCreditDebit = value_neg
+        BalanceResForOfferCreditDebit = value
+
+      elif type == 21:
+        #MetaDEx: Offer/Accept one Master Protocol Coins for another
+
+      elif type == 22:
+        #DEx Accept Offer
+        #Move the amount from Reserved for Offer to Reserved for Accept
+        ## Mastercore doesn't show payments as MP tx. How do we credit a user who has payed?
+        Address = rawtx['result']['referenceaddress']
+        BalanceResForAcceptCreditDebit = value
+        BalanceResForOfferCreditDebit = value_neg
+
+      elif type == 50:
+        AddressRole = "issuer"
+
+      row={'Address': Address, 'PropertyID': PropertyID, 'TxHash': TxHash, 'protocol': protocol, 'AddressTxIndex': AddressTxIndex,
+           'AddressRole': AddressRole, 'BalanceAvailableCreditDebit': BalanceAvailableCreditDebit, 
+           'BalanceResForOfferCreditDebit ':BalanceResForOfferCreditDebit, 'BalanceResForAcceptCreditDebit ': BalanceResForAcceptCreditDebit }
+      csvwb.writerow(row)
 
 
 def dumptx_csv(csvwb, rawtx, protocol, block_height, seq):
@@ -184,13 +220,14 @@ def get_TxType(text_type):
     convert={"Simple Send": 0 ,
              "Restricted Send": 2,
              "Send To Owners": 3,
-             "Automatic Dispensary":-1,
+             "Automatic Dispensary":-2,
              "DEx Sell Offer": 20,
              "MetaDEx: Offer/Accept one Master Protocol Coins for another": 21,
              "DEx Accept Offer": 22,
              "Create Property - Fixed": 50,
              "Create Property - Variable": 51,
              "Promote Property": 52,
-             "Close Crowsale": 53
+             "Close Crowsale": 53,
+             "Crowdsale Purchase": -1
            }
     return convert[text_type]
