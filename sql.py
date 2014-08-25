@@ -107,16 +107,18 @@ def dumptxaddr_csv(csvwb, rawtx, protocol):
       #process all inputs, Start AddressTxIndex=0 since inputs don't have a Index number in json and iterate for each input
       AddressTxIndex=0
       for input in rawtx['result']['vin']:
-        AddressRole="sender"
-        #existing json doesn't have raw address only prev tx. Get prev tx to decipher address/values
-        prevtx=getrawtransaction(input['txid'])
-        BalanceAvailableCreditDebit=int(prevtx['result']['vout'][input['vout']]['value'] * 1e8 * -1)
-        #multisigs have more than 1 address, make sure we find/credit all multisigs for a tx
-        for addr in prevtx['result']['vout'][input['vout']]['scriptPubKey']['addresses']:
-          row={'Address': addr, 'PropertyID': PropertyID, 'TxHash': TxHash, 'protocol': protocol, 'AddressTxIndex': AddressTxIndex,
-               'AddressRole': AddressRole, 'BalanceAvailableCreditDebit': BalanceAvailableCreditDebit}
-          csvwb.writerow(row)
-        AddressTxIndex+=1
+        #check if we have previous input txids we need to lookup or if its a coinbase (newly minted coin ) which needs to be skipped
+        if 'txid' in input:
+          AddressRole="sender"
+          #existing json doesn't have raw address only prev tx. Get prev tx to decipher address/values
+          prevtx=getrawtransaction(input['txid'])
+          BalanceAvailableCreditDebit=int(prevtx['result']['vout'][input['vout']]['value'] * 1e8 * -1)
+          #multisigs have more than 1 address, make sure we find/credit all multisigs for a tx
+          for addr in prevtx['result']['vout'][input['vout']]['scriptPubKey']['addresses']:
+            row={'Address': addr, 'PropertyID': PropertyID, 'TxHash': TxHash, 'protocol': protocol, 'AddressTxIndex': AddressTxIndex,
+                 'AddressRole': AddressRole, 'BalanceAvailableCreditDebit': BalanceAvailableCreditDebit}
+            csvwb.writerow(row)
+          AddressTxIndex+=1
 
     elif protocol == "Mastercoin":
       PropertyID= rawtx['result']['propertyid']

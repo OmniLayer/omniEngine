@@ -11,7 +11,11 @@ dbc=sql_connect()
 #select(dbc)
 #exit(1)
 
-appendname='316639.current'
+
+currentBlock=317456
+#endBlock=316593
+
+appendname=currentBlock+'.current'
 
 #csv output file info
 fieldnames = ['TxHash', 'protocol', 'TxType', 'TxVersion', 'Ecosystem', 'TxSubmitTime', 
@@ -28,8 +32,6 @@ txaddr_table = csv.DictWriter(out_file, delimiter=',', fieldnames=fieldnames)
 txaddr_table.writerow(dict((fn,fn) for fn in fieldnames))
 
 
-currentBlock=316639
-#endBlock=316593
 
 #get last known block from the RPC client
 endBlock=getinfo()['result']['blocks']
