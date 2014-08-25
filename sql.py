@@ -145,10 +145,10 @@ def dumptxaddr_csv(csvwb, rawtx, protocol, host):
         Address = rawtx['result']['referenceaddress']
         BalanceAvailableCreditDebit=value
 
-      elif type == 2:
+      #elif type == 2:
 	#Restricted Send does nothing yet?
 
-      elif type == 3:
+      #elif type == 3:
         #Send To Owners
 	#Do something smart
 
@@ -159,7 +159,7 @@ def dumptxaddr_csv(csvwb, rawtx, protocol, host):
         BalanceAvailableCreditDebit = value_neg
         BalanceResForOfferCreditDebit = value
 
-      elif type == 21:
+      #elif type == 21:
         #MetaDEx: Offer/Accept one Master Protocol Coins for another
 
       elif type == 22:
@@ -171,7 +171,52 @@ def dumptxaddr_csv(csvwb, rawtx, protocol, host):
         BalanceResForOfferCreditDebit = value_neg
 
       elif type == 50:
+        #Fixed Issuance, create property
         AddressRole = "issuer"
+
+      elif type == -51:
+        #Participating in crowdsale
+
+        #First deduct the amount the participant sent to 'buyin'
+        AddressRole = 'participant'
+        BalanceAvailableCreditDebit = value_neg
+        row={'Address': Address, 'PropertyID': PropertyID, 'TxHash': TxHash, 'protocol': protocol, 'AddressTxIndex': AddressTxIndex,
+             'AddressRole': AddressRole, 'BalanceAvailableCreditDebit': BalanceAvailableCreditDebit,
+             'BalanceResForOfferCreditDebit ':BalanceResForOfferCreditDebit, 'BalanceResForAcceptCreditDebit ': BalanceResForAcceptCreditDebit }
+        csvwb.writerow(row)
+
+        #Credit the buy in to the issuer
+        AddressRole = 'issuer'
+        BalanceAvailableCreditDebit = value
+        Address= rawtx['result']['referenceaddress']
+        row={'Address': Address, 'PropertyID': PropertyID, 'TxHash': TxHash, 'protocol': protocol, 'AddressTxIndex': AddressTxIndex,
+             'AddressRole': AddressRole, 'BalanceAvailableCreditDebit': BalanceAvailableCreditDebit,
+             'BalanceResForOfferCreditDebit ':BalanceResForOfferCreditDebit, 'BalanceResForAcceptCreditDebit ': BalanceResForAcceptCreditDebit }
+        csvwb.writerow(row)
+
+        #Now start updating the crowdsale propertyid balance info
+        PropertyID = rawtx['result']['purchasedpropertyid']
+
+        #add additional functionalty to check/credit the issue when there is a % bonus to issuer
+        cstx = getcrowdsale_MP(PropertyID)
+        if cstx['result']['percenttoissuer'] > 0:
+          if getdivisible_MP(PropertyID):
+            BalanceAvailableCreditDebit = (value*cstx['result']['tokensperunit']*(cstx['result']['percenttoissuer']/100)*1e8)
+          else:  
+            BalanceAvailableCreditDebit = value*cstx['result']['tokensperunit']*(cstx['result']['percenttoissuer']/100)
+        row={'Address': Address, 'PropertyID': PropertyID, 'TxHash': TxHash, 'protocol': protocol, 'AddressTxIndex': AddressTxIndex,
+             'AddressRole': AddressRole, 'BalanceAvailableCreditDebit': BalanceAvailableCreditDebit,
+             'BalanceResForOfferCreditDebit ':BalanceResForOfferCreditDebit, 'BalanceResForAcceptCreditDebit ': BalanceResForAcceptCreditDebit }
+        csvwb.writerow(row)
+
+        #now update with crowdsale specific property details
+        Address = rawtx['result']['sendingaddress']
+        if getdivisible_MP(PropertyID):
+          value=int(rawtx['result']['purchasedtokens']*1e8)
+        else:
+          value=int(rawtx['result']['purchasedtokens'])
+        value_neg=(value*-1)
+
 
       row={'Address': Address, 'PropertyID': PropertyID, 'TxHash': TxHash, 'protocol': protocol, 'AddressTxIndex': AddressTxIndex,
            'AddressRole': AddressRole, 'BalanceAvailableCreditDebit': BalanceAvailableCreditDebit, 
@@ -220,7 +265,7 @@ def get_TxType(text_type):
     convert={"Simple Send": 0 ,
              "Restricted Send": 2,
              "Send To Owners": 3,
-             "Automatic Dispensary":-2,
+             "Automatic Dispensary":-1,
              "DEx Sell Offer": 20,
              "MetaDEx: Offer/Accept one Master Protocol Coins for another": 21,
              "DEx Accept Offer": 22,
@@ -228,6 +273,6 @@ def get_TxType(text_type):
              "Create Property - Variable": 51,
              "Promote Property": 52,
              "Close Crowsale": 53,
-             "Crowdsale Purchase": -1
+             "Crowdsale Purchase": -51
            }
     return convert[text_type]
