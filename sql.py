@@ -183,7 +183,7 @@ def dumptxaddr_csv(csvwb, rawtx, protocol):
         BalanceAvailableCreditDebit = value_neg
         row={'Address': Address, 'PropertyID': PropertyID, 'TxHash': TxHash, 'protocol': protocol, 'AddressTxIndex': AddressTxIndex,
              'AddressRole': AddressRole, 'BalanceAvailableCreditDebit': BalanceAvailableCreditDebit,
-             'BalanceResForOfferCreditDebit ':BalanceResForOfferCreditDebit, 'BalanceResForAcceptCreditDebit ': BalanceResForAcceptCreditDebit }
+             'BalanceResForOfferCreditDebit': BalanceResForOfferCreditDebit, 'BalanceResForAcceptCreditDebit': BalanceResForAcceptCreditDebit }
         csvwb.writerow(row)
 
         #Credit the buy in to the issuer
@@ -192,7 +192,7 @@ def dumptxaddr_csv(csvwb, rawtx, protocol):
         Address= rawtx['result']['referenceaddress']
         row={'Address': Address, 'PropertyID': PropertyID, 'TxHash': TxHash, 'protocol': protocol, 'AddressTxIndex': AddressTxIndex,
              'AddressRole': AddressRole, 'BalanceAvailableCreditDebit': BalanceAvailableCreditDebit,
-             'BalanceResForOfferCreditDebit ':BalanceResForOfferCreditDebit, 'BalanceResForAcceptCreditDebit ': BalanceResForAcceptCreditDebit }
+             'BalanceResForOfferCreditDebit': BalanceResForOfferCreditDebit, 'BalanceResForAcceptCreditDebit': BalanceResForAcceptCreditDebit }
         csvwb.writerow(row)
 
         #Now start updating the crowdsale propertyid balance info
@@ -202,12 +202,12 @@ def dumptxaddr_csv(csvwb, rawtx, protocol):
         cstx = getcrowdsale_MP(PropertyID)
         if cstx['result']['percenttoissuer'] > 0:
           if getdivisible_MP(PropertyID):
-            BalanceAvailableCreditDebit = (value*cstx['result']['tokensperunit']*(cstx['result']['percenttoissuer']/100)*1e8)
+            BalanceAvailableCreditDebit = int(rawtx['result']['amount']*cstx['result']['tokensperunit']*(cstx['result']['percenttoissuer']/100)*1e8)
           else:  
-            BalanceAvailableCreditDebit = value*cstx['result']['tokensperunit']*(cstx['result']['percenttoissuer']/100)
+            BalanceAvailableCreditDebit = int(rawtx['result']['amount']*cstx['result']['tokensperunit']*(cstx['result']['percenttoissuer']/100))
         row={'Address': Address, 'PropertyID': PropertyID, 'TxHash': TxHash, 'protocol': protocol, 'AddressTxIndex': AddressTxIndex,
              'AddressRole': AddressRole, 'BalanceAvailableCreditDebit': BalanceAvailableCreditDebit,
-             'BalanceResForOfferCreditDebit ':BalanceResForOfferCreditDebit, 'BalanceResForAcceptCreditDebit ': BalanceResForAcceptCreditDebit }
+             'BalanceResForOfferCreditDebit': BalanceResForOfferCreditDebit, 'BalanceResForAcceptCreditDebit': BalanceResForAcceptCreditDebit }
         csvwb.writerow(row)
 
         #now update with crowdsale specific property details
@@ -217,11 +217,12 @@ def dumptxaddr_csv(csvwb, rawtx, protocol):
         else:
           value=int(rawtx['result']['purchasedtokens'])
         value_neg=(value*-1)
+        BalanceAvailableCreditDebit=value
 
 
       row={'Address': Address, 'PropertyID': PropertyID, 'TxHash': TxHash, 'protocol': protocol, 'AddressTxIndex': AddressTxIndex,
            'AddressRole': AddressRole, 'BalanceAvailableCreditDebit': BalanceAvailableCreditDebit, 
-           'BalanceResForOfferCreditDebit ':BalanceResForOfferCreditDebit, 'BalanceResForAcceptCreditDebit ': BalanceResForAcceptCreditDebit }
+           'BalanceResForOfferCreditDebit': BalanceResForOfferCreditDebit, 'BalanceResForAcceptCreditDebit': BalanceResForAcceptCreditDebit }
       csvwb.writerow(row)
 
 
