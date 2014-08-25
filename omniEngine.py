@@ -1,42 +1,30 @@
 #from rpcclient import *
 from sql import *
 
-#host=RPCHost()
 dbc=sql_connect()
 
-#addr="1Po1oWkD2LmodfkBYiAktwh76vkF93LKnh"
-#hash="00000000000000001ca7d646d1fbc237c94ecc9572ca21207d1140139b9e380c"
-#tx="184188c2a742daec94763927c91b16f347510bc32e3525b6ff2ba431ebcb2252"
-
-#select(dbc)
-#exit(1)
-
-
-currentBlock=317456
+currentBlock=317453
+#get last known block from the RPC client
+endBlock=getinfo()['result']['blocks']
 #endBlock=316593
 
 appendname=str(currentBlock)+'.current'
-
-#csv output file info
+#csv output file info for tx table
 fieldnames = ['TxHash', 'protocol', 'TxType', 'TxVersion', 'Ecosystem', 'TxSubmitTime', 
               'TxState', 'TxErrorCode', 'TxBlockNumber', 'TxSeqInBlock', 'TxBlockTime', 'TxMsg']
 out_file = open('data/tx.'+appendname+'.csv', "wb") 
 tx_table = csv.DictWriter(out_file, delimiter=',', fieldnames=fieldnames)
 tx_table.writerow(dict((fn,fn) for fn in fieldnames))
 
+#csv output file info for tx addr table
 fieldnames = ['Address', 'PropertyID', 'TxHash', 'protocol', 'AddressTxIndex', 'AddressRole', 'BalanceAvailableCreditDebit',
               'BalanceResForOfferCreditDebit', 'BalanceResForAcceptCreditDebit']
-
 out_file = open('data/txaddr.'+appendname+'.csv', "wb")
 txaddr_table = csv.DictWriter(out_file, delimiter=',', fieldnames=fieldnames)
 txaddr_table.writerow(dict((fn,fn) for fn in fieldnames))
 
 
-
-#get last known block from the RPC client
-endBlock=getinfo()['result']['blocks']
-
-
+#main loop
 while currentBlock <= endBlock:
  try:
   #address_data=host.call("getallbalancesforaddress_MP", addr)
