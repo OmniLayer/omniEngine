@@ -9,9 +9,9 @@ try:
   if len(sys.argv) > 2:
     data=host.call(sys.argv.pop(0), sys.argv[0], int(sys.argv[1]))
   elif len(sys.argv) == 2:
-    if type(sys.argv[1]) is int:
+    if sys.argv[1].isdigit():
       data=host.call(sys.argv.pop(0), int(sys.argv[0]))
-    else
+    else:
       data=host.call(sys.argv.pop(0), sys.argv[0])
   else:
     data=host.call(sys.argv.pop(0))
