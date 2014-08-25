@@ -96,15 +96,18 @@ def dumptxaddr_csv(csvwb, rawtx, protocol):
       PropertyID=0
       #process all outputs
       for output in rawtx['result']['vout']:
-        AddressRole="recipient"
-	AddressTxIndex=output['n']
-        #store values as satoshi/willits etc''. Client converts
-	BalanceAvailableCreditDebit=int(decimal.Decimal(output['value'])*decimal.Decimal("1e8"))
-        #multisigs have more than 1 address, make sure we find/credit all multisigs for a tx
-        for addr in output['scriptPubKey']['addresses']:
-          row={'Address': addr, 'PropertyID': PropertyID, 'TxHash': TxHash, 'protocol': protocol, 'AddressTxIndex': AddressTxIndex, 
-               'AddressRole': AddressRole, 'BalanceAvailableCreditDebit': BalanceAvailableCreditDebit}
-          csvwb.writerow(row)
+        #Make sure we have readable output addresses to actually use
+        if 'addresses' in output['scriptPubKey']
+          AddressRole="recipient"
+          AddressTxIndex=output['n']
+          #store values as satoshi/willits etc''. Client converts
+          BalanceAvailableCreditDebit=int(decimal.Decimal(output['value'])*decimal.Decimal("1e8"))
+          #multisigs have more than 1 address, make sure we find/credit all multisigs for a tx
+          for addr in output['scriptPubKey']['addresses']:
+            row={'Address': addr, 'PropertyID': PropertyID, 'TxHash': TxHash, 'protocol': protocol, 'AddressTxIndex': AddressTxIndex, 
+                 'AddressRole': AddressRole, 'BalanceAvailableCreditDebit': BalanceAvailableCreditDebit}
+            csvwb.writerow(row)
+
       #process all inputs, Start AddressTxIndex=0 since inputs don't have a Index number in json and iterate for each input
       AddressTxIndex=0
       for input in rawtx['result']['vin']:
