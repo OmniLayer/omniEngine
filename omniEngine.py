@@ -15,7 +15,7 @@ dbc=sql_connect()
 currentBlock=317456
 #endBlock=316593
 
-appendname=currentBlock+'.current'
+appendname=str(currentBlock)+'.current'
 
 #csv output file info
 fieldnames = ['TxHash', 'protocol', 'TxType', 'TxVersion', 'Ecosystem', 'TxSubmitTime', 
