@@ -8,7 +8,7 @@ currentBlock=317453
 endBlock=getinfo()['result']['blocks']
 #endBlock=316593
 
-appendname=str(currentBlock)+'.current'
+appendname=str(currentBlock)+'.'+str(endBlock)
 #csv output file info for tx table
 fieldnames = ['TxHash', 'protocol', 'TxType', 'TxVersion', 'Ecosystem', 'TxSubmitTime', 
               'TxState', 'TxErrorCode', 'TxBlockNumber', 'TxSeqInBlock', 'TxBlockTime', 'TxMsg']
