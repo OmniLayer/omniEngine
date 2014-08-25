@@ -1,6 +1,7 @@
 import psycopg2, psycopg2.extras
 import csv
 import datetime
+import decimal
 from rpcclient import *
 
 def sql_connect():
@@ -98,7 +99,7 @@ def dumptxaddr_csv(csvwb, rawtx, protocol):
         AddressRole="recipient"
 	AddressTxIndex=output['n']
         #store values as satoshi/willits etc''. Client converts
-	BalanceAvailableCreditDebit=int(output['value']*1e8)
+	BalanceAvailableCreditDebit=int(decimal.Decimal(output['value'])*decimal.Decimal("1e8"))
         #multisigs have more than 1 address, make sure we find/credit all multisigs for a tx
         for addr in output['scriptPubKey']['addresses']:
           row={'Address': addr, 'PropertyID': PropertyID, 'TxHash': TxHash, 'protocol': protocol, 'AddressTxIndex': AddressTxIndex, 
@@ -112,7 +113,8 @@ def dumptxaddr_csv(csvwb, rawtx, protocol):
           AddressRole="sender"
           #existing json doesn't have raw address only prev tx. Get prev tx to decipher address/values
           prevtx=getrawtransaction(input['txid'])
-          BalanceAvailableCreditDebit=int(prevtx['result']['vout'][input['vout']]['value'] * 1e8 * -1)
+          BalanceAvailableCreditDebit=int(decimal.Decimal(prevtx['result']['vout'][input['vout']]['value'])*decimal.Decimal("1e8")*decimal.Decimal(-1))
+          #BalanceAvailableCreditDebit=int(prevtx['result']['vout'][input['vout']]['value'] * 1e8 * -1)
           #multisigs have more than 1 address, make sure we find/credit all multisigs for a tx
           for addr in prevtx['result']['vout'][input['vout']]['scriptPubKey']['addresses']:
             row={'Address': addr, 'PropertyID': PropertyID, 'TxHash': TxHash, 'protocol': protocol, 'AddressTxIndex': AddressTxIndex,
@@ -131,7 +133,7 @@ def dumptxaddr_csv(csvwb, rawtx, protocol):
       BalanceResForAcceptCreditDebit=""
 
       if rawtx['result']['divisible']:
-        value=int(rawtx['result']['amount']*1e8)
+        value=int(decimal.Decimal(rawtx['result']['amount'])*decimal.Decimal(1e8))
       else:
         value=int(rawtx['result']['amount'])
       value_neg=(value*-1)
@@ -204,9 +206,9 @@ def dumptxaddr_csv(csvwb, rawtx, protocol):
         cstx = getcrowdsale_MP(PropertyID)
         if cstx['result']['percenttoissuer'] > 0:
           if getdivisible_MP(PropertyID):
-            BalanceAvailableCreditDebit = int(rawtx['result']['amount']*cstx['result']['tokensperunit']*(cstx['result']['percenttoissuer']/100)*1e8)
+            BalanceAvailableCreditDebit = int(decimal.Decimal(rawtx['result']['amount'])*decimal.Decimal(cstx['result']['tokensperunit'])*(decimal.Decimal(cstx['result']['percenttoissuer'])/decimal.Decimal(100))*decimal.Decimal(1e8))
           else:  
-            BalanceAvailableCreditDebit = int(rawtx['result']['amount']*cstx['result']['tokensperunit']*(cstx['result']['percenttoissuer']/100))
+            BalanceAvailableCreditDebit = int(decimal.Decimal(rawtx['result']['amount'])*decimal.Decimal(cstx['result']['tokensperunit'])*decimal.Decimal((cstx['result']['percenttoissuer'])/decimal.Decimal(100)))
         row={'Address': Address, 'PropertyID': PropertyID, 'TxHash': TxHash, 'protocol': protocol, 'AddressTxIndex': AddressTxIndex,
              'AddressRole': AddressRole, 'BalanceAvailableCreditDebit': BalanceAvailableCreditDebit,
              'BalanceResForOfferCreditDebit': BalanceResForOfferCreditDebit, 'BalanceResForAcceptCreditDebit': BalanceResForAcceptCreditDebit }
@@ -215,7 +217,7 @@ def dumptxaddr_csv(csvwb, rawtx, protocol):
         #now update with crowdsale specific property details
         Address = rawtx['result']['sendingaddress']
         if getdivisible_MP(PropertyID):
-          value=int(rawtx['result']['purchasedtokens']*1e8)
+          value=int(decimal.Decimal(rawtx['result']['purchasedtokens'])*decimal.Decimal(1e8))
         else:
           value=int(rawtx['result']['purchasedtokens'])
         value_neg=(value*-1)
