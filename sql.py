@@ -5,6 +5,7 @@ from rpcclient import *
 
 def sql_connect():
     global con
+    USER=getpass.getuser()
     try:
       with open('/home/'+USER+'/.omni/sql.conf') as fp:
         DBPORT="5432"
