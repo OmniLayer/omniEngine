@@ -9,7 +9,10 @@ try:
   if len(sys.argv) > 2:
     data=host.call(sys.argv.pop(0), sys.argv[0], int(sys.argv[1]))
   elif len(sys.argv) == 2:
-    data=host.call(sys.argv.pop(0), sys.argv[0])
+    if type(sys.argv[1]) is int:
+      data=host.call(sys.argv.pop(0), int(sys.argv[0]))
+    else
+      data=host.call(sys.argv.pop(0), sys.argv[0])
   else:
     data=host.call(sys.argv.pop(0))
   print json.dumps(data,indent=2,sort_keys=True)
