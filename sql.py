@@ -88,7 +88,7 @@ def insert_tx(dbc, rawtx, protocol, blockheight, seq):
 	print 'Error %s' % e
         sys.exit(1)
 
-def dumptxaddr_csv(csvwb, rawtx, protocol, host):
+def dumptxaddr_csv(csvwb, rawtx, protocol):
     TxHash = rawtx['result']['txid']
 
     if protocol == "Bitcoin":

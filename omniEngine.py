@@ -11,11 +11,22 @@ dbc=sql_connect()
 #select(dbc)
 #exit(1)
 
+appendname='316639.current'
+
 #csv output file info
-fieldnames = ['TxHash', 'protocol', 'TxType', 'TxVersion', 'Ecosystem', 'TxSubmitTime', 'TxState', 'TxErrorCode', 'TxBlockNumber', 'TxSeqInBlock', 'TxBlockTime', 'TxMsg']
-out_file = open('data/316639.current.csv', "wb") 
-writer = csv.DictWriter(out_file, delimiter=',', fieldnames=fieldnames)
-writer.writerow(dict((fn,fn) for fn in fieldnames))
+fieldnames = ['TxHash', 'protocol', 'TxType', 'TxVersion', 'Ecosystem', 'TxSubmitTime', 
+              'TxState', 'TxErrorCode', 'TxBlockNumber', 'TxSeqInBlock', 'TxBlockTime', 'TxMsg']
+out_file = open('data/tx.'+appendname+'.csv', "wb") 
+tx_table = csv.DictWriter(out_file, delimiter=',', fieldnames=fieldnames)
+tx_table.writerow(dict((fn,fn) for fn in fieldnames))
+
+fieldnames = ['Address', 'PropertyID', 'TxHash', 'protocol', 'AddressTxIndex', 'AddressRole', 'BalanceAvailableCreditDebit',
+              'BalanceResForOfferCreditDebit', 'BalanceResForAcceptCreditDebit']
+
+out_file = open('data/txaddr.'+appendname+'.csv', "wb")
+txaddr_table = csv.DictWriter(out_file, delimiter=',', fieldnames=fieldnames)
+txaddr_table.writerow(dict((fn,fn) for fn in fieldnames))
+
 
 currentBlock=316639
 #endBlock=316593
@@ -39,7 +50,8 @@ while currentBlock <= endBlock:
   for tx in block_data['result']['tx']:
     rawtx=getrawtransaction(tx)
     #insert_transacation(dbc, rawtx, "Bitcoin", height)
-    dump_csv(writer, rawtx, "Bitcoin", height, x)
+    dumptx_csv(tx_table, rawtx, "Bitcoin", height, x)
+    dumptxaddr_csv(txaddr_table, rawtx, "Bitcoin")
     #decrement tx sequence number in block
     x-=1
 
@@ -49,7 +61,8 @@ while currentBlock <= endBlock:
   for tx in block_data_MP['result']:
     rawtx=gettransaction_MP(tx)
     #insert_transacation(dbc, rawtx, "Mastercoin", height)
-    dump_csv(writer, rawtx, "Mastercoin", height, x)
+    dumptx_csv(tx_table, rawtx, "Mastercoin", height, x)
+    dumptxaddr_csv(txaddr_table, rawtx, "Mastercoin")
     #decrement tx sequence number in block
     x-=1
 
