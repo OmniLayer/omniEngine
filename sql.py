@@ -97,7 +97,7 @@ def dumptxaddr_csv(csvwb, rawtx, protocol):
       #process all outputs
       for output in rawtx['result']['vout']:
         #Make sure we have readable output addresses to actually use
-        if 'addresses' in output['scriptPubKey']
+        if 'addresses' in output['scriptPubKey']:
           AddressRole="recipient"
           AddressTxIndex=output['n']
           #store values as satoshi/willits etc''. Client converts
