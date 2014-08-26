@@ -91,7 +91,7 @@ def resetbalances_MP():
           print 'Error %s' % e
           sys.exit(1)
 
-def update_balance(Address, Protocol, PropertyID, ecosystem, BalanceAvailable, BalanceReserved, LastTxHash)
+def update_balance(Address, Protocol, PropertyID, ecosystem, BalanceAvailable, BalanceReserved, LastTxHash):
     try:
       dbc.execute("select address from AddressBalances where address=%s and protocol=%s and propertyid=%s",
                   (Address, Protocol, PropertyID) )
