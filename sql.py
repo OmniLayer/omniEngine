@@ -48,7 +48,7 @@ def select():
 
 def resetbalances_MP():
     #for now sync / reset balance data from mastercore balance list
-    protocol="Mastercoin"
+    Protocol="Mastercoin"
     #Find all known properties in mastercore
     for property in listproperties_MP()['result']:
       PropertyID = property['propertyid']
@@ -69,16 +69,16 @@ def resetbalances_MP():
           BalanceReserved=int(addr['reserved'])
 
         try:
-          dbc.execute("select address from AddressBalances where address=%s and protocol=%s and propertyid=%s", 
-                      (Address, protocol, PropertyID) )
+          dbc.execute("select address from AddressBalances where address=%s and Protocol=%s and propertyid=%s", 
+                      (Address, Protocol, PropertyID) )
           rows=dbc.fetchall()
 
           if len(rows) == 0:
             #address not in database, insert
             dbc.execute("INSERT into AddressBalances "
-                        "(Address, protocol, PropertyID, Ecosystem, BalanceAvailable, BalanceReserved) "
+                        "(Address, Protocol, PropertyID, Ecosystem, BalanceAvailable, BalanceReserved) "
                         "VALUES (%s,%s,%s,%s,%s,%s)",
-                        (Address, protocol, PropertyID, Ecosystem, BalanceAvailable, BalanceReserved) )
+                        (Address, Protocol, PropertyID, Ecosystem, BalanceAvailable, BalanceReserved) )
           else:
             #address in database update
              dbc.execute("UPDATE AddressBalances set BalanceAvailable=%s, BalanceReserved=%s where address=%s and PropertyID=%s", 
@@ -93,16 +93,16 @@ def resetbalances_MP():
 
 def update_balance(Address, Protocol, PropertyID, ecosystem, BalanceAvailable, BalanceReserved, LastTxHash):
     try:
-      dbc.execute("select address from AddressBalances where address=%s and protocol=%s and propertyid=%s",
+      dbc.execute("select address from AddressBalances where address=%s and Protocol=%s and propertyid=%s",
                   (Address, Protocol, PropertyID) )
       rows=dbc.fetchall()
 
       if len(rows) == 0:
         #address not in database, insert
         dbc.execute("INSERT into AddressBalances "
-                    "(Address, protocol, PropertyID, Ecosystem, BalanceAvailable, BalanceReserved, LastTxHash) "
+                    "(Address, Protocol, PropertyID, Ecosystem, BalanceAvailable, BalanceReserved, LastTxHash) "
                     "VALUES (%s,%s,%s,%s,%s,%s,decode(%s,'hex'))",
-                    (Address, protocol, PropertyID, Ecosystem, BalanceAvailable, BalanceReserved, LastTxHash) )
+                    (Address, Protocol, PropertyID, Ecosystem, BalanceAvailable, BalanceReserved, LastTxHash) )
       else:
         #address in database update
         BalanceAvailable=BalanceAvailable+rows['balanceavailable']
@@ -118,13 +118,13 @@ def update_balance(Address, Protocol, PropertyID, ecosystem, BalanceAvailable, B
       sys.exit(1)
 
 
-def insert_tx(rawtx, protocol, blockheight, seq):
+def insert_tx(rawtx, Protocol, blockheight, seq):
     TxHash = rawtx['result']['txid']
     TxBlockTime = datetime.datetime.utcfromtimestamp(rawtx['result']['blocktime'])
     TxErrorCode = rawtx['error']
     TxSeqInBlock= seq
 
-    if protocol == "Bitcoin":
+    if Protocol == "Bitcoin":
       #Bitcoin is only simple send, type 0
       TxType=0
       TxVersion=rawtx['result']['version']
@@ -132,7 +132,7 @@ def insert_tx(rawtx, protocol, blockheight, seq):
       Ecosystem= "Production"
       TxSubmitTime = datetime.datetime.utcfromtimestamp(rawtx['result']['time'])
 
-    elif protocol == "Mastercoin":
+    elif Protocol == "Mastercoin":
       #currently type a text output from mastercore 'Simple Send' and version is unknown
       TxType= get_TxType(rawtx['result']['type'])
       TxVersion= 0
@@ -145,14 +145,14 @@ def insert_tx(rawtx, protocol, blockheight, seq):
         Ecosystem= "Production"
 
     else:
-      print "Wrong protocol? Exiting, goodbye."
+      print "Wrong Protocol? Exiting, goodbye."
       exit(1)
 
     try:
         dbc.execute("INSERT into transactions "
-                    "(TxHash, protocol, TxType, TxVersion, Ecosystem, TxSubmitTime, TxState, TxErrorCode, TxBlockNumber, TxSeqInBlock, TxBlockTime ) "
+                    "(TxHash, Protocol, TxType, TxVersion, Ecosystem, TxSubmitTime, TxState, TxErrorCode, TxBlockNumber, TxSeqInBlock, TxBlockTime ) "
                     "VALUES (decode(%s,'hex'),%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)", 
-                    (TxHash, protocol, TxType, TxVersion, Ecosystem, TxSubmitTime, TxState, TxErrorCode, TxBlockNumber, TxSeqInBlock, TxBlockTime))
+                    (TxHash, Protocol, TxType, TxVersion, Ecosystem, TxSubmitTime, TxState, TxErrorCode, TxBlockNumber, TxSeqInBlock, TxBlockTime))
         con.commit()
         #need validation on structure
         dbc.execute("Select dbtxserial from transacations where txhash=decode(%s, 'hex')", TxHash)
@@ -164,10 +164,10 @@ def insert_tx(rawtx, protocol, blockheight, seq):
 	print 'Error %s' % e
         sys.exit(1)
 
-def dumptxaddr_csv(csvwb, rawtx, protocol):
+def dumptxaddr_csv(csvwb, rawtx, Protocol):
     TxHash = rawtx['result']['txid']
 
-    if protocol == "Bitcoin":
+    if Protocol == "Bitcoin":
       PropertyID=0
       #process all outputs
       for output in rawtx['result']['vout']:
@@ -179,7 +179,7 @@ def dumptxaddr_csv(csvwb, rawtx, protocol):
           BalanceAvailableCreditDebit=int(decimal.Decimal(output['value'])*decimal.Decimal("1e8"))
           #multisigs have more than 1 address, make sure we find/credit all multisigs for a tx
           for addr in output['scriptPubKey']['addresses']:
-            row={'Address': addr, 'PropertyID': PropertyID, 'TxHash': TxHash, 'protocol': protocol, 'AddressTxIndex': AddressTxIndex, 
+            row={'Address': addr, 'PropertyID': PropertyID, 'TxHash': TxHash, 'Protocol': Protocol, 'AddressTxIndex': AddressTxIndex, 
                  'AddressRole': AddressRole, 'BalanceAvailableCreditDebit': BalanceAvailableCreditDebit}
             csvwb.writerow(row)
 
@@ -195,12 +195,12 @@ def dumptxaddr_csv(csvwb, rawtx, protocol):
           #BalanceAvailableCreditDebit=int(prevtx['result']['vout'][input['vout']]['value'] * 1e8 * -1)
           #multisigs have more than 1 address, make sure we find/credit all multisigs for a tx
           for addr in prevtx['result']['vout'][input['vout']]['scriptPubKey']['addresses']:
-            row={'Address': addr, 'PropertyID': PropertyID, 'TxHash': TxHash, 'protocol': protocol, 'AddressTxIndex': AddressTxIndex,
+            row={'Address': addr, 'PropertyID': PropertyID, 'TxHash': TxHash, 'Protocol': Protocol, 'AddressTxIndex': AddressTxIndex,
                  'AddressRole': AddressRole, 'BalanceAvailableCreditDebit': BalanceAvailableCreditDebit}
             csvwb.writerow(row)
           AddressTxIndex+=1
 
-    elif protocol == "Mastercoin":
+    elif Protocol == "Mastercoin":
       PropertyID= rawtx['result']['propertyid']
       AddressTxIndex=0
       AddressRole="sender"
@@ -220,7 +220,7 @@ def dumptxaddr_csv(csvwb, rawtx, protocol):
         #Simple Send
 
 	#debit the sender
-        row={'Address': Address, 'PropertyID': PropertyID, 'TxHash': TxHash, 'protocol': protocol, 'AddressTxIndex': AddressTxIndex,
+        row={'Address': Address, 'PropertyID': PropertyID, 'TxHash': TxHash, 'Protocol': Protocol, 'AddressTxIndex': AddressTxIndex,
                'AddressRole': AddressRole, 'BalanceAvailableCreditDebit': value_neg}
         csvwb.writerow(row)
 
@@ -263,7 +263,7 @@ def dumptxaddr_csv(csvwb, rawtx, protocol):
         #First deduct the amount the participant sent to 'buyin'
         AddressRole = 'participant'
         BalanceAvailableCreditDebit = value_neg
-        row={'Address': Address, 'PropertyID': PropertyID, 'TxHash': TxHash, 'protocol': protocol, 'AddressTxIndex': AddressTxIndex,
+        row={'Address': Address, 'PropertyID': PropertyID, 'TxHash': TxHash, 'Protocol': Protocol, 'AddressTxIndex': AddressTxIndex,
              'AddressRole': AddressRole, 'BalanceAvailableCreditDebit': BalanceAvailableCreditDebit,
              'BalanceResForOfferCreditDebit': BalanceResForOfferCreditDebit, 'BalanceResForAcceptCreditDebit': BalanceResForAcceptCreditDebit }
         csvwb.writerow(row)
@@ -272,7 +272,7 @@ def dumptxaddr_csv(csvwb, rawtx, protocol):
         AddressRole = 'issuer'
         BalanceAvailableCreditDebit = value
         Address= rawtx['result']['referenceaddress']
-        row={'Address': Address, 'PropertyID': PropertyID, 'TxHash': TxHash, 'protocol': protocol, 'AddressTxIndex': AddressTxIndex,
+        row={'Address': Address, 'PropertyID': PropertyID, 'TxHash': TxHash, 'Protocol': Protocol, 'AddressTxIndex': AddressTxIndex,
              'AddressRole': AddressRole, 'BalanceAvailableCreditDebit': BalanceAvailableCreditDebit,
              'BalanceResForOfferCreditDebit': BalanceResForOfferCreditDebit, 'BalanceResForAcceptCreditDebit': BalanceResForAcceptCreditDebit }
         csvwb.writerow(row)
@@ -287,7 +287,7 @@ def dumptxaddr_csv(csvwb, rawtx, protocol):
             BalanceAvailableCreditDebit = int(decimal.Decimal(rawtx['result']['amount'])*decimal.Decimal(cstx['result']['tokensperunit'])*(decimal.Decimal(cstx['result']['percenttoissuer'])/decimal.Decimal(100))*decimal.Decimal(1e8))
           else:  
             BalanceAvailableCreditDebit = int(decimal.Decimal(rawtx['result']['amount'])*decimal.Decimal(cstx['result']['tokensperunit'])*decimal.Decimal((cstx['result']['percenttoissuer'])/decimal.Decimal(100)))
-        row={'Address': Address, 'PropertyID': PropertyID, 'TxHash': TxHash, 'protocol': protocol, 'AddressTxIndex': AddressTxIndex,
+        row={'Address': Address, 'PropertyID': PropertyID, 'TxHash': TxHash, 'Protocol': Protocol, 'AddressTxIndex': AddressTxIndex,
              'AddressRole': AddressRole, 'BalanceAvailableCreditDebit': BalanceAvailableCreditDebit,
              'BalanceResForOfferCreditDebit': BalanceResForOfferCreditDebit, 'BalanceResForAcceptCreditDebit': BalanceResForAcceptCreditDebit }
         csvwb.writerow(row)
@@ -302,19 +302,19 @@ def dumptxaddr_csv(csvwb, rawtx, protocol):
         BalanceAvailableCreditDebit=value
 
 
-      row={'Address': Address, 'PropertyID': PropertyID, 'TxHash': TxHash, 'protocol': protocol, 'AddressTxIndex': AddressTxIndex,
+      row={'Address': Address, 'PropertyID': PropertyID, 'TxHash': TxHash, 'Protocol': Protocol, 'AddressTxIndex': AddressTxIndex,
            'AddressRole': AddressRole, 'BalanceAvailableCreditDebit': BalanceAvailableCreditDebit, 
            'BalanceResForOfferCreditDebit': BalanceResForOfferCreditDebit, 'BalanceResForAcceptCreditDebit': BalanceResForAcceptCreditDebit }
       csvwb.writerow(row)
 
 
-def dumptx_csv(csvwb, rawtx, protocol, block_height, seq):
+def dumptx_csv(csvwb, rawtx, Protocol, block_height, seq):
     TxHash = rawtx['result']['txid']
     TxBlockTime = datetime.datetime.utcfromtimestamp(rawtx['result']['blocktime'])
     TxErrorCode = rawtx['error']
     TxSeqInBlock= seq
 
-    if protocol == "Bitcoin":
+    if Protocol == "Bitcoin":
       #Bitcoin is only simple send, type 0
       TxType=0
       TxVersion=0
@@ -322,7 +322,7 @@ def dumptx_csv(csvwb, rawtx, protocol, block_height, seq):
       Ecosystem= "Production"
       TxSubmitTime = datetime.datetime.utcfromtimestamp(rawtx['result']['time'])
 
-    elif protocol == "Mastercoin":
+    elif Protocol == "Mastercoin":
       #currently type a text output from mastercore 'Simple Send' and version is unknown
       TxType= get_TxType(rawtx['result']['type'])
       TxVersion= 0
@@ -335,10 +335,10 @@ def dumptx_csv(csvwb, rawtx, protocol, block_height, seq):
         Ecosystem= "Production"
 
     else:
-      print "Wrong protocol? Exiting, goodbye."
+      print "Wrong Protocol? Exiting, goodbye."
       exit(1)
 
-    row={'TxHash': TxHash, 'protocol': protocol, 'TxType': TxType, 'TxVersion': TxVersion, 'Ecosystem': Ecosystem, 
+    row={'TxHash': TxHash, 'Protocol': Protocol, 'TxType': TxType, 'TxVersion': TxVersion, 'Ecosystem': Ecosystem, 
          'TxSubmitTime': TxSubmitTime, 'TxState': TxState, 'TxErrorCode': TxErrorCode, 'TxBlockNumber': block_height, 
          'TxSeqInBlock': TxSeqInBlock, 'TxBlockTime': TxBlockTime}
     #, 'TxMsg': rawtx}
