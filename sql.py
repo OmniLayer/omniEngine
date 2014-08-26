@@ -90,7 +90,33 @@ def resetbalances_MP():
             con.rollback()
           print 'Error %s' % e
           sys.exit(1)
-      
+
+def update_balance(Address, Protocol, PropertyID, ecosystem, BalanceAvailable, BalanceReserved, LastTxHash)
+    try:
+      dbc.execute("select address from AddressBalances where address=%s and protocol=%s and propertyid=%s",
+                  (Address, Protocol, PropertyID) )
+      rows=dbc.fetchall()
+
+      if len(rows) == 0:
+        #address not in database, insert
+        dbc.execute("INSERT into AddressBalances "
+                    "(Address, protocol, PropertyID, Ecosystem, BalanceAvailable, BalanceReserved, LastTxHash) "
+                    "VALUES (%s,%s,%s,%s,%s,%s,decode(%s,'hex'))",
+                    (Address, protocol, PropertyID, Ecosystem, BalanceAvailable, BalanceReserved, LastTxHash) )
+      else:
+        #address in database update
+        BalanceAvailable=BalanceAvailable+rows['balanceavailable']
+        BalanceReserved=BalanceReserved+rows['balancereserved']
+        dbc.execute("UPDATE AddressBalances set BalanceAvailable=%s, BalanceReserved=%s, LastTxHash=decode(%s,'hex') where address=%s and PropertyID=%s",
+                    (BalanceAvailable, BalanceReserved, LastTxHash, address, PropertyID) )
+
+      con.commit()
+    except psycopg2.DatabaseError, e:
+      if con:
+        con.rollback()
+      print 'Error %s' % e
+      sys.exit(1)
+
 
 def insert_tx(rawtx, protocol, blockheight, seq):
     TxHash = rawtx['result']['txid']
