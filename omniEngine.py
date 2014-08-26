@@ -43,7 +43,7 @@ while currentBlock <= endBlock:
   print "Found ", x, "Bitcoin transactions"
   for tx in block_data['result']['tx']:
     rawtx=getrawtransaction(tx)
-    if tx in skip and skip['tx'] == height:
+    if tx in skip and skip[tx] == height:
       print "Skipping bad tx"
     else:
       #insert_transacation(dbc, rawtx, "Bitcoin", height)
