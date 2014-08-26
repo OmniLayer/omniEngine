@@ -2,6 +2,7 @@ import psycopg2, psycopg2.extras
 import csv
 import datetime
 import decimal
+import sys
 from rpcclient import *
 
 def sql_connect():
