@@ -44,7 +44,7 @@ while currentBlock <= endBlock:
   for tx in block_data['result']['tx']:
     rawtx=getrawtransaction(tx)
     if tx in skip and skip['tx'] == height:
-      print "Skipping bad tx
+      print "Skipping bad tx"
     else:
       #insert_transacation(dbc, rawtx, "Bitcoin", height)
       dumptx_csv(tx_table, rawtx, "Bitcoin", height, x)
