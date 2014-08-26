@@ -11,7 +11,7 @@ endBlock=getinfo()['result']['blocks']
 appendname=str(currentBlock)+'.'+str(endBlock)
 #csv output file info for tx table
 fieldnames = ['TxHash', 'protocol', 'TxType', 'TxVersion', 'Ecosystem', 'TxSubmitTime', 
-              'TxState', 'TxErrorCode', 'TxBlockNumber', 'TxSeqInBlock', 'TxBlockTime', 'TxMsg']
+              'TxState', 'TxErrorCode', 'TxBlockNumber', 'TxSeqInBlock', 'TxBlockTime']
 out_file = open('data/tx.'+appendname+'.csv', "wb") 
 tx_table = csv.DictWriter(out_file, delimiter=',', fieldnames=fieldnames)
 tx_table.writerow(dict((fn,fn) for fn in fieldnames))
