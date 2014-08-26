@@ -34,7 +34,10 @@ def sql_connect():
         print 'Error %s' % e    
         sys.exit(1)
 
-def select(dbc):
+dbc=sql_connect()
+
+
+def select():
     try:
       dbc.execute("select * from transactions")
       ROWS= dbc.fetchall()
@@ -43,7 +46,53 @@ def select(dbc):
     except psycopg2.DatabaseError, e:
       print 'Error %s' % e
 
-def insert_tx(dbc, rawtx, protocol, blockheight, seq):
+def resetbalances_MP():
+    #for now sync / reset balance data from mastercore balance list
+    protocol="Mastercoin"
+    #Find all known properties in mastercore
+    for property in listproperties_MP()['result']:
+      PropertyID = property['propertyid']
+      if PropertyID == 2 or ( PropertyID >= 2147483651 and PropertyID <= 4294967295 ):
+        Ecosystem= "Test"
+      else:
+        Ecosystem= "Production"
+      bal_data=getallbalancesforid_MP(PropertyID)
+
+      #Check each address and get balance info
+      for addr in bal_data['result']:
+        Address=addr['address']
+        if property['divisible']:
+          BalanceAvailable=int(decimal.Decimal(addr['balance'])*decimal.Decimal(1e8))
+          BalanceReserved=int(decimal.Decimal(addr['reserved'])*decimal.Decimal(1e8))
+        else:
+          BalanceAvailable=int(addr['balance'])
+          BalanceReserved=int(addr['reserved'])
+
+        try:
+          dbc.execute("select address from AddressBalances where address=%s and protocol=%s and propertyid=%s", 
+                      (Address, protocol, PropertyID) )
+          rows=dbc.fetchall()
+
+          if len(rows) == 0:
+            #address not in database, insert
+            dbc.execute("INSERT into AddressBalances "
+                        "(Address, protocol, PropertyID, Ecosystem, BalanceAvailable, BalanceReserved) "
+                        "VALUES (%s,%s,%s,%s,%s,%s)",
+                        (Address, protocol, PropertyID, Ecosystem, BalanceAvailable, BalanceReserved) )
+          else:
+            #address in database update
+             dbc.execute("UPDATE AddressBalances set BalanceAvailable=%s, BalanceReserved=%s where address=%s and PropertyID=%s", 
+                         (BalanceAvailable, BalanceReserved, address, PropertyID) )
+
+          con.commit()
+        except psycopg2.DatabaseError, e:
+          if con:
+            con.rollback()
+          print 'Error %s' % e
+          sys.exit(1)
+      
+
+def insert_tx(rawtx, protocol, blockheight, seq):
     TxHash = rawtx['result']['txid']
     TxBlockTime = datetime.datetime.utcfromtimestamp(rawtx['result']['blocktime'])
     TxErrorCode = rawtx['error']
@@ -52,7 +101,7 @@ def insert_tx(dbc, rawtx, protocol, blockheight, seq):
     if protocol == "Bitcoin":
       #Bitcoin is only simple send, type 0
       TxType=0
-      TxVersion=0
+      TxVersion=rawtx['result']['version']
       TxState= "True"
       Ecosystem= "Production"
       TxSubmitTime = datetime.datetime.utcfromtimestamp(rawtx['result']['time'])

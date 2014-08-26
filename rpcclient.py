@@ -74,17 +74,35 @@ def getblockhash(block):
 def getblock(hash):
     return host.call("getblock", hash)
 
-def listblocktransactions_MP(height):
-    return host.call("listblocktransactions_MP", height)
+def getbalance_MP(addr, propertyid):
+    return host.call("getbalance_MP", addr, propertyid)
 
-def getcrowdsale_MP(propertyid):
-    return host.call("getcrowdsale_MP", propertyid)
+def getallbalancesforaddress_MP(addr):
+    return host.call("getallbalancesforaddress_MP", addr)
+
+def getallbalancesforid_MP(propertyid):
+    return host.call("getallbalancesforid_MP", propertyid)
 
 def gettransaction_MP(tx):
     return host.call("gettransaction_MP", tx)
 
+def listblocktransactions_MP(height):
+    return host.call("listblocktransactions_MP", height)
+
 def getproperty_MP(propertyid):
     return host.call("getproperty_MP", propertyid)
+
+def listproperties_MP():
+    return host.call("listproperties_MP")
+
+def getcrowdsale_MP(propertyid):
+    return host.call("getcrowdsale_MP", propertyid)
+
+def getactivecrowdsales_MP():
+    return host.call("getactivecrowdsales_MP")
+
+def getactivedexsells_MP():
+    return host.call("getactivedexsells_MP")
 
 def getdivisible_MP(propertyid):
     return getproperty_MP(propertyid)['result']['divisible']
