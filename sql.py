@@ -166,7 +166,7 @@ def insert_tx(rawtx, Protocol, blockheight, seq):
         sys.exit(1)
 
 def dumptxaddr_csv(csvwb, rawtx, Protocol):
-    TxHash = rawtx['result']['txid']
+    TxHash = '\\x'+rawtx['result']['txid']
 
     if Protocol == "Bitcoin":
       PropertyID=0
@@ -310,7 +310,7 @@ def dumptxaddr_csv(csvwb, rawtx, Protocol):
 
 
 def dumptx_csv(csvwb, rawtx, Protocol, block_height, seq):
-    TxHash = rawtx['result']['txid']
+    TxHash = '\\x'+rawtx['result']['txid']
     TxBlockTime = datetime.datetime.utcfromtimestamp(rawtx['result']['blocktime'])
     TxErrorCode = rawtx['error']
     TxSeqInBlock= seq
