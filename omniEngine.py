@@ -10,7 +10,7 @@ endBlock=getinfo()['result']['blocks']
 
 appendname=str(currentBlock)+'.'+str(endBlock)
 #csv output file info for tx table
-fieldnames = ['TxHash', 'protocol', 'TxType', 'TxVersion', 'Ecosystem', 'TxSubmitTime', 
+fieldnames = ['TxHash', 'Protocol', 'TxType', 'TxVersion', 'Ecosystem', 'TxSubmitTime', 
               'TxState', 'TxErrorCode', 'TxBlockNumber', 'TxSeqInBlock', 'TxBlockTime']
 out_file = open('data/tx.'+appendname+'.csv', "wb") 
 tx_table = csv.DictWriter(out_file, delimiter=',', fieldnames=fieldnames)
@@ -23,6 +23,10 @@ out_file = open('data/txaddr.'+appendname+'.csv', "wb")
 txaddr_table = csv.DictWriter(out_file, delimiter=',', fieldnames=fieldnames)
 txaddr_table.writerow(dict((fn,fn) for fn in fieldnames))
 
+#There are 2 bitcoin transactions that have duplicate hashes in different blocks. 
+#We skip them here to avoid database issues
+skip={'d5d27987d2a3dfc724e359870c6644b40e497bdc0589a033220fe15429d88599': 91842,
+      'e3bf3d07d4b0375638d5f1db5255fe07ba2c4cb067cd81b84ee974b6585fb468': 91880}
 
 #main loop
 while currentBlock <= endBlock:
@@ -39,9 +43,12 @@ while currentBlock <= endBlock:
   print "Found ", x, "Bitcoin transactions"
   for tx in block_data['result']['tx']:
     rawtx=getrawtransaction(tx)
-    #insert_transacation(dbc, rawtx, "Bitcoin", height)
-    dumptx_csv(tx_table, rawtx, "Bitcoin", height, x)
-    dumptxaddr_csv(txaddr_table, rawtx, "Bitcoin")
+    if tx in skip and skip['tx'] == height:
+      print "Skipping bad tx
+    else:
+      #insert_transacation(dbc, rawtx, "Bitcoin", height)
+      dumptx_csv(tx_table, rawtx, "Bitcoin", height, x)
+      dumptxaddr_csv(txaddr_table, rawtx, "Bitcoin")
     #decrement tx sequence number in block
     x-=1
 
