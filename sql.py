@@ -53,10 +53,11 @@ def resetbalances_MP():
     #Find all known properties in mastercore
     for property in listproperties_MP()['result']:
       PropertyID = property['propertyid']
-      if PropertyID == 2 or ( PropertyID >= 2147483651 and PropertyID <= 4294967295 ):
-        Ecosystem= "Test"
-      else:
-        Ecosystem= "Production"
+      Ecosystem=getEcosystem(PropertyID)
+      #if PropertyID == 2 or ( PropertyID >= 2147483651 and PropertyID <= 4294967295 ):
+      #  Ecosystem= "Test"
+      #else:
+      #  Ecosystem= "Production"
       bal_data=getallbalancesforid_MP(PropertyID)
 
       #Check each address and get balance info
@@ -130,20 +131,22 @@ def insert_tx(rawtx, Protocol, blockheight, seq):
       TxType=0
       TxVersion=rawtx['result']['version']
       TxState= "True"
-      Ecosystem= "Production"
+      Ecosystem= ""
       TxSubmitTime = datetime.datetime.utcfromtimestamp(rawtx['result']['time'])
 
     elif Protocol == "Mastercoin":
       #currently type a text output from mastercore 'Simple Send' and version is unknown
       TxType= get_TxType(rawtx['result']['type'])
       TxVersion= 0
-      TxState= rawtx['result']['valid']
+      TxState= getTxState(rawtx['result']['valid'])
       #Use block time - 10 minutes to approx
-      TxSubmitTime = TxBlockTime-datetime.timedelta(minutes=10)
-      if rawtx['result']['propertyid'] == 2 or ( rawtx['result']['propertyid'] >= 2147483651 and rawtx['result']['propertyid'] <= 4294967295 ):
-        Ecosystem= "Test"
-      else:
-        Ecosystem= "Production"
+      #TxSubmitTime = TxBlockTime-datetime.timedelta(minutes=10)
+      TxSubmitTime=""
+      Ecosystem=getEcosystem(rawtx['result']['propertyid'])
+      #if rawtx['result']['propertyid'] == 2 or ( rawtx['result']['propertyid'] >= 2147483651 and rawtx['result']['propertyid'] <= 4294967295 ):
+      #  Ecosystem= "Test"
+      #else:
+      #  Ecosystem= "Production"
 
     else:
       print "Wrong Protocol? Exiting, goodbye."
@@ -219,20 +222,22 @@ def dumptxaddr_csv(csvwb, rawtx, Protocol, TxDBSerialNum):
           AddressTxIndex+=1
 
     elif Protocol == "Mastercoin":
-      PropertyID= rawtx['result']['propertyid']
       AddressTxIndex=0
       AddressRole="sender"
       type=get_TxType(rawtx['result']['type'])
-      Address = rawtx['result']['sendingaddress']
       BalanceAvailableCreditDebit=""
-      BalanceResForOfferCreditDebit=""
-      BalanceResForAcceptCreditDebit=""
+      BalanceReservedCreditDebit=""
+      BalanceAcceptedCreditDebit=""
 
-      if rawtx['result']['divisible']:
-        value=int(decimal.Decimal(rawtx['result']['amount'])*decimal.Decimal(1e8))
-      else:
-        value=int(rawtx['result']['amount'])
-      value_neg=(value*-1)
+      #Check if we are a DEx Purchase/payment. Format is a littler different and variables below would fail if we tried. 
+      if type != -22:
+        PropertyID= rawtx['result']['propertyid']
+        Address = rawtx['result']['sendingaddress']
+        if rawtx['result']['divisible']:
+          value=int(decimal.Decimal(rawtx['result']['amount'])*decimal.Decimal(1e8))
+        else:
+          value=int(rawtx['result']['amount'])
+        value_neg=(value*-1)
 
       if type == 0:
         #Simple Send
@@ -252,24 +257,88 @@ def dumptxaddr_csv(csvwb, rawtx, Protocol, TxDBSerialNum):
       #elif type == 3:
         #Send To Owners
 	#Do something smart
+        #return
 
       elif type == 20:
         #DEx Sell Offer
         #Move the amount from Available balance to reserved for Offer
         ##Sell offer cancel doesn't display an amount from core, not sure what we do here yet
         BalanceAvailableCreditDebit = value_neg
-        BalanceResForOfferCreditDebit = value
+        BalanceReservedCreditDebit = value
 
       #elif type == 21:
         #MetaDEx: Offer/Accept one Master Protocol Coins for another
+        #return
 
       elif type == 22:
         #DEx Accept Offer
         #Move the amount from Reserved for Offer to Reserved for Accept
         ## Mastercore doesn't show payments as MP tx. How do we credit a user who has payed?
         Address = rawtx['result']['referenceaddress']
-        BalanceResForAcceptCreditDebit = value
-        BalanceResForOfferCreditDebit = value_neg
+        BalanceAcceptedCreditDebit = value
+        BalanceReservedCreditDebit = value_neg
+
+      elif type == -22:
+        #DEx Accept Payment
+
+        #process all purchases in the transaction 
+        for payment in rawtx['result']['purchases']:
+
+          Receiver = payment['referenceaddress']
+          Sender =  payment['senderaddress']
+          PropertyIDBought = payment['propertyid']
+          #Right now payments are only in btc
+          PropertyIDPaid = 0
+          #AddressTxIndex =  Do we need to change this?
+
+          if getdivisible_MP(PropertyIDBought):
+            AmountBought=int(decimal.Decimal(payment['amountbought'])*decimal.Decimal(1e8))
+          else:
+            AmountBought=int(payment['amountbought'])
+          AmountBoughtNeg=(AmountBought * -1)
+
+          if (PropertyIDPaid == 0 ) or getdivisible_MP(PropertyIDPaid):
+            AmountPaid=int(decimal.Decimal(payment['amountpaid'])*decimal.Decimal(1e8))
+          else:
+            AmountPaid=int(payment['amountpaid'])
+          AmountPaidNeg=(AmountPaid * -1)
+
+          #deduct payment from sender
+          AddressRole = 'sender'
+          BalanceAvailableCreditDebit=AmountPaidNeg
+          row={'Address': Sender, 'PropertyID': PropertyIDPaid, 'Protocol': Protocol, 'TxDBSerialNum': TxDBSerialNum, 'AddressTxIndex': AddressTxIndex,
+               'AddressRole': AddressRole, 'BalanceAvailableCreditDebit': BalanceAvailableCreditDebit,
+               'BalanceReservedCreditDebit': BalanceReservedCreditDebit, 'BalanceAcceptedCreditDebit': BalanceAcceptedCreditDebit }
+          csvwb.writerow(row)
+
+          #Credit payment to payee
+          AddressRole = 'payee'
+          BalanceAvailableCreditDebit=AmountPaid
+          row={'Address': Receiver, 'PropertyID': PropertyIDPaid, 'Protocol': Protocol, 'TxDBSerialNum': TxDBSerialNum, 'AddressTxIndex': AddressTxIndex,
+               'AddressRole': AddressRole, 'BalanceAvailableCreditDebit': BalanceAvailableCreditDebit,
+               'BalanceReservedCreditDebit': BalanceReservedCreditDebit, 'BalanceAcceptedCreditDebit': BalanceAcceptedCreditDebit }
+          csvwb.writerow(row)
+
+          #deduct tokens from seller
+          AddressRole = 'sender'
+          BalanceAvailableCreditDebit=AmountBoughtNeg
+          row={'Address': Receiver, 'PropertyID': PropertyIDBought, 'Protocol': Protocol, 'TxDBSerialNum': TxDBSerialNum, 'AddressTxIndex': AddressTxIndex,
+               'AddressRole': AddressRole, 'BalanceAvailableCreditDebit': BalanceAvailableCreditDebit,
+               'BalanceReservedCreditDebit': BalanceReservedCreditDebit, 'BalanceAcceptedCreditDebit': BalanceAcceptedCreditDebit }
+          csvwb.writerow(row)
+
+          #Credit tokens to buyer
+          AddressRole = 'recipient'
+          BalanceAvailableCreditDebit=AmountBought
+          row={'Address': Sender, 'PropertyID': PropertyIDBought, 'Protocol': Protocol, 'TxDBSerialNum': TxDBSerialNum, 'AddressTxIndex': AddressTxIndex,
+               'AddressRole': AddressRole, 'BalanceAvailableCreditDebit': BalanceAvailableCreditDebit,
+               'BalanceReservedCreditDebit': BalanceReservedCreditDebit, 'BalanceAcceptedCreditDebit': BalanceAcceptedCreditDebit }
+          csvwb.writerow(row)
+
+          #end //for payment in rawtx['result']['purchases']
+
+        #We've updated all the records in the DEx payment, don't let the last write command run, not needed
+        return
 
       elif type == 50:
         #Fixed Issuance, create property
@@ -283,7 +352,7 @@ def dumptxaddr_csv(csvwb, rawtx, Protocol, TxDBSerialNum):
         BalanceAvailableCreditDebit = value_neg
         row={'Address': Address, 'PropertyID': PropertyID, 'Protocol': Protocol, 'TxDBSerialNum': TxDBSerialNum, 'AddressTxIndex': AddressTxIndex,
              'AddressRole': AddressRole, 'BalanceAvailableCreditDebit': BalanceAvailableCreditDebit,
-             'BalanceResForOfferCreditDebit': BalanceResForOfferCreditDebit, 'BalanceResForAcceptCreditDebit': BalanceResForAcceptCreditDebit }
+             'BalanceReservedCreditDebit': BalanceReservedCreditDebit, 'BalanceAcceptedCreditDebit': BalanceAcceptedCreditDebit }
         csvwb.writerow(row)
 
         #Credit the buy in to the issuer
@@ -292,7 +361,7 @@ def dumptxaddr_csv(csvwb, rawtx, Protocol, TxDBSerialNum):
         Address= rawtx['result']['referenceaddress']
         row={'Address': Address, 'PropertyID': PropertyID, 'Protocol': Protocol, 'TxDBSerialNum': TxDBSerialNum, 'AddressTxIndex': AddressTxIndex,
              'AddressRole': AddressRole, 'BalanceAvailableCreditDebit': BalanceAvailableCreditDebit,
-             'BalanceResForOfferCreditDebit': BalanceResForOfferCreditDebit, 'BalanceResForAcceptCreditDebit': BalanceResForAcceptCreditDebit }
+             'BalanceReservedCreditDebit': BalanceReservedCreditDebit, 'BalanceAcceptedCreditDebit': BalanceAcceptedCreditDebit }
         csvwb.writerow(row)
 
         #Now start updating the crowdsale propertyid balance info
@@ -307,7 +376,7 @@ def dumptxaddr_csv(csvwb, rawtx, Protocol, TxDBSerialNum):
             BalanceAvailableCreditDebit = int(decimal.Decimal(rawtx['result']['amount'])*decimal.Decimal(cstx['result']['tokensperunit'])*decimal.Decimal((cstx['result']['percenttoissuer'])/decimal.Decimal(100)))
         row={'Address': Address, 'PropertyID': PropertyID, 'Protocol': Protocol, 'TxDBSerialNum': TxDBSerialNum, 'AddressTxIndex': AddressTxIndex,
              'AddressRole': AddressRole, 'BalanceAvailableCreditDebit': BalanceAvailableCreditDebit,
-             'BalanceResForOfferCreditDebit': BalanceResForOfferCreditDebit, 'BalanceResForAcceptCreditDebit': BalanceResForAcceptCreditDebit }
+             'BalanceReservedCreditDebit': BalanceReservedCreditDebit, 'BalanceAcceptedCreditDebit': BalanceAcceptedCreditDebit }
         csvwb.writerow(row)
 
         #now update with crowdsale specific property details
@@ -319,10 +388,10 @@ def dumptxaddr_csv(csvwb, rawtx, Protocol, TxDBSerialNum):
         value_neg=(value*-1)
         BalanceAvailableCreditDebit=value
 
-
+      #write output of the address details
       row={'Address': Address, 'PropertyID': PropertyID, 'Protocol': Protocol, 'TxDBSerialNum': TxDBSerialNum, 'AddressTxIndex': AddressTxIndex,
            'AddressRole': AddressRole, 'BalanceAvailableCreditDebit': BalanceAvailableCreditDebit, 
-           'BalanceResForOfferCreditDebit': BalanceResForOfferCreditDebit, 'BalanceResForAcceptCreditDebit': BalanceResForAcceptCreditDebit }
+           'BalanceReservedCreditDebit': BalanceReservedCreditDebit, 'BalanceAcceptedCreditDebit': BalanceAcceptedCreditDebit }
       csvwb.writerow(row)
 
 
@@ -336,22 +405,30 @@ def dumptx_csv(csvwb, rawtx, Protocol, block_height, seq, dbserialnum):
     if Protocol == "Bitcoin":
       #Bitcoin is only simple send, type 0
       TxType=0
-      TxVersion=0
+      TxVersion=rawtx['result']['version']
       TxState= "valid"
-      Ecosystem= "Production"
+      Ecosystem= ""
       TxSubmitTime = datetime.datetime.utcfromtimestamp(rawtx['result']['time'])
 
     elif Protocol == "Mastercoin":
       #currently type a text output from mastercore 'Simple Send' and version is unknown
       TxType= get_TxType(rawtx['result']['type'])
-      TxVersion= 0
-      TxState= rawtx['result']['valid']
-      #Use block time - 10 minutes to approx
-      TxSubmitTime = TxBlockTime-datetime.timedelta(minutes=10)
-      if rawtx['result']['propertyid'] == 2 or ( rawtx['result']['propertyid'] >= 2147483651 and rawtx['result']['propertyid'] <= 4294967295 ):
-        Ecosystem= "Test"
+      TxVersion=0
+      #!!temp workaround, Need to update for DEx Purchases after conversation with MasterCore team
+      if TxType == -22:
+        TxState=getTxState(rawtx['result']['purchases'][0]['valid'])
+        Ecosystem=getEcosystem(rawtx['result']['purchases'][0]['propertyid'])
       else:
-        Ecosystem= "Production"
+        TxState= getTxState(rawtx['result']['valid'])
+        Ecosystem=getEcosystem(rawtx['result']['propertyid'])
+
+      #Use block time - 10 minutes to approx
+      #TxSubmitTime = TxBlockTime-datetime.timedelta(minutes=10)
+      TxSubmitTime=""
+      #if rawtx['result']['propertyid'] == 2 or ( rawtx['result']['propertyid'] >= 2147483651 and rawtx['result']['propertyid'] <= 4294967295 ):
+      #  Ecosystem= "Test"
+      #else:
+      #  Ecosystem= "Production"
 
     else:
       print "Wrong Protocol? Exiting, goodbye."
@@ -363,6 +440,19 @@ def dumptx_csv(csvwb, rawtx, Protocol, block_height, seq, dbserialnum):
     csvwb.writerow(row)
 
 
+def getEcosystem(propertyid):
+    if propertyid == 2 or ( propertyid >= 2147483651 and propertyid <= 4294967295 ):
+       return "Test"
+    else:
+       return "Production"
+
+def getTxState(valid):
+    if valid:
+      return "valid"
+    else:
+      return "not valid"
+    #there is also pending, but omniEngine won't write that
+
 def get_TxType(text_type):
     convert={"Simple Send": 0 ,
              "Restricted Send": 2,
@@ -371,6 +461,7 @@ def get_TxType(text_type):
              "DEx Sell Offer": 20,
              "MetaDEx: Offer/Accept one Master Protocol Coins for another": 21,
              "DEx Accept Offer": 22,
+             "DEx Purchase": -22,
              "Create Property - Fixed": 50,
              "Create Property - Variable": 51,
              "Promote Property": 52,
