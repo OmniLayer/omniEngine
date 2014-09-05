@@ -228,11 +228,11 @@ def dumptxaddr_csv(csvwb, rawtx, Protocol, TxDBSerialNum):
       BalanceAvailableCreditDebit=""
       BalanceReservedCreditDebit=""
       BalanceAcceptedCreditDebit=""
+      Address = rawtx['result']['sendingaddress']
 
       #Check if we are a DEx Purchase/payment. Format is a littler different and variables below would fail if we tried. 
       if type != -22:
         PropertyID= rawtx['result']['propertyid']
-        Address = rawtx['result']['sendingaddress']
         if rawtx['result']['divisible']:
           value=int(decimal.Decimal(rawtx['result']['amount'])*decimal.Decimal(1e8))
         else:
@@ -281,11 +281,11 @@ def dumptxaddr_csv(csvwb, rawtx, Protocol, TxDBSerialNum):
       elif type == -22:
         #DEx Accept Payment
 
+        Sender =  Address
         #process all purchases in the transaction 
         for payment in rawtx['result']['purchases']:
 
           Receiver = payment['referenceaddress']
-          Sender =  payment['senderaddress']
           PropertyIDBought = payment['propertyid']
           #Right now payments are only in btc
           PropertyIDPaid = 0
