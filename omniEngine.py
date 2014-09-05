@@ -9,7 +9,7 @@ firstMPtxBlock=249948
 #get last known block from the RPC client
 initialBlock=0
 #endBlock=getinfo()['result']['blocks']
-endBlock=99999
+endBlock=10
 
 #get highest TxDBSerialNum (number of rows in the Transactions table)
 TxDBSerialNum=0
@@ -56,7 +56,7 @@ while currentBlock <= endBlock:
   if height >= firstMPtxBlock:
     block_data_MP = listblocktransactions_MP(height)
   else:
-    block_data_MP = {"error": null, "id": null, "result": []}
+    block_data_MP = {"error": None, "id": None, "result": []}
 
   #Status update every 10 blocks
   if height % 10 == 0 or currentBlock == initialBlock:
