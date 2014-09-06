@@ -244,7 +244,8 @@ def dumptxaddr_csv(csvwb, rawtx, Protocol, TxDBSerialNum):
 
 	#debit the sender
         row={'Address': Address, 'PropertyID': PropertyID, 'Protocol': Protocol, 'TxDBSerialNum': TxDBSerialNum, 'AddressTxIndex': AddressTxIndex,
-               'AddressRole': AddressRole, 'BalanceAvailableCreditDebit': value_neg}
+             'AddressRole': AddressRole, 'BalanceAvailableCreditDebit': value_neg, 
+             'BalanceReservedCreditDebit': BalanceReservedCreditDebit, 'BalanceAcceptedCreditDebit': BalanceAcceptedCreditDebit}
         csvwb.writerow(row)
 
 	#credit the receiver
@@ -264,6 +265,7 @@ def dumptxaddr_csv(csvwb, rawtx, Protocol, TxDBSerialNum):
         #DEx Sell Offer
         #Move the amount from Available balance to reserved for Offer
         ##Sell offer cancel doesn't display an amount from core, not sure what we do here yet
+        AddressRole='seller'
         BalanceAvailableCreditDebit = value_neg
         BalanceReservedCreditDebit = value
 
@@ -275,6 +277,16 @@ def dumptxaddr_csv(csvwb, rawtx, Protocol, TxDBSerialNum):
         #DEx Accept Offer
         #Move the amount from Reserved for Offer to Reserved for Accept
         ## Mastercore doesn't show payments as MP tx. How do we credit a user who has payed?
+
+        #update the buyer
+        AddressRole='buyer'
+        BalanceAcceptedCreditDebit = value
+        row={'Address': Address, 'PropertyID': PropertyID, 'Protocol': Protocol, 'TxDBSerialNum': TxDBSerialNum, 'AddressTxIndex': AddressTxIndex,
+             'AddressRole': AddressRole, 'BalanceAvailableCreditDebit': BalanceAvailableCreditDebit, 
+             'BalanceReservedCreditDebit': BalanceReservedCreditDebit, 'BalanceAcceptedCreditDebit': BalanceAcceptedCreditDebit }
+        csvwb.writerow(row)
+
+        AddressRole='seller'
         Address = rawtx['result']['referenceaddress']
         BalanceAcceptedCreditDebit = value
         BalanceReservedCreditDebit = value_neg
@@ -304,16 +316,16 @@ def dumptxaddr_csv(csvwb, rawtx, Protocol, TxDBSerialNum):
             AmountPaid=int(payment['amountpaid'])
           AmountPaidNeg=(AmountPaid * -1)
 
-          #deduct payment from sender
-          AddressRole = 'sender'
+          #deduct payment from buyer
+          AddressRole = 'buyer'
           BalanceAvailableCreditDebit=AmountPaidNeg
           row={'Address': Sender, 'PropertyID': PropertyIDPaid, 'Protocol': Protocol, 'TxDBSerialNum': TxDBSerialNum, 'AddressTxIndex': AddressTxIndex,
                'AddressRole': AddressRole, 'BalanceAvailableCreditDebit': BalanceAvailableCreditDebit,
                'BalanceReservedCreditDebit': BalanceReservedCreditDebit, 'BalanceAcceptedCreditDebit': BalanceAcceptedCreditDebit }
           csvwb.writerow(row)
 
-          #Credit payment to payee
-          AddressRole = 'payee'
+          #Credit payment to seller
+          AddressRole = 'seller'
           BalanceAvailableCreditDebit=AmountPaid
           row={'Address': Receiver, 'PropertyID': PropertyIDPaid, 'Protocol': Protocol, 'TxDBSerialNum': TxDBSerialNum, 'AddressTxIndex': AddressTxIndex,
                'AddressRole': AddressRole, 'BalanceAvailableCreditDebit': BalanceAvailableCreditDebit,
@@ -321,16 +333,17 @@ def dumptxaddr_csv(csvwb, rawtx, Protocol, TxDBSerialNum):
           csvwb.writerow(row)
 
           #deduct tokens from seller
-          AddressRole = 'sender'
+          AddressRole = 'seller'
           BalanceAvailableCreditDebit=AmountBoughtNeg
           row={'Address': Receiver, 'PropertyID': PropertyIDBought, 'Protocol': Protocol, 'TxDBSerialNum': TxDBSerialNum, 'AddressTxIndex': AddressTxIndex,
                'AddressRole': AddressRole, 'BalanceAvailableCreditDebit': BalanceAvailableCreditDebit,
                'BalanceReservedCreditDebit': BalanceReservedCreditDebit, 'BalanceAcceptedCreditDebit': BalanceAcceptedCreditDebit }
           csvwb.writerow(row)
 
-          #Credit tokens to buyer
-          AddressRole = 'recipient'
+          #Credit tokens to buyer and reduce their accepted amount by amount bought
+          AddressRole = 'buyer'
           BalanceAvailableCreditDebit=AmountBought
+          BalanceAcceptedCreditDebut=AmountBoughtNeg
           row={'Address': Sender, 'PropertyID': PropertyIDBought, 'Protocol': Protocol, 'TxDBSerialNum': TxDBSerialNum, 'AddressTxIndex': AddressTxIndex,
                'AddressRole': AddressRole, 'BalanceAvailableCreditDebit': BalanceAvailableCreditDebit,
                'BalanceReservedCreditDebit': BalanceReservedCreditDebit, 'BalanceAcceptedCreditDebit': BalanceAcceptedCreditDebit }
