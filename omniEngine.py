@@ -7,12 +7,26 @@ dbc=sql_connect()
 firstMPtxBlock=249948
 
 #get last known block from the RPC client
-initialBlock=0
+#initialBlock=1
+
+#MSC tx's
+#initialBlock=319100
+
+#DEx Payment block
+initialBlock=316339
+
 #endBlock=getinfo()['result']['blocks']
-endBlock=10
+#endBlock=10
+
+#MSC TX's
+#endBlock=319105
+
+#DEx Payment block
+endBlock=316339
 
 #get highest TxDBSerialNum (number of rows in the Transactions table)
-TxDBSerialNum=0
+#Start at 1 since block 0 is special case
+TxDBSerialNum=1
 
 appendname=str(initialBlock)+'.'+str(endBlock)
 #csv output file info for tx table
