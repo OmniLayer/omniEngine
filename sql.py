@@ -119,6 +119,49 @@ def update_balance(Address, Protocol, PropertyID, Ecosystem, BalanceAvailable, B
       print 'Error %s' % e
       sys.exit(1)
 
+def insert_prop(rawtx, Protocol):
+    #only insert valid updates. ignore invalid data?
+    if rawtx['result']['valid']:
+      PropertyID = rawtx['result']['propertyid']
+      TxType = get_TxType(rawtx['result']['type'])
+    
+      rawprop = getproperty_MP(PropertyID)['result']
+ 
+      Issuer = rawprop['issuer']
+      Ecosystem = getEcosystem(PropertyID)
+      txhash = rawtx['result']['txid']
+      txdbserialnum = gettxdbserialnum(txhash)
+
+      #do we use this for the db or is it only on broadcast
+      #prevpropertyid      | integer                        | default 0
+
+      txblocktime=datetime.datetime.utcfromtimestamp(rawtx['result']['blocktime'])
+      propertyname = rawprop['name']
+      propertyurl = rawprop['url']
+      if rawprop['divisible']:
+        propertytype = 1
+        numberoftokens=int(decimal.Decimal(rawprop['totaltokens'])*decimal.Decimal("1e8"))
+      else:
+        propertytype = 0
+        numberoftokens = int(rawprop['totaltokens'])
+      propertydata = rawprop['data']
+      propertycategory = rawprop['category']
+      propertysubcategory =rawprop['subcategory'] 
+      
+      if rawprop['fixedissuance'] :
+        pass
+      else:
+        #get crowdsale specific details from core
+        csraw=getcrowdsale_MP(PropertyID)['result']
+        crowdsaledeadline = datetime.datetime.utcfromtimestamp(csraw['deadline'])
+        #might need to change the variable name to distinguish 50 vs 51
+        totaltokens=int(csraw['tokensperunit'])
+        ebb=int(csraw['earlybonus'])
+        percenttoissuer=int(csraw['percenttoissuer'])
+        propertyiddesired=int(csraw['propertyiddesired'])
+
+      #do the insert, once we have the final structure defined
+
 
 def insert_tx(rawtx, Protocol, blockheight, seq):
     TxHash = rawtx['result']['txid']
@@ -454,6 +497,15 @@ def dumptx_csv(csvwb, rawtx, Protocol, block_height, seq, dbserialnum):
          'TxSeqInBlock': TxSeqInBlock}
     csvwb.writerow(row)
 
+
+def gettxdbserialnum(txhash):
+    try:
+      dbc.execute("select txdbserialnum from transactions where txhash=%s",txhash)
+      ROWS= dbc.fetchall()
+      return ROWS['txdbserialnum']
+    except psycopg2.DatabaseError, e:
+      print 'Error %s' % e
+      exit
 
 def getEcosystem(propertyid):
     if propertyid == 2 or ( propertyid >= 2147483651 and propertyid <= 4294967295 ):
