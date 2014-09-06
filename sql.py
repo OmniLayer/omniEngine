@@ -301,6 +301,7 @@ def dumptxaddr_csv(csvwb, rawtx, Protocol, TxDBSerialNum):
           Receiver = payment['referenceaddress']
           PropertyIDBought = payment['propertyid']
           #Right now payments are only in btc
+          #we already insert btc payments in btc processing might need to skip this
           PropertyIDPaid = 0
           #AddressTxIndex =  Do we need to change this?
 
@@ -310,27 +311,27 @@ def dumptxaddr_csv(csvwb, rawtx, Protocol, TxDBSerialNum):
             AmountBought=int(payment['amountbought'])
           AmountBoughtNeg=(AmountBought * -1)
 
-          if (PropertyIDPaid == 0 ) or getdivisible_MP(PropertyIDPaid):
-            AmountPaid=int(decimal.Decimal(payment['amountpaid'])*decimal.Decimal(1e8))
-          else:
-            AmountPaid=int(payment['amountpaid'])
-          AmountPaidNeg=(AmountPaid * -1)
+          #if (PropertyIDPaid == 0 ) or getdivisible_MP(PropertyIDPaid):
+          #  AmountPaid=int(decimal.Decimal(payment['amountpaid'])*decimal.Decimal(1e8))
+          #else:
+          #  AmountPaid=int(payment['amountpaid'])
+          #AmountPaidNeg=(AmountPaid * -1)
 
           #deduct payment from buyer
-          AddressRole = 'buyer'
-          BalanceAvailableCreditDebit=AmountPaidNeg
-          row={'Address': Sender, 'PropertyID': PropertyIDPaid, 'Protocol': Protocol, 'TxDBSerialNum': TxDBSerialNum, 'AddressTxIndex': AddressTxIndex,
-               'AddressRole': AddressRole, 'BalanceAvailableCreditDebit': BalanceAvailableCreditDebit,
-               'BalanceReservedCreditDebit': BalanceReservedCreditDebit, 'BalanceAcceptedCreditDebit': BalanceAcceptedCreditDebit }
-          csvwb.writerow(row)
+          #AddressRole = 'buyer'
+          #BalanceAvailableCreditDebit=AmountPaidNeg
+          #row={'Address': Sender, 'PropertyID': PropertyIDPaid, 'Protocol': Protocol, 'TxDBSerialNum': TxDBSerialNum, 'AddressTxIndex': AddressTxIndex,
+          #     'AddressRole': AddressRole, 'BalanceAvailableCreditDebit': BalanceAvailableCreditDebit,
+          #     'BalanceReservedCreditDebit': BalanceReservedCreditDebit, 'BalanceAcceptedCreditDebit': BalanceAcceptedCreditDebit }
+          #csvwb.writerow(row)
 
           #Credit payment to seller
-          AddressRole = 'seller'
-          BalanceAvailableCreditDebit=AmountPaid
-          row={'Address': Receiver, 'PropertyID': PropertyIDPaid, 'Protocol': Protocol, 'TxDBSerialNum': TxDBSerialNum, 'AddressTxIndex': AddressTxIndex,
-               'AddressRole': AddressRole, 'BalanceAvailableCreditDebit': BalanceAvailableCreditDebit,
-               'BalanceReservedCreditDebit': BalanceReservedCreditDebit, 'BalanceAcceptedCreditDebit': BalanceAcceptedCreditDebit }
-          csvwb.writerow(row)
+          #AddressRole = 'seller'
+          #BalanceAvailableCreditDebit=AmountPaid
+          #row={'Address': Receiver, 'PropertyID': PropertyIDPaid, 'Protocol': Protocol, 'TxDBSerialNum': TxDBSerialNum, 'AddressTxIndex': AddressTxIndex,
+          #     'AddressRole': AddressRole, 'BalanceAvailableCreditDebit': BalanceAvailableCreditDebit,
+          #     'BalanceReservedCreditDebit': BalanceReservedCreditDebit, 'BalanceAcceptedCreditDebit': BalanceAcceptedCreditDebit }
+          #csvwb.writerow(row)
 
           #deduct tokens from seller
           AddressRole = 'seller'
