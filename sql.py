@@ -247,8 +247,9 @@ def dumptxaddr_csv(csvwb, rawtx, Protocol, TxDBSerialNum):
                'AddressRole': AddressRole, 'BalanceAvailableCreditDebit': value_neg}
         csvwb.writerow(row)
 
-	#credit the reciever
+	#credit the receiver
         Address = rawtx['result']['referenceaddress']
+	AddressRole="recipient"
         BalanceAvailableCreditDebit=value
 
       #elif type == 2:
