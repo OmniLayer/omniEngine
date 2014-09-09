@@ -518,7 +518,7 @@ def insertTx(rawtx, Protocol, blockheight, seq):
                     (TxHash, Protocol, TxType, TxVersion, Ecosystem, TxSubmitTime, TxState, TxErrorCode, TxBlockNumber, TxSeqInBlock))
         con.commit()
         #need validation on structure
-        dbc.execute("Select TxDBSerialNum from transacations where txhash=%s and protocol=%s", (TxHash, Protocol))
+        dbc.execute("Select TxDBSerialNum from transactions where txhash=%s and protocol=%s", (TxHash, Protocol))
         serial=dbc.fetchall()['0']['dbtxserial']
         return serial
     except psycopg2.DatabaseError, e:
