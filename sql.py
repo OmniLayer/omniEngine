@@ -45,7 +45,11 @@ def select():
       print len(ROWS)
       print ROWS
     except psycopg2.DatabaseError, e:
+      if con:
+            con.rollback()
       print 'Error %s' % e
+      sys.exit(1)
+
 
 def resetbalances_MP():
     #for now sync / reset balance data from mastercore balance list
@@ -125,42 +129,56 @@ def insert_prop(rawtx, Protocol):
       PropertyID = rawtx['result']['propertyid']
       TxType = get_TxType(rawtx['result']['type'])
     
-      rawprop = getproperty_MP(PropertyID)['result']
- 
+      PropertyData = getproperty_MP(PropertyID)
+      rawprop = PropertyData['result'] 
+
       Issuer = rawprop['issuer']
       Ecosystem = getEcosystem(PropertyID)
-      txhash = rawtx['result']['txid']
-      txdbserialnum = gettxdbserialnum(txhash)
+      lasthash = rawtx['result']['txid']
+      LastTxDBSerialNum = gettxdbserialnum(lasthash)
+      createhash = rawprop['creationtxid']
+      CreateTxDBSerialNum = gettxdbserialnum(createhash)
 
-      #do we use this for the db or is it only on broadcast
-      #prevpropertyid      | integer                        | default 0
-
-      txblocktime=datetime.datetime.utcfromtimestamp(rawtx['result']['blocktime'])
-      propertyname = rawprop['name']
-      propertyurl = rawprop['url']
+      PropertyName = rawprop['name']
+      #propertyurl = rawprop['url']
       if rawprop['divisible']:
-        propertytype = 1
-        numberoftokens=int(decimal.Decimal(rawprop['totaltokens'])*decimal.Decimal("1e8"))
+        PropertyType = 1
       else:
-        propertytype = 0
-        numberoftokens = int(rawprop['totaltokens'])
+        PropertyType = 0
       propertydata = rawprop['data']
-      propertycategory = rawprop['category']
-      propertysubcategory =rawprop['subcategory'] 
-      
-      if rawprop['fixedissuance'] :
-        pass
-      else:
-        #get crowdsale specific details from core
-        csraw=getcrowdsale_MP(PropertyID)['result']
-        crowdsaledeadline = datetime.datetime.utcfromtimestamp(csraw['deadline'])
-        #might need to change the variable name to distinguish 50 vs 51
-        totaltokens=int(csraw['tokensperunit'])
-        ebb=int(csraw['earlybonus'])
-        percenttoissuer=int(csraw['percenttoissuer'])
-        propertyiddesired=int(csraw['propertyiddesired'])
+      PropertyCategory = rawprop['category']
+      PropertySubcategory =rawprop['subcategory'] 
 
-      #do the insert, once we have the final structure defined
+      #, PrevPropertyID bigint null default 0
+      #, PropertyServiceURL varchar(256) null
+
+      #do the update/insert, once we have the final structure defined
+      try:
+        dbc.execute("select * from smartproperties where Protocol=%s and PropertyID=%s", (Protocol, PropertyID))
+        ROWS= dbc.fetchall()
+        if len(ROWS) > 0:
+          #Its already there, update it and insert into history table
+          dbc.execute("update smartproperties set Issuer=%s, Ecosystem=%s, CreateTxDBSerialNum=%s, LastTxDBSerialNum=%s, "
+                      "PropertyName=%s, PropertyType=%s, PropertyCategory=%s, PropertySubcategory=%s, PropertyData=%s "
+                      "where Protocol=%s and PropertyID=%s",
+                      (Issuer, Ecosystem, CreateTxDBSerialNum, LastTxDBSerialNum, PropertyName, PropertyType, PropertyCategory, PropertySubcategory, PropertyData, Protocol, PropertyID))
+          #insert this tx into the history table
+          dbc.execute("insert into PropertyHistory (Protocol, PropertyID, TxDBSerialNum) Values(%s, %s, %s)", (Protocol, PropertyID, LastTxDBSerialNum))
+          con.commit()
+        else:
+          #doesn't exist, insert
+          dbc.execute("insert into SmartProperties"
+                      "(Issuer, Ecosystem, CreateTxDBSerialNum, LastTxDBSerialNum, PropertyName, PropertyType, PropertyCategory, PropertySubcategory, PropertyData, Protocol, PropertyID "
+                      "values(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
+                      (Issuer, Ecosystem, CreateTxDBSerialNum, LastTxDBSerialNum, PropertyName, PropertyType, PropertyCategory, PropertySubcategory, PropertyData, Protocol, PropertyID))
+          #insert this tx into the history table
+          dbc.execute("insert into PropertyHistory (Protocol, PropertyID, TxDBSerialNum) Values(%s, %s, %s)", (Protocol, PropertyID, LastTxDBSerialNum))
+          con.commit()
+      except psycopg2.DatabaseError, e:
+        if con:
+            con.rollback()
+        print 'Error %s' % e
+        sys.exit(1)
 
 
 def insert_tx(rawtx, Protocol, blockheight, seq):
@@ -401,9 +419,17 @@ def dumptxaddr_csv(csvwb, rawtx, Protocol, TxDBSerialNum):
       elif type == 50:
         #Fixed Issuance, create property
         AddressRole = "issuer"
+        #update smart property table
+        insert_prop(rawtx, Protocol)
+     
+      elif type == 51:
+        AddressRole = "issuer"
+        #update smart property table
+        insert_prop(rawtx, Protocol)
 
       elif type == -51:
         #Participating in crowdsale
+        dbc.execute("insert into PropertyHistory (Protocol, PropertyID, TxDBSerialNum) Values(%s, %s, %s)", (Protocol, PropertyID, TxDBSerialNum))
 
         #First deduct the amount the participant sent to 'buyin'
         AddressRole = 'participant'
@@ -445,6 +471,16 @@ def dumptxaddr_csv(csvwb, rawtx, Protocol, TxDBSerialNum):
           value=int(rawtx['result']['purchasedtokens'])
         value_neg=(value*-1)
         BalanceAvailableCreditDebit=value
+ 
+      #elif type == 52:
+        #promote crowdsale does what?
+
+      elif type == 53:
+        #Close Crowdsale
+        AddressRole = "issuer"
+        #update smart property table
+        insert_prop(rawtx, Protocol)
+
 
       #write output of the address details
       row={'Address': Address, 'PropertyID': PropertyID, 'Protocol': Protocol, 'TxDBSerialNum': TxDBSerialNum, 'AddressTxIndex': AddressTxIndex,
