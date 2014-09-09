@@ -1,6 +1,6 @@
 #from rpcclient import *
 from sql import *
-from csv import *
+from csv-tools import *
 
 #dbc=sql_connect()
 
@@ -19,7 +19,7 @@ initialBlock=firstMPtxBlock
 #initialBlock=316339
 
 #endBlock=getinfo()['result']['blocks']
-endBlock=250000
+endBlock=249950
 
 #MSC TX's
 #endBlock=319105
