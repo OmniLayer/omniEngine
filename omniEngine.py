@@ -9,20 +9,22 @@ firstMPtxBlock=249948
 #get last known block from the RPC client
 #initialBlock=1
 
+initialBlock=firstMPtxBlock
+
 #MSC tx's
 #initialBlock=319100
 
 #DEx Payment block
-initialBlock=316339
+#initialBlock=316339
 
-#endBlock=getinfo()['result']['blocks']
+endBlock=getinfo()['result']['blocks']
 #endBlock=10
 
 #MSC TX's
 #endBlock=319105
 
 #DEx Payment block
-endBlock=316339
+#endBlock=316339
 
 #get highest TxDBSerialNum (number of rows in the Transactions table)
 #Start at 1 since block 0 is special case
@@ -83,14 +85,18 @@ while currentBlock <= endBlock:
   print  x, "BTC tx"
 
   #Write the blocks table row
-  dumpblocks_csv(blocks_table, block_data, Protocol, height, x)
+  #dumpblocks_csv(blocks_table, block_data, Protocol, height, x)
+   insertBlock(blocks_table, block_data, Protocol, height, x)
 
   for tx in block_data['result']['tx']:
     rawtx=getrawtransaction(tx)
     #add the transaction and addresses in the transaction to the csv files
-    dumptx_csv(tx_table, rawtx, Protocol, height, x, TxDBSerialNum)
-    dumptxaddr_csv(txaddr_table, rawtx, Protocol, TxDBSerialNum)
-    #insert_transaction(dbc, rawtx, Protocol, height, x, TxDBSerialNum)
+    #dumptx_csv(tx_table, rawtx, Protocol, height, x, TxDBSerialNum)
+    #dumptxaddr_csv(txaddr_table, rawtx, Protocol, TxDBSerialNum)
+    serial=insertTx(rawtx, Protocol, height, x)
+    insertTxAddr(rawtx, Protocol, serial)
+    #write db changes
+    dbCommit()
 
     #increment the number of transactions
     TxDBSerialNum+=1
@@ -108,9 +114,12 @@ while currentBlock <= endBlock:
   for tx in block_data_MP['result']:
     rawtx=gettransaction_MP(tx)
     #add the transaction and addresses in the transaction to the csv files
-    dumptx_csv(tx_table, rawtx, Protocol, height, x, TxDBSerialNum)
-    dumptxaddr_csv(txaddr_table, rawtx, Protocol, TxDBSerialNum)
-    #insert_transaction(dbc, rawtx, Protocol, height, x, TxDBSerialNum)
+    #dumptx_csv(tx_table, rawtx, Protocol, height, x, TxDBSerialNum)
+    #dumptxaddr_csv(txaddr_table, rawtx, Protocol, TxDBSerialNum)
+    serial=insertTx(rawtx, Protocol, height, x)
+    insertTxAddr(rawtx, Protocol, serial)
+    #write db changes
+    dbCommit()
 
     #increment the number of transactions
     TxDBSerialNum+=1
