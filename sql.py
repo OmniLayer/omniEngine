@@ -499,7 +499,7 @@ def insertTx(rawtx, Protocol, blockheight, seq):
 	print 'Error %s' % e
         sys.exit(1)
 
-def insertblock(block_data, Protocol, block_height, txcount):
+def insertBlock(block_data, Protocol, block_height, txcount):
     BlockTime = datetime.datetime.utcfromtimestamp(block_data['result']['time'])
     version = block_data['result']['version'];
     if block_height > 0:
