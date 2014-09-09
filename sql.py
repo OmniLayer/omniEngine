@@ -113,6 +113,21 @@ def updateBalance(Address, Protocol, PropertyID, Ecosystem, BalanceAvailable, Ba
                     (Address, Protocol, PropertyID) )
 
       if len(rows) == 0:
+        try:
+          BalanceAvailable=int(BalanceAvailable)
+        except (ValueError, TypeError):
+          BalanceAvailable=0
+
+        try:
+          BalanceReserved=int(BalanceReserved)
+        except (ValueError, TypeError):
+          BalanceReserved=0
+
+        try:
+          BalanceAccepted=int(BalanceAccepted)
+        except (ValueError, TypeError):
+          BalanceAccepted=0
+
         #address not in database, insert
         dbExecute("INSERT into AddressBalances "
                     "(Address, Protocol, PropertyID, Ecosystem, BalanceAvailable, BalanceReserved, BalanceAccepted, LastTxHash) "
