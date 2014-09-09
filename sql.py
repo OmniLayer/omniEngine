@@ -107,7 +107,7 @@ def resetbalances_MP():
 
 def updateBalance(Address, Protocol, PropertyID, Ecosystem, BalanceAvailable, BalanceReserved, BalanceAccepted, LastTxHash):
     
-      rows=dbSelect("select cast(BalanceAvailable as integer), cast(BalanceReserved as integer), cast(BalanceAccepted as integer) "
+      rows=dbSelect("select BalanceAvailable, BalanceReserved, BalanceAccepted "
                     "from AddressBalances where address=%s and Protocol=%s and propertyid=%s",
                     (Address, Protocol, PropertyID) )
 
