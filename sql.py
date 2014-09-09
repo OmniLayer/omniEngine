@@ -114,9 +114,9 @@ def resetbalances_MP():
           print 'Error %s' % e
           sys.exit(1)
 
-def update_balance(Address, Protocol, PropertyID, Ecosystem, BalanceAvailable, BalanceReserved, LastTxHash):
+def updateBalance(Address, Protocol, PropertyID, Ecosystem, BalanceAvailable, BalanceReserved, LastTxHash):
     try:
-      dbc.execute("select address from AddressBalances where address=%s and Protocol=%s and propertyid=%s",
+      dbc.execute("select * from AddressBalances where address=%s and Protocol=%s and propertyid=%s",
                   (Address, Protocol, PropertyID) )
       rows=dbc.fetchall()
 
@@ -125,13 +125,27 @@ def update_balance(Address, Protocol, PropertyID, Ecosystem, BalanceAvailable, B
         dbc.execute("INSERT into AddressBalances "
                     "(Address, Protocol, PropertyID, Ecosystem, BalanceAvailable, BalanceReserved, LastTxHash) "
                     "VALUES (%s,%s,%s,%s,%s,%s,decode(%s,'hex'))",
-                    (Address, Protocol, PropertyID, Ecosystem, BalanceAvailable, BalanceReserved, LastTxHash) )
+                    (Address, Protocol, PropertyID, Ecosystem, BalanceAvailable, BalanceReserved, BalanceAccepted, LastTxHash) )
       else:
         #address in database update
-        BalanceAvailable=BalanceAvailable+rows['balanceavailable']
-        BalanceReserved=BalanceReserved+rows['balancereserved']
-        dbc.execute("UPDATE AddressBalances set BalanceAvailable=%s, BalanceReserved=%s, LastTxHash=decode(%s,'hex') where address=%s and PropertyID=%s",
-                    (BalanceAvailable, BalanceReserved, LastTxHash, address, PropertyID) )
+        #check if null values and default to no change on update
+        try:
+          BalanceAvailable=int(BalanceAvailable)+rows['balanceavailable']
+        except ValueError:
+          BalanceAvailable=rows['balanceavailable']
+
+        try:
+          BalanceReserved=int(BalanceReserved)+rows['balancereserved']
+        except ValueError:
+          BalanceReserved=rows['balancereserved']
+
+        try:
+          BalanceAccepted=int(BalanceAccepted)+rows['balanceaccepted']
+        except ValueError:
+          BalanceAccepted=rows['balanceaccepted']
+
+        dbc.execute("UPDATE AddressBalances set BalanceAvailable=%s, BalanceReserved=%s, BalanceAccepted=%s, LastTxHash=%s where address=%s and PropertyID=%s and Protocol=%s",
+                    (BalanceAvailable, BalanceReserved, BalanceAccepted, LastTxHash, address, PropertyID, Protocol) )
 
       con.commit()
     except psycopg2.DatabaseError, e:
@@ -202,6 +216,7 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum):
 
     if Protocol == "Bitcoin":
       PropertyID=0
+      Ecosystem=""
       #process all outputs
       for output in rawtx['result']['vout']:
         #Make sure we have readable output addresses to actually use
@@ -216,6 +231,8 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum):
                       "(Address, PropertyID, Protocol, TxDBSerialNum, AddressTxIndex, AddressRole, BalanceAvailableCreditDebit)"
                       "values(%s, %s, %s, %s, %s, %s, %s)",
                       (addr, PropertyID, Protocol, TxDBSerialNum, AddressTxIndex, AddressRole, BalanceAvailableCreditDebit))
+            updateBalance(addr, Protocol, PropertyID, Ecosystem, BalanceAvailableCreditDebit, 0, 0, TxHash)
+
 
       #process all inputs, Start AddressTxIndex=0 since inputs don't have a Index number in json and iterate for each input
       AddressTxIndex=0
@@ -233,6 +250,7 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum):
                       "(Address, PropertyID, Protocol, TxDBSerialNum, AddressTxIndex, AddressRole, BalanceAvailableCreditDebit)"
                       "values(%s, %s, %s, %s, %s, %s, %s)",
                       (addr, PropertyID, Protocol, TxDBSerialNum, AddressTxIndex, AddressRole, BalanceAvailableCreditDebit))
+            updateBalance(addr, Protocol, PropertyID, Ecosystem, BalanceAvailableCreditDebit, 0, 0, TxHash)
           AddressTxIndex+=1
 
     elif Protocol == "Mastercoin":
@@ -243,6 +261,8 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum):
       BalanceReservedCreditDebit=""
       BalanceAcceptedCreditDebit=""
       Address = rawtx['result']['sendingaddress']
+      PropertyID=rawtx['result']['propertyid']
+      Ecosystem=getEcosystem(PropertyID) 
 
       #Check if we are a DEx Purchase/payment. Format is a littler different and variables below would fail if we tried. 
       if type != -22:
@@ -262,6 +282,7 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum):
                   "(Address, PropertyID, Protocol, TxDBSerialNum, AddressTxIndex, AddressRole, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit)"
                   "values(%s, %s, %s, %s, %s, %s, %s, %s, %s)",
                   (Address, PropertyID, Protocol, TxDBSerialNum, AddressTxIndex, AddressRole, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit))
+        updateBalance(Address, Protocol, PropertyID, Ecosystem, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit, TxHash)
 
 	#credit the receiver
         Address = rawtx['result']['referenceaddress']
@@ -300,6 +321,7 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum):
                   "(Address, PropertyID, Protocol, TxDBSerialNum, AddressTxIndex, AddressRole, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit)"
                   "values(%s, %s, %s, %s, %s, %s, %s, %s, %s)", 
                   (Address, PropertyID, Protocol, TxDBSerialNum, AddressTxIndex, AddressRole, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit))
+        updateBalance(Address, Protocol, PropertyID, Ecosystem, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit, TxHash)
 
         AddressRole='seller'
         Address = rawtx['result']['referenceaddress']
@@ -355,6 +377,7 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum):
                     "(Address, PropertyID, Protocol, TxDBSerialNum, AddressTxIndex, AddressRole, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit)"
                     "values(%s, %s, %s, %s, %s, %s, %s, %s, %s)",
                     (Receiver, PropertyIDBought, Protocol, TxDBSerialNum, AddressTxIndex, AddressRole, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit))
+          updateBalance(Receiver, Protocol, PropertyIDBought, Ecosystem, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit, TxHash)
 
           #Credit tokens to buyer and reduce their accepted amount by amount bought
           AddressRole = 'buyer'
@@ -364,6 +387,7 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum):
                     "(Address, PropertyID, Protocol, TxDBSerialNum, AddressTxIndex, AddressRole, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit)"
                     "values(%s, %s, %s, %s, %s, %s, %s, %s, %s)",
                     (Sender, PropertyIDBought, Protocol, TxDBSerialNum, AddressTxIndex, AddressRole, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit))
+          updateBalance(Sender, Protocol, PropertyIDBought, Ecosystem, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit, TxHash)
 
           #end //for payment in rawtx['result']['purchases']
 
@@ -385,7 +409,7 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum):
         #Participating in crowdsale
         dbExecute("insert into PropertyHistory (Protocol, PropertyID, TxDBSerialNum) Values(%s, %s, %s)", (Protocol, PropertyID, TxDBSerialNum))
 
-        #First deduct the amount the participant sent to 'buyin'
+        #First deduct the amount the participant sent to 'buyin'  (BTC Amount might need to be excluded?)
         AddressRole = 'participant'
         BalanceAvailableCreditDebit = value_neg
 
@@ -393,6 +417,7 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum):
                   "(Address, PropertyID, Protocol, TxDBSerialNum, AddressTxIndex, AddressRole, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit)"
                   "values(%s, %s, %s, %s, %s, %s, %s, %s, %s)",
                   (Address, PropertyID, Protocol, TxDBSerialNum, AddressTxIndex, AddressRole, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit))
+        updateBalance(Address, Protocol, PropertyID, Ecosystem, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit, TxHash)
 
         #Credit the buy in to the issuer
         AddressRole = 'issuer'
@@ -402,6 +427,7 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum):
                   "(Address, PropertyID, Protocol, TxDBSerialNum, AddressTxIndex, AddressRole, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit)"
                   "values(%s, %s, %s, %s, %s, %s, %s, %s, %s)",
                   (Address, PropertyID, Protocol, TxDBSerialNum, AddressTxIndex, AddressRole, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit))
+        updateBalance(Address, Protocol, PropertyID, Ecosystem, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit, TxHash)
 
         #Now start updating the crowdsale propertyid balance info
         PropertyID = rawtx['result']['purchasedpropertyid']
@@ -417,6 +443,7 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum):
                   "(Address, PropertyID, Protocol, TxDBSerialNum, AddressTxIndex, AddressRole, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit)"
                   "values(%s, %s, %s, %s, %s, %s, %s, %s, %s)",
                   (Address, PropertyID, Protocol, TxDBSerialNum, AddressTxIndex, AddressRole, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit))
+        updateBalance(Address, Protocol, PropertyID, Ecosystem, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit, TxHash)
 
         #now update with crowdsale specific property details
         Address = rawtx['result']['sendingaddress']
@@ -441,6 +468,7 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum):
                 "(Address, PropertyID, Protocol, TxDBSerialNum, AddressTxIndex, AddressRole, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit)"
                 "values(%s, %s, %s, %s, %s, %s, %s, %s, %s)",
                 (Address, PropertyID, Protocol, TxDBSerialNum, AddressTxIndex, AddressRole, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit))
+      updateBalance(Address, Protocol, PropertyID, Ecosystem, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit, TxHash)
 
 
 def insertTx(rawtx, Protocol, blockheight, seq):
@@ -511,18 +539,12 @@ def insertBlock(block_data, Protocol, block_height, txcount):
     bits = block_data['result']['bits'];
     nonce = block_data['result']['nonce'];
     size = block_data['result']['size'];
+    BlockNumber=block_height
 
-    try:
-        dbc.execute("INSERT into Blocks"
-                    "(BlockNumber, Protocol, BlockTime, version, blockhash, prevblockhash, merkleroot, bits, nonce, size, txcount)"
-                    "VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",
-                    (BlockNumber, Protocol, BlockTime, version, blockhash, prevblockhash, merkleroot, bits, nonce, size, txcount))
-        con.commit()
-    except psycopg2.DatabaseError, e:
-        if con:
-            con.rollback()
-        print 'Error %s' % e
-        sys.exit(1)
+    dbExecute("INSERT into Blocks"
+              "(BlockNumber, Protocol, BlockTime, version, blockhash, prevblockhash, merkleroot, bits, nonce, size, txcount)"
+              "VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",
+              (BlockNumber, Protocol, BlockTime, version, blockhash, prevblockhash, merkleroot, bits, nonce, size, txcount))
 
 
 def dumpblocks_csv(csvwb, block_data, Protocol, block_height, txcount):
