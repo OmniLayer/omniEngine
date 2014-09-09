@@ -1,7 +1,8 @@
 #from rpcclient import *
 from sql import *
+from csv import *
 
-dbc=sql_connect()
+#dbc=sql_connect()
 
 #block with first MP transaction
 firstMPtxBlock=249948
