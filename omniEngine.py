@@ -17,8 +17,8 @@ initialBlock=firstMPtxBlock
 #DEx Payment block
 #initialBlock=316339
 
-endBlock=getinfo()['result']['blocks']
-#endBlock=10
+#endBlock=getinfo()['result']['blocks']
+endBlock=250000
 
 #MSC TX's
 #endBlock=319105
@@ -86,7 +86,7 @@ while currentBlock <= endBlock:
 
   #Write the blocks table row
   #dumpblocks_csv(blocks_table, block_data, Protocol, height, x)
-   insertBlock(blocks_table, block_data, Protocol, height, x)
+  insertBlock(blocks_table, block_data, Protocol, height, x)
 
   for tx in block_data['result']['tx']:
     rawtx=getrawtransaction(tx)
