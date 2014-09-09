@@ -38,17 +38,16 @@ def sql_connect():
 dbc=sql_connect()
 
 
-def select():
+def dbSelect(statement, values):
     try:
-      dbc.execute("select * from transactions")
-      ROWS= dbc.fetchall()
-      print len(ROWS)
-      print ROWS
+        dbc.execute(statement, values)
+        ROWS = dbc.fetchall()
+        return ROWS
     except psycopg2.DatabaseError, e:
-      if con:
+        if con:
             con.rollback()
-      print 'Error %s' % e
-      sys.exit(1)
+        print 'Error %s' % e
+        sys.exit(1)
 
 def dbExecute(statement, values):
     try:
@@ -91,38 +90,28 @@ def resetbalances_MP():
           BalanceAvailable=int(addr['balance'])
           BalanceReserved=int(addr['reserved'])
 
-        try:
-          dbc.execute("select address from AddressBalances where address=%s and Protocol=%s and propertyid=%s", 
+        rows=dbSelect("select address from AddressBalances where address=%s and Protocol=%s and propertyid=%s", 
                       (Address, Protocol, PropertyID) )
-          rows=dbc.fetchall()
 
-          if len(rows) == 0:
-            #address not in database, insert
-            dbc.execute("INSERT into AddressBalances "
-                        "(Address, Protocol, PropertyID, Ecosystem, BalanceAvailable, BalanceReserved) "
-                        "VALUES (%s,%s,%s,%s,%s,%s)",
-                        (Address, Protocol, PropertyID, Ecosystem, BalanceAvailable, BalanceReserved) )
-          else:
-            #address in database update
-             dbc.execute("UPDATE AddressBalances set BalanceAvailable=%s, BalanceReserved=%s where address=%s and PropertyID=%s", 
-                         (BalanceAvailable, BalanceReserved, address, PropertyID) )
-
-          con.commit()
-        except psycopg2.DatabaseError, e:
-          if con:
-            con.rollback()
-          print 'Error %s' % e
-          sys.exit(1)
+        if len(rows) == 0:
+          #address not in database, insert
+          dbExecute("INSERT into AddressBalances "
+                    "(Address, Protocol, PropertyID, Ecosystem, BalanceAvailable, BalanceReserved) "
+                    "VALUES (%s,%s,%s,%s,%s,%s)",
+                    (Address, Protocol, PropertyID, Ecosystem, BalanceAvailable, BalanceReserved) )
+        else:
+          #address in database update
+          dbExecute("UPDATE AddressBalances set BalanceAvailable=%s, BalanceReserved=%s where address=%s and PropertyID=%s", 
+                    (BalanceAvailable, BalanceReserved, address, PropertyID) )
 
 def updateBalance(Address, Protocol, PropertyID, Ecosystem, BalanceAvailable, BalanceReserved, BalanceAccepted, LastTxHash):
-    try:
-      dbc.execute("select * from AddressBalances where address=%s and Protocol=%s and propertyid=%s",
-                  (Address, Protocol, PropertyID) )
-      rows=dbc.fetchall()
+    
+      rows=dbSelect("select * from AddressBalances where address=%s and Protocol=%s and propertyid=%s",
+                    (Address, Protocol, PropertyID) )
 
       if len(rows) == 0:
         #address not in database, insert
-        dbc.execute("INSERT into AddressBalances "
+        dbExecute("INSERT into AddressBalances "
                     "(Address, Protocol, PropertyID, Ecosystem, BalanceAvailable, BalanceReserved, LastTxHash) "
                     "VALUES (%s,%s,%s,%s,%s,%s,decode(%s,'hex'))",
                     (Address, Protocol, PropertyID, Ecosystem, BalanceAvailable, BalanceReserved, BalanceAccepted, LastTxHash) )
@@ -144,15 +133,9 @@ def updateBalance(Address, Protocol, PropertyID, Ecosystem, BalanceAvailable, Ba
         except ValueError:
           BalanceAccepted=rows['balanceaccepted']
 
-        dbc.execute("UPDATE AddressBalances set BalanceAvailable=%s, BalanceReserved=%s, BalanceAccepted=%s, LastTxHash=%s where address=%s and PropertyID=%s and Protocol=%s",
-                    (BalanceAvailable, BalanceReserved, BalanceAccepted, LastTxHash, address, PropertyID, Protocol) )
+        dbExecute("UPDATE AddressBalances set BalanceAvailable=%s, BalanceReserved=%s, BalanceAccepted=%s, LastTxHash=%s where address=%s and PropertyID=%s and Protocol=%s",
+                  (BalanceAvailable, BalanceReserved, BalanceAccepted, LastTxHash, address, PropertyID, Protocol) )
 
-      con.commit()
-    except psycopg2.DatabaseError, e:
-      if con:
-        con.rollback()
-      print 'Error %s' % e
-      sys.exit(1)
 
 def insertProperty(rawtx, Protocol):
     #only insert valid updates. ignore invalid data?
@@ -184,32 +167,23 @@ def insertProperty(rawtx, Protocol):
       #, PropertyServiceURL varchar(256) null
 
       #do the update/insert, once we have the final structure defined
-      try:
-        dbc.execute("select * from smartproperties where Protocol=%s and PropertyID=%s", (Protocol, PropertyID))
-        ROWS= dbc.fetchall()
-        if len(ROWS) > 0:
-          #Its already there, update it and insert into history table
-          dbc.execute("update smartproperties set Issuer=%s, Ecosystem=%s, CreateTxDBSerialNum=%s, LastTxDBSerialNum=%s, "
-                      "PropertyName=%s, PropertyType=%s, PropertyCategory=%s, PropertySubcategory=%s, PropertyData=%s "
-                      "where Protocol=%s and PropertyID=%s",
-                      (Issuer, Ecosystem, CreateTxDBSerialNum, LastTxDBSerialNum, PropertyName, PropertyType, PropertyCategory, PropertySubcategory, PropertyData, Protocol, PropertyID))
-          #insert this tx into the history table
-          dbc.execute("insert into PropertyHistory (Protocol, PropertyID, TxDBSerialNum) Values(%s, %s, %s)", (Protocol, PropertyID, LastTxDBSerialNum))
-          con.commit()
-        else:
-          #doesn't exist, insert
-          dbc.execute("insert into SmartProperties"
-                      "(Issuer, Ecosystem, CreateTxDBSerialNum, LastTxDBSerialNum, PropertyName, PropertyType, PropertyCategory, PropertySubcategory, PropertyData, Protocol, PropertyID "
-                      "values(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
-                      (Issuer, Ecosystem, CreateTxDBSerialNum, LastTxDBSerialNum, PropertyName, PropertyType, PropertyCategory, PropertySubcategory, PropertyData, Protocol, PropertyID))
-          #insert this tx into the history table
-          dbc.execute("insert into PropertyHistory (Protocol, PropertyID, TxDBSerialNum) Values(%s, %s, %s)", (Protocol, PropertyID, LastTxDBSerialNum))
-          con.commit()
-      except psycopg2.DatabaseError, e:
-        if con:
-            con.rollback()
-        print 'Error %s' % e
-        sys.exit(1)
+      ROWS=dbSelect("select * from smartproperties where Protocol=%s and PropertyID=%s", (Protocol, PropertyID))
+      if len(ROWS) > 0:
+        #Its already there, update it and insert into history table
+        dbExecute("update smartproperties set Issuer=%s, Ecosystem=%s, CreateTxDBSerialNum=%s, LastTxDBSerialNum=%s, "
+                  "PropertyName=%s, PropertyType=%s, PropertyCategory=%s, PropertySubcategory=%s, PropertyData=%s "
+                  "where Protocol=%s and PropertyID=%s",
+                  (Issuer, Ecosystem, CreateTxDBSerialNum, LastTxDBSerialNum, PropertyName, PropertyType, PropertyCategory, PropertySubcategory, PropertyData, Protocol, PropertyID))
+        #insert this tx into the history table
+        dbExecute("insert into PropertyHistory (Protocol, PropertyID, TxDBSerialNum) Values(%s, %s, %s)", (Protocol, PropertyID, LastTxDBSerialNum))
+      else:
+        #doesn't exist, insert
+        dbExecute("insert into SmartProperties"
+                  "(Issuer, Ecosystem, CreateTxDBSerialNum, LastTxDBSerialNum, PropertyName, PropertyType, PropertyCategory, PropertySubcategory, PropertyData, Protocol, PropertyID "
+                  "values(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
+                  (Issuer, Ecosystem, CreateTxDBSerialNum, LastTxDBSerialNum, PropertyName, PropertyType, PropertyCategory, PropertySubcategory, PropertyData, Protocol, PropertyID))
+        #insert this tx into the history table
+        dbExecute("insert into PropertyHistory (Protocol, PropertyID, TxDBSerialNum) Values(%s, %s, %s)", (Protocol, PropertyID, LastTxDBSerialNum))
 
 def insertTxAddr(rawtx, Protocol, TxDBSerialNum):
     TxHash = rawtx['result']['txid']
