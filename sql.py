@@ -150,8 +150,8 @@ def insertProperty(rawtx, Protocol):
       PropertyID = rawtx['result']['propertyid']
       TxType = get_TxType(rawtx['result']['type'])
     
-      PropertyData = getproperty_MP(PropertyID)
-      rawprop = PropertyData['result'] 
+      PropertyDataJson = getproperty_MP(PropertyID)
+      rawprop = PropertyDataJson['result'] 
 
       Issuer = rawprop['issuer']
       Ecosystem = getEcosystem(PropertyID)
@@ -166,7 +166,7 @@ def insertProperty(rawtx, Protocol):
         PropertyType = 1
       else:
         PropertyType = 0
-      propertydata = rawprop['data']
+      PropertyData = rawprop['data']
       PropertyCategory = rawprop['category']
       PropertySubcategory =rawprop['subcategory'] 
 
@@ -180,15 +180,18 @@ def insertProperty(rawtx, Protocol):
         dbExecute("update smartproperties set Issuer=%s, Ecosystem=%s, CreateTxDBSerialNum=%s, LastTxDBSerialNum=%s, "
                   "PropertyName=%s, PropertyType=%s, PropertyCategory=%s, PropertySubcategory=%s, PropertyData=%s "
                   "where Protocol=%s and PropertyID=%s",
-                  (Issuer, Ecosystem, CreateTxDBSerialNum, LastTxDBSerialNum, PropertyName, PropertyType, PropertyCategory, PropertySubcategory, PropertyData, Protocol, PropertyID))
+                  (Issuer, Ecosystem, CreateTxDBSerialNum, LastTxDBSerialNum, PropertyName, PropertyType, PropertyCategory, 
+                   PropertySubcategory, json.dumps(rawprop), Protocol, PropertyID))
         #insert this tx into the history table
         dbExecute("insert into PropertyHistory (Protocol, PropertyID, TxDBSerialNum) Values(%s, %s, %s)", (Protocol, PropertyID, LastTxDBSerialNum))
       else:
         #doesn't exist, insert
         dbExecute("insert into SmartProperties"
-                  "(Issuer, Ecosystem, CreateTxDBSerialNum, LastTxDBSerialNum, PropertyName, PropertyType, PropertyCategory, PropertySubcategory, PropertyData, Protocol, PropertyID "
+                  "(Issuer, Ecosystem, CreateTxDBSerialNum, LastTxDBSerialNum, PropertyName, PropertyType, "
+                  "PropertyCategory, PropertySubcategory, PropertyData, Protocol, PropertyID )"
                   "values(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
-                  (Issuer, Ecosystem, CreateTxDBSerialNum, LastTxDBSerialNum, PropertyName, PropertyType, PropertyCategory, PropertySubcategory, PropertyData, Protocol, PropertyID))
+                  (Issuer, Ecosystem, CreateTxDBSerialNum, LastTxDBSerialNum, PropertyName, PropertyType, PropertyCategory, 
+                   PropertySubcategory, json.dumps(rawprop), Protocol, PropertyID))
         #insert this tx into the history table
         dbExecute("insert into PropertyHistory (Protocol, PropertyID, TxDBSerialNum) Values(%s, %s, %s)", (Protocol, PropertyID, LastTxDBSerialNum))
 
@@ -250,7 +253,7 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum):
       BalanceReservedCreditDebit=None
       BalanceAcceptedCreditDebit=None
       Address = rawtx['result']['sendingaddress']
-      PropertyID=rawtx['result']['propertyid']
+      #PropertyID=rawtx['result']['propertyid']
       Ecosystem=getEcosystem(PropertyID) 
 
       #Check if we are a DEx Purchase/payment. Format is a littler different and variables below would fail if we tried. 
