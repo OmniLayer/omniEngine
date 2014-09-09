@@ -50,9 +50,9 @@ def select():
       print 'Error %s' % e
       sys.exit(1)
 
-def dbExecute(statement):
+def dbExecute(statement, values):
     try:
-        dbc.execute(statement)
+        dbc.execute(statement, values)
     except psycopg2.DatabaseError, e:
         if con:
             con.rollback()
