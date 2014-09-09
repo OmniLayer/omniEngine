@@ -254,16 +254,19 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum):
       BalanceAcceptedCreditDebit=None
       Address = rawtx['result']['sendingaddress']
       #PropertyID=rawtx['result']['propertyid']
-      Ecosystem=getEcosystem(PropertyID) 
 
       #Check if we are a DEx Purchase/payment. Format is a littler different and variables below would fail if we tried. 
       if type != -22:
         PropertyID= rawtx['result']['propertyid']
+        Ecosystem=getEcosystem(PropertyID) 
+
         if rawtx['result']['divisible']:
           value=int(decimal.Decimal(rawtx['result']['amount'])*decimal.Decimal(1e8))
         else:
           value=int(rawtx['result']['amount'])
         value_neg=(value*-1)
+
+
 
       if type == 0:
         #Simple Send
