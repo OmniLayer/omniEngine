@@ -140,7 +140,7 @@ def updateBalance(Address, Protocol, PropertyID, Ecosystem, BalanceAvailable, Ba
           BalanceAccepted=dbAccp
 
         dbExecute("UPDATE AddressBalances set BalanceAvailable=%s, BalanceReserved=%s, BalanceAccepted=%s, LastTxHash=%s where address=%s and PropertyID=%s and Protocol=%s",
-                  (BalanceAvailable, BalanceReserved, BalanceAccepted, LastTxHash, address, PropertyID, Protocol) )
+                  (BalanceAvailable, BalanceReserved, BalanceAccepted, LastTxHash, Address, PropertyID, Protocol) )
 
 
 def insertProperty(rawtx, Protocol):
