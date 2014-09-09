@@ -223,14 +223,22 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum):
           AddressRole="sender"
           #existing json doesn't have raw address only prev tx. Get prev tx to decipher address/values
           prevtx=getrawtransaction(input['txid'])
+
+          #get prev txdbserial num and update output/recipient of previous tx for utxo stuff
+          LinkedTxDBSerialNum=gettxdbserialnum(input['txid'])
+          prevtxindex=input['vout']
+          dbExecute("update addressesintxs set LinkedTxDBSerialNum=%s where protocol=%s and txdbserialnum=%s"
+                    " and addresstxindex=%s and addressrole='recipient'",
+                    (LinkedTxDBSerialNum, Protocol, TxDBSerialNum, prevtxindex) )
+
           BalanceAvailableCreditDebit=int(decimal.Decimal(prevtx['result']['vout'][input['vout']]['value'])*decimal.Decimal("1e8")*decimal.Decimal(-1))
           #BalanceAvailableCreditDebit=int(prevtx['result']['vout'][input['vout']]['value'] * 1e8 * -1)
           #multisigs have more than 1 address, make sure we find/credit all multisigs for a tx
           for addr in prevtx['result']['vout'][input['vout']]['scriptPubKey']['addresses']:
             dbExecute("insert into addressesintxs "
-                      "(Address, PropertyID, Protocol, TxDBSerialNum, AddressTxIndex, AddressRole, BalanceAvailableCreditDebit)"
-                      "values(%s, %s, %s, %s, %s, %s, %s)",
-                      (addr, PropertyID, Protocol, TxDBSerialNum, AddressTxIndex, AddressRole, BalanceAvailableCreditDebit))
+                      "(Address, PropertyID, Protocol, TxDBSerialNum, LinkedTxDBSerialNum, AddressTxIndex, AddressRole, BalanceAvailableCreditDebit)"
+                      "values(%s, %s, %s, %s, %s, %s, %s, %s)",
+                      (addr, PropertyID, Protocol, TxDBSerialNum, LinkedTxDBSerialNum, AddressTxIndex, AddressRole, BalanceAvailableCreditDebit))
             updateBalance(addr, Protocol, PropertyID, Ecosystem, BalanceAvailableCreditDebit, 0, 0, TxHash)
           AddressTxIndex+=1
 
