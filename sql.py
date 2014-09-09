@@ -1,5 +1,4 @@
 import psycopg2, psycopg2.extras
-import csv
 import datetime
 import decimal
 import sys
@@ -121,9 +120,9 @@ def updateBalance(Address, Protocol, PropertyID, Ecosystem, BalanceAvailable, Ba
       else:
         #address in database update
         #check if null values and default to no change on update
-        dbAvail=int(rows[0])
-        dbResv =int(rows[1])
-        dbAccp =int(rows[2])
+        dbAvail=int(rows[0][0])
+        dbResv =int(rows[0][1])
+        dbAccp =int(rows[0][2])
 
         try:
           BalanceAvailable=int(BalanceAvailable)+dbAvail
