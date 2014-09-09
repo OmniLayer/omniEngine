@@ -216,7 +216,7 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum):
 
     if Protocol == "Bitcoin":
       PropertyID=0
-      Ecosystem=""
+      Ecosystem=None
       #process all outputs
       for output in rawtx['result']['vout']:
         #Make sure we have readable output addresses to actually use
@@ -257,9 +257,9 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum):
       AddressTxIndex=0
       AddressRole="sender"
       type=get_TxType(rawtx['result']['type'])
-      BalanceAvailableCreditDebit=""
-      BalanceReservedCreditDebit=""
-      BalanceAcceptedCreditDebit=""
+      BalanceAvailableCreditDebit=None
+      BalanceReservedCreditDebit=None
+      BalanceAcceptedCreditDebit=None
       Address = rawtx['result']['sendingaddress']
       PropertyID=rawtx['result']['propertyid']
       Ecosystem=getEcosystem(PropertyID) 
@@ -484,7 +484,7 @@ def insertTx(rawtx, Protocol, blockheight, seq):
       TxType=0
       TxVersion=rawtx['result']['version']
       TxState= "valid"
-      Ecosystem= ""
+      Ecosystem= None
       TxSubmitTime = datetime.datetime.utcfromtimestamp(rawtx['result']['time'])
 
     elif Protocol == "Mastercoin":
@@ -501,7 +501,7 @@ def insertTx(rawtx, Protocol, blockheight, seq):
 
       #Use block time - 10 minutes to approx
       #TxSubmitTime = TxBlockTime-datetime.timedelta(minutes=10)
-      TxSubmitTime=""
+      TxSubmitTime=None
       #if rawtx['result']['propertyid'] == 2 or ( rawtx['result']['propertyid'] >= 2147483651 and rawtx['result']['propertyid'] <= 4294967295 ):
       #  Ecosystem= "Test"
       #else:
