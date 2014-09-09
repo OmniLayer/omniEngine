@@ -10,7 +10,8 @@ firstMPtxBlock=249948
 #get last known block from the RPC client
 #initialBlock=1
 
-initialBlock=firstMPtxBlock
+#initialBlock=firstMPtxBlock
+initialBlock=253056
 
 #MSC tx's
 #initialBlock=319100
@@ -19,7 +20,7 @@ initialBlock=firstMPtxBlock
 #initialBlock=316339
 
 #endBlock=getinfo()['result']['blocks']
-endBlock=249950
+endBlock=253060
 
 #MSC TX's
 #endBlock=319105
