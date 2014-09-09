@@ -86,7 +86,7 @@ while currentBlock <= endBlock:
 
   #Write the blocks table row
   #dumpblocks_csv(blocks_table, block_data, Protocol, height, x)
-  insertBlock(blocks_table, block_data, Protocol, height, x)
+  insertBlock(block_data, Protocol, height, x)
 
   for tx in block_data['result']['tx']:
     rawtx=getrawtransaction(tx)
