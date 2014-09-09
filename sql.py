@@ -112,8 +112,8 @@ def updateBalance(Address, Protocol, PropertyID, Ecosystem, BalanceAvailable, Ba
       if len(rows) == 0:
         #address not in database, insert
         dbExecute("INSERT into AddressBalances "
-                    "(Address, Protocol, PropertyID, Ecosystem, BalanceAvailable, BalanceReserved, LastTxHash) "
-                    "VALUES (%s,%s,%s,%s,%s,%s,decode(%s,'hex'))",
+                    "(Address, Protocol, PropertyID, Ecosystem, BalanceAvailable, BalanceReserved, BalanceAccepted, LastTxHash) "
+                    "VALUES (%s,%s,%s,%s,%s,%s,%s, %s)",
                     (Address, Protocol, PropertyID, Ecosystem, BalanceAvailable, BalanceReserved, BalanceAccepted, LastTxHash) )
       else:
         #address in database update
