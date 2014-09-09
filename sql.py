@@ -121,24 +121,24 @@ def updateBalance(Address, Protocol, PropertyID, Ecosystem, BalanceAvailable, Ba
       else:
         #address in database update
         #check if null values and default to no change on update
-        dbAvail=int(rows[0][0])
-        dbResv =int(rows[0][1])
-        dbAccp =int(rows[0][2])
+        dbAvail=rows[0][0]
+        dbResvd=rows[0][1]
+        dbAccpt=rows[0][2]
 
         try:
           BalanceAvailable=int(BalanceAvailable)+dbAvail
-        except ValueError:
+        except (ValueError, TypeError):
           BalanceAvailable=dbAvail
 
         try:
-          BalanceReserved=int(BalanceReserved)+dbResv
-        except ValueError:
-          BalanceReserved=dbResv
+          BalanceReserved=int(BalanceReserved)+dbResvd
+        except (ValueError, TypeError):
+          BalanceReserved=dbResvd
 
         try:
-          BalanceAccepted=int(BalanceAccepted)+dbAccp
-        except ValueError:
-          BalanceAccepted=dbAccp
+          BalanceAccepted=int(BalanceAccepted)+dbAccpt
+        except (ValueError, TypeError):
+          BalanceAccepted=dbAccpt
 
         dbExecute("UPDATE AddressBalances set BalanceAvailable=%s, BalanceReserved=%s, BalanceAccepted=%s, LastTxHash=%s where address=%s and PropertyID=%s and Protocol=%s",
                   (BalanceAvailable, BalanceReserved, BalanceAccepted, LastTxHash, Address, PropertyID, Protocol) )
