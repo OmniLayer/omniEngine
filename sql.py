@@ -539,9 +539,12 @@ def insertBlock(block_data, Protocol, block_height, txcount):
 
 def gettxdbserialnum(txhash):
     try:
-      dbc.execute("select txdbserialnum from transactions where txhash=%s",txhash)
+      dbc.execute("select txdbserialnum from transactions where txhash=%s",[txhash])
       ROWS= dbc.fetchall()
-      return ROWS[0]
+      if len(ROWS)==0:
+          return -1
+      else:
+          return ROWS[0][0]
     except psycopg2.DatabaseError, e:
       print 'Error %s' % e
       exit
