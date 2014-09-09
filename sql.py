@@ -511,15 +511,15 @@ def insertTx(rawtx, Protocol, blockheight, seq):
       print "Wrong Protocol? Exiting, goodbye."
       exit(1)
 
+    #try:
+    dbExecute("INSERT into transactions "
+              "(TxHash, Protocol, TxType, TxVersion, Ecosystem, TxSubmitTime, TxState, TxErrorCode, TxBlockNumber, TxSeqInBlock ) "
+              "VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)", 
+              (TxHash, Protocol, TxType, TxVersion, Ecosystem, TxSubmitTime, TxState, TxErrorCode, TxBlockNumber, TxSeqInBlock))
+    #con.commit()
     try:
-        dbc.execute("INSERT into transactions "
-                    "(TxHash, Protocol, TxType, TxVersion, Ecosystem, TxSubmitTime, TxState, TxErrorCode, TxBlockNumber, TxSeqInBlock ) "
-                    "VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)", 
-                    (TxHash, Protocol, TxType, TxVersion, Ecosystem, TxSubmitTime, TxState, TxErrorCode, TxBlockNumber, TxSeqInBlock))
-        con.commit()
-        #need validation on structure
         dbc.execute("Select TxDBSerialNum from transactions where txhash=%s and protocol=%s", (TxHash, Protocol))
-        serial=dbc.fetchall()[0]['dbtxserial']
+        serial=dbc.fetchall()[0]['txdbserialnum']
         return serial
     except psycopg2.DatabaseError, e:
 	if con:
