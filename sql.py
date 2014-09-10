@@ -104,7 +104,7 @@ def resetbalances_MP():
         else:
           #address in database update
           dbExecute("UPDATE AddressBalances set BalanceAvailable=%s, BalanceReserved=%s where address=%s and PropertyID=%s", 
-                    (BalanceAvailable, BalanceReserved, address, PropertyID) )
+                    (BalanceAvailable, BalanceReserved, Address, PropertyID) )
 
 def updateBalance(Address, Protocol, PropertyID, Ecosystem, BalanceAvailable, BalanceReserved, BalanceAccepted, LastTxHash):
     
