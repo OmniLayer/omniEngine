@@ -29,8 +29,11 @@ endBlock=getinfo()['result']['blocks']
 #endBlock=316339
 
 #get highest TxDBSerialNum (number of rows in the Transactions table)
+#TxDBSerialNum=dbSelect('select last_value from transactions_txdbserialnum_seq',None)[0][0]+1
+
 #Start at 1 since block 0 is special case
-TxDBSerialNum=1
+#21479844 btc tx's before block 249948
+TxDBSerialNum=21479844
 
 appendname=str(initialBlock)+'.'+str(endBlock)
 #csv output file info for tx table
@@ -131,11 +134,18 @@ while currentBlock <= endBlock:
     #decrement tx sequence number in block
     x-=1    
 
+  #make sure we store the last serialnumber used
+  dbExecute("select setval('transactions_txdbserialnum_seq', %s)", str(TxDBSerialNum-1))
   #write db changes for entire block
   dbCommit()
 
  except Exception,e:
   print "Problem with ", e
+  if dbRollback():
+    print "Database rolledback, last successful block", (currentBlock -1)
+  else:
+    print "Problem rolling database back, check block data for", currentBlock
+  exit(1)
 
  #increment to next block
  currentBlock += 1
