@@ -135,7 +135,7 @@ while currentBlock <= endBlock:
     x-=1    
 
   #make sure we store the last serialnumber used
-  dbExecute("select setval('transactions_txdbserialnum_seq', %s)", str(TxDBSerialNum-1))
+  dbExecute("select setval('transactions_txdbserialnum_seq', %s)", [TxDBSerialNum-1])
   #write db changes for entire block
   dbCommit()
 
