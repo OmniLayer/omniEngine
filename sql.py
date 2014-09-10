@@ -491,7 +491,7 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum):
       updateBalance(Address, Protocol, PropertyID, Ecosystem, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit, TxHash)
 
 
-def insertTx(rawtx, Protocol, blockheight, seq):
+def insertTx(rawtx, Protocol, blockheight, seq, TxDBSerialNum):
     TxHash = rawtx['result']['txid']
     TxBlockTime = datetime.datetime.utcfromtimestamp(rawtx['result']['blocktime'])
     TxErrorCode = rawtx['error']
@@ -531,11 +531,16 @@ def insertTx(rawtx, Protocol, blockheight, seq):
       print "Wrong Protocol? Exiting, goodbye."
       exit(1)
 
-    #try:
-    dbExecute("INSERT into transactions "
-              "(TxHash, Protocol, TxType, TxVersion, Ecosystem, TxSubmitTime, TxState, TxErrorCode, TxBlockNumber, TxSeqInBlock ) "
-              "VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)", 
-              (TxHash, Protocol, TxType, TxVersion, Ecosystem, TxSubmitTime, TxState, TxErrorCode, TxBlockNumber, TxSeqInBlock))
+    if TxDBSerialNum == -1:
+        dbExecute("INSERT into transactions "
+                  "(TxHash, Protocol, TxType, TxVersion, Ecosystem, TxSubmitTime, TxState, TxErrorCode, TxBlockNumber, TxSeqInBlock ) "
+                  "VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)", 
+                  (TxHash, Protocol, TxType, TxVersion, Ecosystem, TxSubmitTime, TxState, TxErrorCode, TxBlockNumber, TxSeqInBlock))
+    else:
+        dbExecute("INSERT into transactions "
+                  "(TxHash, Protocol, TxType, TxVersion, Ecosystem, TxSubmitTime, TxState, TxErrorCode, TxBlockNumber, TxSeqInBlock, TxDBSerialNum ) "
+                  "VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",
+                  (TxHash, Protocol, TxType, TxVersion, Ecosystem, TxSubmitTime, TxState, TxErrorCode, TxBlockNumber, TxSeqInBlock, TxDBSerialNum))
     #con.commit()
     try:
         dbc.execute("Select TxDBSerialNum from transactions where txhash=%s and protocol=%s", (TxHash, Protocol))

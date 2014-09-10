@@ -8,10 +8,10 @@ from csvtools import *
 firstMPtxBlock=249948
 
 #get last known block from the RPC client
-#initialBlock=1
+#initialBlock=0
 
-#initialBlock=firstMPtxBlock
-initialBlock=253056
+initialBlock=firstMPtxBlock
+#initialBlock=253056
 
 #MSC tx's
 #initialBlock=319100
@@ -19,8 +19,8 @@ initialBlock=253056
 #DEx Payment block
 #initialBlock=316339
 
-#endBlock=getinfo()['result']['blocks']
-endBlock=253060
+endBlock=getinfo()['result']['blocks']
+#endBlock=253060
 
 #MSC TX's
 #endBlock=319105
@@ -91,14 +91,15 @@ while currentBlock <= endBlock:
   insertBlock(block_data, Protocol, height, x)
 
   for tx in block_data['result']['tx']:
-    rawtx=getrawtransaction(tx)
+    #rawtx=getrawtransaction(tx)
     #add the transaction and addresses in the transaction to the csv files
     #dumptx_csv(tx_table, rawtx, Protocol, height, x, TxDBSerialNum)
     #dumptxaddr_csv(txaddr_table, rawtx, Protocol, TxDBSerialNum)
-    serial=insertTx(rawtx, Protocol, height, x)
-    insertTxAddr(rawtx, Protocol, serial)
-    #write db changes
-    dbCommit()
+
+    #manualtxnum=TxDBSerialNum
+    #manualtxnum=-1
+    #serial=insertTx(rawtx, Protocol, height, x, TxDBSerialNum)
+    #insertTxAddr(rawtx, Protocol, serial)
 
     #increment the number of transactions
     TxDBSerialNum+=1
@@ -118,15 +119,20 @@ while currentBlock <= endBlock:
     #add the transaction and addresses in the transaction to the csv files
     #dumptx_csv(tx_table, rawtx, Protocol, height, x, TxDBSerialNum)
     #dumptxaddr_csv(txaddr_table, rawtx, Protocol, TxDBSerialNum)
-    serial=insertTx(rawtx, Protocol, height, x)
+  
+    #use -1 to auto assign TxDBSerialNum otherwise specify it here
+    manualtxnum=TxDBSerialNum
+    #manualtxnum=-1
+    serial=insertTx(rawtx, Protocol, height, x, manualtxnum)
     insertTxAddr(rawtx, Protocol, serial)
-    #write db changes
-    dbCommit()
 
     #increment the number of transactions
     TxDBSerialNum+=1
     #decrement tx sequence number in block
     x-=1    
+
+  #write db changes for entire block
+  dbCommit()
 
  except Exception,e:
   print "Problem with ", e
