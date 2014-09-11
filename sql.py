@@ -79,6 +79,10 @@ def dbRollback():
 def resetbalances_MP():
     #for now sync / reset balance data from mastercore balance list
     Protocol="Mastercoin"
+
+    #get DEx sales to process 'accepted' amounts  
+    DExSales=getactivedexsells_MP()
+
     #Find all known properties in mastercore
     for property in listproperties_MP()['result']:
       PropertyID = property['propertyid']
@@ -92,12 +96,20 @@ def resetbalances_MP():
       #Check each address and get balance info
       for addr in bal_data['result']:
         Address=addr['address']
+
+        #find reserved balance (if exists)
+        for x in DExSales['result']:
+          if x['seller'] == Address:
+            accept= x['amountaccepted']
+
         if property['divisible']:
           BalanceAvailable=int(decimal.Decimal(addr['balance'])*decimal.Decimal(1e8))
           BalanceReserved=int(decimal.Decimal(addr['reserved'])*decimal.Decimal(1e8))
+          BalanceAccepted=int(decimal.Decimal(accept)*decimal.Decimal(1e8))
         else:
           BalanceAvailable=int(addr['balance'])
           BalanceReserved=int(addr['reserved'])
+          BalanceAccepted=int(decimal.Decimal(accept))
 
         rows=dbSelect("select address from AddressBalances where address=%s and Protocol=%s and propertyid=%s", 
                       (Address, Protocol, PropertyID) )
@@ -340,8 +352,7 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum):
 
       elif type == 22:
         #DEx Accept Offer
-        #Move the amount from Reserved for Offer to Reserved for Accept
-        ## Mastercore doesn't show payments as MP tx. How do we credit a user who has payed?
+        #Update the amount  Reserved for Accept
 
         #update the buyer
         AddressRole='buyer'
@@ -351,13 +362,22 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum):
                   "values(%s, %s, %s, %s, %s, %s, %s, %s, %s)", 
                   (Address, PropertyID, Protocol, TxDBSerialNum, AddressTxIndex, AddressRole, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit))
   
+        AddressRole='seller'
+        Address = rawtx['result']['referenceaddress']
+        #credit the sellers 'accepted' balance
         if Valid:
           updateBalance(Address, Protocol, PropertyID, Ecosystem, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit, TxHash)
 
-        AddressRole='seller'
-        Address = rawtx['result']['referenceaddress']
-        BalanceAcceptedCreditDebit = value
-        BalanceReservedCreditDebit = value_neg
+        #track the address as part of the tx, but it has no balance changing values for the addressesintx table
+        BalanceAcceptedCreditDebit = None
+
+        dbExecute("insert into addressesintxs "
+                  "(Address, PropertyID, Protocol, TxDBSerialNum, AddressTxIndex, AddressRole, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit)"
+                  "values(%s, %s, %s, %s, %s, %s, %s, %s, %s)",
+                  (Address, PropertyID, Protocol, TxDBSerialNum, AddressTxIndex, AddressRole, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit))
+
+        #we processed everything for this tx, return
+        return
 
       elif type == -22:
         #DEx Accept Payment
@@ -405,20 +425,24 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum):
 
           #deduct tokens from seller
           AddressRole = 'seller'
-          BalanceAvailableCreditDebit=AmountBoughtNeg
-          Ecosystem=getEcosystem(PropertyIDBought)
+          BalanceReservedCreditDebit=AmountBoughtNeg
+          Ecosystem=getEctosystem(PropertyIDBought)
           dbExecute("insert into addressesintxs "
                     "(Address, PropertyID, Protocol, TxDBSerialNum, AddressTxIndex, AddressRole, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit)"
                     "values(%s, %s, %s, %s, %s, %s, %s, %s, %s)",
                     (Receiver, PropertyIDBought, Protocol, TxDBSerialNum, AddressTxIndex, AddressRole, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit))
 
           if Valid:
+            #deduct the amount bought from both reserved and accepted fields, since we track it twice to match core (it only tracks reserved)
+            BalanceAcceptedCreditDebit=AmountBoughtNeg
             updateBalance(Receiver, Protocol, PropertyIDBought, Ecosystem, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit, TxHash)
+            #reset it to null to not screw up next insert
+            BalanceAcceptedCreditDebit=None
 
-          #Credit tokens to buyer and reduce their accepted amount by amount bought
+          #Credit tokens tco buyer and reduce their accepted amount by amount bought
           AddressRole = 'buyer'
           BalanceAvailableCreditDebit=AmountBought
-          BalanceAcceptedCreditDebut=AmountBoughtNeg
+          BalanceReservedCreditDebut=None
           dbExecute("insert into addressesintxs "
                     "(Address, PropertyID, Protocol, TxDBSerialNum, AddressTxIndex, AddressRole, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit)"
                     "values(%s, %s, %s, %s, %s, %s, %s, %s, %s)",
