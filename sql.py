@@ -429,7 +429,7 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum):
           #deduct tokens from seller
           AddressRole = 'seller'
           BalanceReservedCreditDebit=AmountBoughtNeg
-          Ecosystem=getEctosystem(PropertyIDBought)
+          Ecosystem=getEcosystem(PropertyIDBought)
           dbExecute("insert into addressesintxs "
                     "(Address, PropertyID, Protocol, TxDBSerialNum, AddressTxIndex, AddressRole, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit)"
                     "values(%s, %s, %s, %s, %s, %s, %s, %s, %s)",
