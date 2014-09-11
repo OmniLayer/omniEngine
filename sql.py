@@ -100,7 +100,10 @@ def resetbalances_MP():
         #find reserved balance (if exists)
         for x in DExSales['result']:
           if x['seller'] == Address:
-            accept= x['amountaccepted']
+            accept = x['amountaccepted']
+            break
+          else:
+            accept=0
 
         if property['divisible']:
           BalanceAvailable=int(decimal.Decimal(addr['balance'])*decimal.Decimal(1e8))
