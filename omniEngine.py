@@ -1,6 +1,10 @@
 from sql import *
 from csvtools import *
 
+#start db connection 
+dbInit()
+
+
 #Need to change variables back above here if using csv
 ##appendname=str(initialBlock)+'.'+str(endBlock)
 #csv output file info for tx table
@@ -51,8 +55,6 @@ TxDBSerialNum=dbSelect('select last_value from transactions_txdbserialnum_seq',N
 
 currentBlock=initialBlock
 
-#start db connection 
-dbInit()
 
 #main loop
 while currentBlock <= endBlock:
