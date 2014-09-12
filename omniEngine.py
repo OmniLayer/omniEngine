@@ -51,6 +51,9 @@ TxDBSerialNum=dbSelect('select last_value from transactions_txdbserialnum_seq',N
 
 currentBlock=initialBlock
 
+#start db connection 
+dbInit()
+
 #main loop
 while currentBlock <= endBlock:
  try:

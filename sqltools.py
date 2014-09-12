@@ -32,14 +32,15 @@ def sql_connect():
         print 'Error %s' % e    
         sys.exit(1)
 
-
-#Prime the DB Connection, it can be restarted in the select/execute statement if it gets closed prematurely. 
-dbc=sql_connect()
+def dbInit():
+    global dbc
+    #Prime the DB Connection, it can be restarted in the select/execute statement if it gets closed prematurely. 
+    dbc=sql_connect()
 
 
 def dbSelect(statement, values):
     if dbc.closed:
-        dbc=sql_connect()
+        dbInit()
     try:
         dbc.execute(statement, values)
         ROWS = dbc.fetchall()
@@ -50,7 +51,7 @@ def dbSelect(statement, values):
 
 def dbExecute(statement, values):
     if dbc.closed:
-        dbc=sql_connect()
+        dbInit()
     try:
         dbc.execute(statement, values)
     except psycopg2.DatabaseError, e:
