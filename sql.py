@@ -5,6 +5,37 @@ from rpcclient import *
 from mscutils import *
 from sqltools import *
 
+
+def resetdextable_MP():
+      activesales= getactivedexsells_MP()['result']
+      for sale in activesales:
+        #0 for btc for now all sales use btc
+        propertyiddesired=0
+        propertyidselling=sale['propertyid']
+
+        if getdivisible_MP(propertyidselling):
+          amountaccepted=int(decimal.Decimal(sale['amountaccepted'])*decimal.Decimal(1e8))
+          amountavailable=int(decimal.Decimal(sale['amountavailable'])*decimal.Decimal(1e8))
+        else:
+          amountaccepted=int(sale['amountaccepted'])
+          amountavailable=int(sale['amountavailable'])
+
+        #convert all btc stuff, need additional logic for metadex  
+        amountdesired=int(decimal.Decimal(sale['bitcoindesired'])*decimal.Decimal(1e8))
+        minimumfee=int(decimal.Decimal(sale['minimumfee'])*decimal.Decimal(1e8))
+        unitprice=int(decimal.Decimal(sale['unitprice'])*decimal.Decimal(1e8))
+        
+        seller=sale['seller']
+        timelimit=sale['timelimit']
+        createtxdbserialnum=gettxdbserialnum(sale['txid'])
+        offerstate='active'
+
+        dbExecute("insert into activeoffers (amountaccepted, amountavailable, amountdesired, minimumfee, propertyidselling, "
+                  "propertyiddesired, seller, timelimit, createtxdbserialnum, unitprice, offerstate) values "
+                  "(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",
+                  (amountaccepted, amountavailable, amountdesired, minimumfee, propertyidselling, propertyiddesired,
+                   seller, timelimit, createtxdbserialnum, unitprice, offerstate) )    
+
 def resetbalances_MP():
     #for now sync / reset balance data from mastercore balance list
     Protocol="Mastercoin"
@@ -200,14 +231,16 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum):
         if 'txid' in input:
           AddressRole="sender"
           #existing json doesn't have raw address only prev tx. Get prev tx to decipher address/values
-          prevtx=getrawtransaction(input['txid'])
+          prevtxhash=input['txid']
+          prevtxindex=input['vout']
+          prevtx=getrawtransaction(prevtxhash)
 
           #get prev txdbserial num and update output/recipient of previous tx for utxo stuff
-          LinkedTxDBSerialNum=gettxdbserialnum(input['txid'])
-          prevtxindex=input['vout']
+          LinkedTxDBSerialNum=gettxdbserialnum(prevtxhash)
+
           dbExecute("update addressesintxs set LinkedTxDBSerialNum=%s where protocol=%s and txdbserialnum=%s"
                     " and addresstxindex=%s and addressrole='recipient'",
-                    (LinkedTxDBSerialNum, Protocol, TxDBSerialNum, prevtxindex) )
+                    (TxDBSerialNum, Protocol, LinkedTxDBSerialNum, prevtxindex) )
 
           BalanceAvailableCreditDebit=int(decimal.Decimal(prevtx['result']['vout'][input['vout']]['value'])*decimal.Decimal("1e8")*decimal.Decimal(-1))
           #BalanceAvailableCreditDebit=int(prevtx['result']['vout'][input['vout']]['value'] * 1e8 * -1)
@@ -277,6 +310,26 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum):
         AddressRole='seller'
         BalanceAvailableCreditDebit = value_neg
         BalanceReservedCreditDebit = value
+        #subaction=rawtx['result']['subaction']
+
+        #Catches, new, update, empty, cancel states from core
+        #if subaction == 'Cancel' or subaction == 'Empty':
+        #  State='cancelled'
+        #  #Update any active offers to replace
+        #  dbExecute("update activeoffers set offerstate=%s, LastTxDBSerialNum=%s where seller=%s and offerstate='active'", 
+        #            (State, TxDBSerialNum, Address) )
+        #else:
+        #  #state new/update
+        #  State='replaced'
+        #  #Update any active offers to replace
+        #  dbExecute("update activeoffers set offerstate=%s, LastTxDBSerialNum=%s where seller=%s and offerstate='active'", 
+        #            (State, TxDBSerialNum, Address) )
+          #insert the new/updated tx as active
+          #State='active'
+          #dbExecute("insert into activeoffers (amountaccepted, amountavailable, amountdesired, minimumfee, propertyidselling, "
+          #          "propertyiddesired, seller, timelimit, createtxdbserialnum, unitprice, offerstate) values "
+          #          "(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",
+          #          (amountaccepted, amountavailable, amountdesired, minimumfee, propertyidselling,
 
       #elif type == 21:
         #MetaDEx: Offer/Accept one Master Protocol Coins for another
