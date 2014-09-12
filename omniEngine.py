@@ -92,7 +92,7 @@ while currentBlock <= endBlock:
     #manualtxnum=TxDBSerialNum
     #manualtxnum=-1
     #serial=insertTx(rawtx, Protocol, height, x, TxDBSerialNum)
-    #insertTxAddr(rawtx, Protocol, serial)
+    #insertTxAddr(rawtx, Protocol, serial, currentBlock)
 
     #increment the number of transactions
     TxDBSerialNum+=1
@@ -117,7 +117,7 @@ while currentBlock <= endBlock:
     manualtxnum=TxDBSerialNum
     #manualtxnum=-1
     serial=insertTx(rawtx, Protocol, height, x, manualtxnum)
-    insertTxAddr(rawtx, Protocol, serial)
+    insertTxAddr(rawtx, Protocol, serial, currentBlock)
 
     #increment the number of transactions
     TxDBSerialNum+=1

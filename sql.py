@@ -1,3 +1,4 @@
+
 import datetime
 import decimal
 import sys
@@ -5,6 +6,79 @@ from rpcclient import *
 from mscutils import *
 from sqltools import *
 
+def updateAccept(Buyer, Seller, AmountBought, PropertyIDBought, TxDBSerialNum):
+    
+
+
+def offerAccept (rawtx, TxDBSerialNum, Block):
+    BuyerAddress=rawtx['result']['sendingaddress']
+    SellerAddress=rawtx['result']['referenceaddress']
+    
+    propertyid = rawtx['result']['propertyid']
+
+    #convert accepted amount to non divisible quantity to store in db
+    if rawtx['result']['divisible']:
+      amountaccepted=int(decimal.Decimal(rawtx['result']['amount'])*decimal.Decimal(1e8))
+    else:
+      amountaccepted=int(rawtx['result']['amount'])
+
+    #get the current active dex sale this matches
+    saleinfo=dbSelect("select createtxdbserialnum,timelimit from activeoffers where seller=%s and offerstate='active' and propertyidselling=%s",
+                 (SellerAddress, propertyid) )
+    saletxdbserialnum=saleinfo[0][0]
+    timelimit=saleinfo[0][1]
+
+    #calculate when the offer should expire
+    expireblock=timelimit+Block
+    dexstate='unpaid'
+
+    #insert the off
+    dbExecute("insert into offeraccepts (buyer, amountaccepted, linkedtxdbserialnum, saletxdbserialnum, block, dexstate, expireblock)"
+              "values(%s,%s,%s,%s,%s,%s,%s)", 
+              (BuyerAddress, amountaccepted, TxDBSerialNum, saletxdbserialnum, Block, dexstate, expireblock) )
+
+def updatedex(rawtx, TxDBSerialNum):
+
+    Address=rawtx['result']['sendingaddress']
+    subaction=rawtx['result']['subaction']
+
+    #Catches, new, update, empty, cancel states from core
+    if subaction == 'Cancel' or subaction == 'Empty':
+      State='cancelled'
+      #Update any active offers to replace
+      dbExecute("update activeoffers set offerstate=%s, LastTxDBSerialNum=%s where seller=%s and offerstate='active'",
+                (State, TxDBSerialNum, Address) )
+    else:
+      #state new/update
+      State='replaced'
+      #Update any active offers to replace
+      dbExecute("update activeoffers set offerstate=%s, LastTxDBSerialNum=%s where seller=%s and offerstate='active'",
+                (State, TxDBSerialNum, Address) )
+      #insert the new/updated tx as active
+      State='active'
+      propertyiddesired=0
+      propertyidselling=rawtx['result']['propertyid']
+      amountaccepted=0
+
+      if getdivisible_MP(propertyidselling):
+        amountavailable=int(decimal.Decimal(rawtx['result']['amount'])*decimal.Decimal(1e8))
+      else:
+        amountavailable=int(rawtx['result']['amount'])
+
+      #convert all btc stuff, need additional logic for metadex  
+      amountdesired=int(decimal.Decimal(rawtx['result']['bitcoindesired'])*decimal.Decimal(1e8))
+      minimumfee=int(decimal.Decimal(rawtx['result']['fee'])*decimal.Decimal(1e8))
+
+      #rawtx does't have ppc, do the calculation to store
+      unitprice=int(amountdesired/amountavailable)
+
+      timelimit=rawtx['result']['timelimit']
+
+      dbExecute("insert into activeoffers (amountaccepted, amountavailable, amountdesired, minimumfee, propertyidselling, "
+                "propertyiddesired, seller, timelimit, createtxdbserialnum, unitprice, offerstate) values "
+                "(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",
+                (amountaccepted, amountavailable, amountdesired, minimumfee, propertyidselling, propertyiddesired,
+                Address, timelimit, createtxdbserialnum, unitprice, State) )
 
 def resetdextable_MP():
       activesales= getactivedexsells_MP()['result']
@@ -201,7 +275,7 @@ def insertProperty(rawtx, Protocol):
         #insert this tx into the history table
         dbExecute("insert into PropertyHistory (Protocol, PropertyID, TxDBSerialNum) Values(%s, %s, %s)", (Protocol, PropertyID, LastTxDBSerialNum))
 
-def insertTxAddr(rawtx, Protocol, TxDBSerialNum):
+def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
     TxHash = rawtx['result']['txid']
 
     if Protocol == "Bitcoin":
@@ -310,26 +384,10 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum):
         AddressRole='seller'
         BalanceAvailableCreditDebit = value_neg
         BalanceReservedCreditDebit = value
-        #subaction=rawtx['result']['subaction']
 
-        #Catches, new, update, empty, cancel states from core
-        #if subaction == 'Cancel' or subaction == 'Empty':
-        #  State='cancelled'
-        #  #Update any active offers to replace
-        #  dbExecute("update activeoffers set offerstate=%s, LastTxDBSerialNum=%s where seller=%s and offerstate='active'", 
-        #            (State, TxDBSerialNum, Address) )
-        #else:
-        #  #state new/update
-        #  State='replaced'
-        #  #Update any active offers to replace
-        #  dbExecute("update activeoffers set offerstate=%s, LastTxDBSerialNum=%s where seller=%s and offerstate='active'", 
-        #            (State, TxDBSerialNum, Address) )
-          #insert the new/updated tx as active
-          #State='active'
-          #dbExecute("insert into activeoffers (amountaccepted, amountavailable, amountdesired, minimumfee, propertyidselling, "
-          #          "propertyiddesired, seller, timelimit, createtxdbserialnum, unitprice, offerstate) values "
-          #          "(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",
-          #          (amountaccepted, amountavailable, amountdesired, minimumfee, propertyidselling,
+        #Update our DEx tables if its a valid dex sale
+        if rawtx['result']['valid']:
+          updatedex(rawtx, TxDBSerialNum)
 
       #elif type == 21:
         #MetaDEx: Offer/Accept one Master Protocol Coins for another
@@ -352,6 +410,8 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum):
         #credit the sellers 'accepted' balance
         if Valid:
           updateBalance(Address, Protocol, PropertyID, Ecosystem, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit, TxHash)
+          #update the accepted offers
+          offerAccept(rawtx, TxDBSerialNum, Block)
 
         #track the address as part of the tx, but it has no balance changing values for the addressesintx table
         BalanceAcceptedCreditDebit = None
@@ -360,6 +420,7 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum):
                   "(Address, PropertyID, Protocol, TxDBSerialNum, AddressTxIndex, AddressRole, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit)"
                   "values(%s, %s, %s, %s, %s, %s, %s, %s, %s)",
                   (Address, PropertyID, Protocol, TxDBSerialNum, AddressTxIndex, AddressRole, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit))
+
 
         #we processed everything for this tx, return
         return
@@ -435,6 +496,7 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum):
 
           if Valid:
             updateBalance(Sender, Protocol, PropertyIDBought, Ecosystem, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit, TxHash)
+            updateAccept(Sender, Receiver, BalanceAvailableCreditDebit, PropertyIDBought, TxDBSerialNum)
 
           #end //for payment in rawtx['result']['purchases']
 
