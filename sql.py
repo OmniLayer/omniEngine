@@ -1,80 +1,9 @@
-import psycopg2, psycopg2.extras
 import datetime
 import decimal
 import sys
 from rpcclient import *
 from mscutils import *
-
-def sql_connect():
-    global con
-    USER=getpass.getuser()
-    try:
-      with open('/home/'+USER+'/.omni/sql.conf') as fp:
-        DBPORT="5432"
-        for line in fp:
-          #print line
-          if line.split('=')[0] == "sqluser":
-            DBUSER=line.split('=')[1].strip()
-          elif line.split('=')[0] == "sqlpassword":
-            DBPASS=line.split('=')[1].strip()
-          elif line.split('=')[0] == "sqlconnect":
-            DBHOST=line.split('=')[1].strip()
-          elif line.split('=')[0] == "sqlport":
-            DBPORT=line.split('=')[1].strip()
-          elif line.split('=')[0] == "sqldatabase":
-            DBNAME=line.split('=')[1].strip()
-    except IOError as e:
-      response='{"error": "Unable to load sql config file. Please Notify Site Administrator"}'
-      return response
-
-    try:     
-        con = psycopg2.connect(database=DBNAME, user=DBUSER, password=DBPASS, host=DBHOST, port=DBPORT)
-        cur = con.cursor(cursor_factory=psycopg2.extras.DictCursor)
-    	return cur
-    except psycopg2.DatabaseError, e:
-        print 'Error %s' % e    
-        sys.exit(1)
-
-
-#Prime the DB Connection
-dbc=sql_connect()
-
-
-def dbSelect(statement, values):
-    try:
-        dbc.execute(statement, values)
-        ROWS = dbc.fetchall()
-        return ROWS
-    except psycopg2.DatabaseError, e:
-        if con:
-            con.rollback()
-        print 'Error %s' % e
-        sys.exit(1)
-
-def dbExecute(statement, values):
-    try:
-        dbc.execute(statement, values)
-    except psycopg2.DatabaseError, e:
-        if con:
-            con.rollback()
-        print 'Error %s' % e
-        sys.exit(1)
-
-def dbCommit():
-    try:
-        con.commit()
-    except psycopg2.DatabaseError, e:
-        if con:
-            con.rollback()
-        print 'Error %s' % e
-        sys.exit(1)
-
-def dbRollback():
-    if con:
-       con.rollback()
-       return 1
-    else:
-       return 0
+from sqltools import *
 
 def resetbalances_MP():
     #for now sync / reset balance data from mastercore balance list
@@ -621,13 +550,8 @@ def insertBlock(block_data, Protocol, block_height, txcount):
 
 
 def gettxdbserialnum(txhash):
-    try:
-      dbc.execute("select txdbserialnum from transactions where txhash=%s",[txhash])
-      ROWS= dbc.fetchall()
-      if len(ROWS)==0:
-          return -1
-      else:
-          return ROWS[0][0]
-    except psycopg2.DatabaseError, e:
-      print 'Error %s' % e
-      exit
+    ROWS=dbSelect("select txdbserialnum from transactions where txhash=%s",[txhash])
+    if len(ROWS)==0:
+        return -1
+    else:
+        return ROWS[0][0]
