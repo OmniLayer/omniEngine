@@ -41,6 +41,7 @@ def offerAccept (rawtx, TxDBSerialNum, Block):
     timelimit=saleinfo[0][1]
     #how much in the sale is currently accepted
     currentamountaccepted=saleinfo[0][2]
+    amountavailable=saleinfo[0][3]
 
     #calculate when the offer should expire
     expireblock=timelimit+Block
