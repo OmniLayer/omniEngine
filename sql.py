@@ -1,4 +1,3 @@
-
 import datetime
 import decimal
 import sys
@@ -7,7 +6,7 @@ from mscutils import *
 from sqltools import *
 
 def updateAccept(Buyer, Seller, AmountBought, PropertyIDBought, TxDBSerialNum):
-    
+    accept=dbSelect("select * from offeraccepts innet join activeoffers on (offeraccepts.
 
 
 def offerAccept (rawtx, TxDBSerialNum, Block):
@@ -15,6 +14,7 @@ def offerAccept (rawtx, TxDBSerialNum, Block):
     SellerAddress=rawtx['result']['referenceaddress']
     
     propertyid = rawtx['result']['propertyid']
+    valid = rawtx['result']['valid']
 
     #convert accepted amount to non divisible quantity to store in db
     if rawtx['result']['divisible']:
@@ -41,23 +41,23 @@ def updatedex(rawtx, TxDBSerialNum):
 
     Address=rawtx['result']['sendingaddress']
     subaction=rawtx['result']['subaction']
+    propertyiddesired=0
+    propertyidselling=rawtx['result']['propertyid']
 
     #Catches, new, update, empty, cancel states from core
-    if subaction == 'Cancel' or subaction == 'Empty':
+    if subaction.lower() == 'cancel' or subaction.lower() == 'empty':
       State='cancelled'
       #Update any active offers to replace
-      dbExecute("update activeoffers set offerstate=%s, LastTxDBSerialNum=%s where seller=%s and offerstate='active'",
-                (State, TxDBSerialNum, Address) )
+      dbExecute("update activeoffers set offerstate=%s, LastTxDBSerialNum=%s where seller=%s and offerstate='active' and propertyiddesired=$s and propertyidselling=%s",
+                (State, TxDBSerialNum, Address, propertyiddesired, propertyidselling) )
     else:
       #state new/update
       State='replaced'
       #Update any active offers to replace
-      dbExecute("update activeoffers set offerstate=%s, LastTxDBSerialNum=%s where seller=%s and offerstate='active'",
-                (State, TxDBSerialNum, Address) )
+      dbExecute("update activeoffers set offerstate=%s, LastTxDBSerialNum=%s where seller=%s and offerstate='active' and propertyiddesired=$s and propertyidselling=%s",
+                (State, TxDBSerialNum, Address, propertyiddesired, propertyidselling) )
       #insert the new/updated tx as active
       State='active'
-      propertyiddesired=0
-      propertyidselling=rawtx['result']['propertyid']
       amountaccepted=0
 
       if getdivisible_MP(propertyidselling):
@@ -81,6 +81,7 @@ def updatedex(rawtx, TxDBSerialNum):
                 Address, timelimit, createtxdbserialnum, unitprice, State) )
 
 def resetdextable_MP():
+      #add code to handle accepts in the dex results
       activesales= getactivedexsells_MP()['result']
       for sale in activesales:
         #0 for btc for now all sales use btc
