@@ -6,13 +6,61 @@ from mscutils import *
 from sqltools import *
 
 def expireAccepts(Block):
+    #find the offers that are ready to expire and credit the 'accepted' amount back to the sellers sale
+    expiring=dbSelect("select amountaccepted, saletxdbserialnum from offeracepts where expireblock < $s and expiredstate=false", (Block) )
+    amountaccepted=expiring[0][0]
+    saletxserialnum=expiring[0][1]
+
+    dbExecute("update activeoffers set amountaccepted=amountaccepted-%s::numeric, amountavailable=amountavailable+%s::numeric "
+              "where createtxdbserialnum=%s", (amountaccepted, amountaccepted, saletxserialnum) )
+
+    #credit the offers that are ready to expire back to the sellers balance
+    dbExecute("update ab set ab.balanceaccepted=ab.balanceaccepted-%s::numeric"
+              "from addressbalances as ab inner join activeoffers as ao on (ab.address=ao.seller)"
+              "where ab.propertyid = ao.propertyidselling and ao.createtxdbserialnum=%s", 
+              (amountaccepted, saletxserialnum) )
+
+    #every block we check any 'active' accepts. If their expire block has passed, we set them expired
     dbExecute("update offeraccepts set expiredstate=true where expireblock < $s and expiredstate=false", (Block) )
 
 def updateAccept(Buyer, Seller, AmountBought, PropertyIDBought, TxDBSerialNum):
     #user has paid for their accept (either partially or in full) update accordingly. 
 
     #find the accept data for updating
-    accept=dbSelect("select * from offeraccepts where buyer=%s and prop")
+    accept=dbSelect("select oa.amountaccepted, oa.amountpurchased, ao.amountaccepted, ao.amountavailable, ao.offerstate "
+                    "from offeraccepts oa inner join activeoffers ao on (oa.saletxdbserialnum=ao.createtxdbserialnum) "
+                    "where oa.buyer=%s and ao.seller=%s and ao.propertyidselling=%s", 
+                    (Buyer, Seller, PropertyIDBought) )
+
+    buyeraccepted = accept[0][0] - AmountBought
+    buyerpurchased= AmountBought + accept[0][1]
+
+    if buyeraccepted > 0:
+      dexstate = 'paid-partial'
+    else:
+      dexstate == 'paid-complete'
+      #can we have a negative amount accepted?  bad math?
+ 
+    #update the buyers 'accept' in the offeraccepts table with the new data
+    dbExecute("update oa set oa.amountaccepted=%s, oa.amountpurchased=%s, oa.dexstate=%s "
+              "from offeraccepts as oa inner join activeoffers as ao on (oa.saletxdbserialnum=ao.createtxdbserialnum)"
+              "where oa.buyer=%s and ao.seller=%s and ao.propertyidselling=%s", 
+              (buyeraccepted, buyerpurchased, dexstate, Buyer, Seller, PropertyIDBought) )
+
+    selleraccepted= accept[0][2] - AmountBought
+    selleravailable=accept[0][3]
+
+    if selleraccepted == 0 and selleravailable == 0:
+      offerstate='sold'
+    else:
+      offerstate=accept[0][4]
+
+    #update the sellers sale with the information from the buyers successful buy
+    dbExecute("update ao set ao.amountaccepted=%s, ao.offerstate=%s "
+              "from offeraccepts as oa inner join activeoffers as ao on (oa.saletxdbserialnum=ao.createtxdbserialnum)"
+              "where oa.buyer=%s and ao.seller=%s and ao.propertyidselling=%s",
+              (selleraccepted, offerstate, Buyer, Seller, PropertyIDBought) )
+
 
 
 def offerAccept (rawtx, TxDBSerialNum, Block):
@@ -70,7 +118,7 @@ def updatedex(rawtx, TxDBSerialNum):
     propertyidselling=rawtx['result']['propertyid']
 
     #Catches, new, update, empty, cancel states from core
-    if subaction.lower() == 'cancel' or subaction.lower() == 'empty':
+    if subaction.lower() == 'cancel':
       State='cancelled'
       #Update any active offers to replace
       dbExecute("update activeoffers set offerstate=%s, LastTxDBSerialNum=%s where seller=%s and offerstate='active' and propertyiddesired=$s and propertyidselling=%s",
