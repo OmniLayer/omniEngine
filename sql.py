@@ -5,15 +5,25 @@ from rpcclient import *
 from mscutils import *
 from sqltools import *
 
+def expireAccepts(Block):
+    dbExecute("update offeraccepts set expiredstate=true where expireblock < $s and expiredstate=false", (Block) )
+
 def updateAccept(Buyer, Seller, AmountBought, PropertyIDBought, TxDBSerialNum):
-    accept=dbSelect("select * from offeraccepts innet join activeoffers on (offeraccepts.
+    #user has paid for their accept (either partially or in full) update accordingly. 
+
+    #find the accept data for updating
+    accept=dbSelect("select * from offeraccepts where buyer=%s and prop")
 
 
 def offerAccept (rawtx, TxDBSerialNum, Block):
     BuyerAddress=rawtx['result']['sendingaddress']
     SellerAddress=rawtx['result']['referenceaddress']
     
-    propertyid = rawtx['result']['propertyid']
+    #what did the user accept
+    propertyidbuying = rawtx['result']['propertyid']
+    #what are they going to have to pay/send to complete. (BTC for now until metadex launch)
+    propertyidpaying = 0
+    #was it a valid accept, we still insert invalids for displaying to user later
     valid = rawtx['result']['valid']
 
     #convert accepted amount to non divisible quantity to store in db
@@ -23,19 +33,33 @@ def offerAccept (rawtx, TxDBSerialNum, Block):
       amountaccepted=int(rawtx['result']['amount'])
 
     #get the current active dex sale this matches
-    saleinfo=dbSelect("select createtxdbserialnum,timelimit from activeoffers where seller=%s and offerstate='active' and propertyidselling=%s",
-                 (SellerAddress, propertyid) )
+    saleinfo=dbSelect("select createtxdbserialnum,timelimit,amountaccepted,amountavailable from activeoffers where seller=%s and offerstate='active'"
+                      " and propertyidselling=%s and propertyiddesired=%s",
+                      (SellerAddress, propertyidbuying, propertyidpaying) )
     saletxdbserialnum=saleinfo[0][0]
+    #how long does user have to pay
     timelimit=saleinfo[0][1]
+    #how much in the sale is currently accepted
+    currentamountaccepted=saleinfo[0][2]
 
     #calculate when the offer should expire
     expireblock=timelimit+Block
-    dexstate='unpaid'
+    if valid:
+      dexstate='unpaid'
+      expiredstate='false'
+      #update original sale to reflect accept
+      currentamountaccepted+=amountaccepted
+      amountavailable-=amountaccepted      
+      dbExecute("update activeoffers set amountaccepted=%s, amountavailable=%s where  seller=%s and offerstate='active' and propertyidselling=%s and propertyiddesired=%s",
+                (currentamountaccepted,amountavailable,SellerAddress,propertyidbuying,propertyidpaying) )
+    else:
+      dexstate='invalid'
+      expiredstate='true'
 
-    #insert the off
-    dbExecute("insert into offeraccepts (buyer, amountaccepted, linkedtxdbserialnum, saletxdbserialnum, block, dexstate, expireblock)"
-              "values(%s,%s,%s,%s,%s,%s,%s)", 
-              (BuyerAddress, amountaccepted, TxDBSerialNum, saletxdbserialnum, Block, dexstate, expireblock) )
+    #insert the offer
+    dbExecute("insert into offeraccepts (buyer, amountaccepted, linkedtxdbserialnum, saletxdbserialnum, block, dexstate, expireblock, expiredstate)"
+              "values(%s,%s,%s,%s,%s,%s,%s,%s)", 
+              (BuyerAddress, amountaccepted, TxDBSerialNum, saletxdbserialnum, Block, dexstate, expireblock,expiredstate) )
 
 def updatedex(rawtx, TxDBSerialNum):
 
@@ -65,6 +89,8 @@ def updatedex(rawtx, TxDBSerialNum):
       else:
         amountavailable=int(rawtx['result']['amount'])
 
+      totalselling=amountavailable
+
       #convert all btc stuff, need additional logic for metadex  
       amountdesired=int(decimal.Decimal(rawtx['result']['bitcoindesired'])*decimal.Decimal(1e8))
       minimumfee=int(decimal.Decimal(rawtx['result']['fee'])*decimal.Decimal(1e8))
@@ -74,11 +100,11 @@ def updatedex(rawtx, TxDBSerialNum):
 
       timelimit=rawtx['result']['timelimit']
 
-      dbExecute("insert into activeoffers (amountaccepted, amountavailable, amountdesired, minimumfee, propertyidselling, "
+      dbExecute("insert into activeoffers (amountaccepted, amountavailable, totalselling, amountdesired, minimumfee, propertyidselling, "
                 "propertyiddesired, seller, timelimit, createtxdbserialnum, unitprice, offerstate) values "
-                "(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",
-                (amountaccepted, amountavailable, amountdesired, minimumfee, propertyidselling, propertyiddesired,
-                Address, timelimit, createtxdbserialnum, unitprice, State) )
+                "(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",
+                (amountaccepted, amountavailable, totalselling, amountdesired, minimumfee, propertyidselling, 
+                propertyiddesired, Address, timelimit, createtxdbserialnum, unitprice, State) )
 
 def resetdextable_MP():
       #add code to handle accepts in the dex results
@@ -95,6 +121,8 @@ def resetdextable_MP():
           amountaccepted=int(sale['amountaccepted'])
           amountavailable=int(sale['amountavailable'])
 
+        totalselling=amountaccepted
+
         #convert all btc stuff, need additional logic for metadex  
         amountdesired=int(decimal.Decimal(sale['bitcoindesired'])*decimal.Decimal(1e8))
         minimumfee=int(decimal.Decimal(sale['minimumfee'])*decimal.Decimal(1e8))
@@ -105,10 +133,10 @@ def resetdextable_MP():
         createtxdbserialnum=gettxdbserialnum(sale['txid'])
         offerstate='active'
 
-        dbExecute("insert into activeoffers (amountaccepted, amountavailable, amountdesired, minimumfee, propertyidselling, "
+        dbExecute("insert into activeoffers (amountaccepted, amountavailable, totalselling, amountdesired, minimumfee, propertyidselling, "
                   "propertyiddesired, seller, timelimit, createtxdbserialnum, unitprice, offerstate) values "
-                  "(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",
-                  (amountaccepted, amountavailable, amountdesired, minimumfee, propertyidselling, propertyiddesired,
+                  "(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",
+                  (amountaccepted, amountavailable, totalselling, amountdesired, minimumfee, propertyidselling, propertyiddesired,
                    seller, timelimit, createtxdbserialnum, unitprice, offerstate) )    
 
 def resetbalances_MP():
@@ -411,8 +439,9 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
         #credit the sellers 'accepted' balance
         if Valid:
           updateBalance(Address, Protocol, PropertyID, Ecosystem, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit, TxHash)
-          #update the accepted offers
-          offerAccept(rawtx, TxDBSerialNum, Block)
+
+        #update the accepted offers (actually track invalid offers for reporting as well)
+        offerAccept(rawtx, TxDBSerialNum, Block)
 
         #track the address as part of the tx, but it has no balance changing values for the addressesintx table
         BalanceAcceptedCreditDebit = None

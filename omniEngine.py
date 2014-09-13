@@ -63,6 +63,9 @@ while currentBlock <= endBlock:
   block_data = getblock(hash)
   height = block_data['result']['height']
 
+  #expire the current active offers if block time has passed
+  expireAccepts(height)
+
   #don't waste resources looking for MP transactions before the first one occurred
   if height >= firstMPtxBlock:
     block_data_MP = listblocktransactions_MP(height)
