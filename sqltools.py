@@ -38,7 +38,7 @@ def dbInit():
     dbc=sql_connect()
 
 
-def dbSelect(statement, values):
+def dbSelect(statement, values=None):
     if dbc.closed:
         dbInit()
     try:
@@ -49,7 +49,7 @@ def dbSelect(statement, values):
         print 'Error', e, 'Rollback returned: ', dbRollback()
         sys.exit(1)
 
-def dbExecute(statement, values):
+def dbExecute(statement, values=None):
     if dbc.closed:
         dbInit()
     try:
