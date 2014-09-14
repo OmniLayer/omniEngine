@@ -9,10 +9,12 @@ def expireAccepts(Block):
     #find the offers that are ready to expire and credit the 'accepted' amount back to the sellers sale
     expiring=dbSelect("select amountaccepted, saletxdbserialnum from offeraccepts where expireblock < %s and expiredstate=false", [Block] )
 
-    #only process if there is anything to process
-    if len(expiring) > 0:
-      amountaccepted=expiring[0][0]
-      saletxserialnum=expiring[0][1]
+    #make sure we process all the offers that are expiring
+    for offer in expiring:
+
+      #only process if there is anything to process
+      amountaccepted=offer[0]
+      saletxserialnum=offer[1]
 
       dbExecute("update activeoffers set amountaccepted=amountaccepted-%s::numeric, amountavailable=amountavailable+%s::numeric "
                 "where createtxdbserialnum=%s", (amountaccepted, amountaccepted, saletxserialnum) )
@@ -23,8 +25,8 @@ def expireAccepts(Block):
                 "ab.propertyid = ao.propertyidselling and ao.createtxdbserialnum=%s", 
                 (amountaccepted, saletxserialnum) )
 
-      #every block we check any 'active' accepts. If their expire block has passed, we set them expired
-      dbExecute("update offeraccepts set expiredstate=true where expireblock < %s and expiredstate=false", [Block] )
+    #every block we check any 'active' accepts. If their expire block has passed, we set them expired
+    dbExecute("update offeraccepts set expiredstate=true where expireblock < %s and expiredstate=false", [Block] )
 
 def updateAccept(Buyer, Seller, AmountBought, PropertyIDBought, TxDBSerialNum):
     #user has paid for their accept (either partially or in full) update accordingly. 
