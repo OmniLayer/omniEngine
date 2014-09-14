@@ -7,7 +7,7 @@ from sqltools import *
 
 def expireAccepts(Block):
     #find the offers that are ready to expire and credit the 'accepted' amount back to the sellers sale
-    expiring=dbSelect("select amountaccepted, saletxdbserialnum from offeracepts where expireblock < $s and expiredstate=false", (Block) )
+    expiring=dbSelect("select amountaccepted, saletxdbserialnum from offeraccepts where expireblock < %s and expiredstate=false", [Block] )
     amountaccepted=expiring[0][0]
     saletxserialnum=expiring[0][1]
 
@@ -15,9 +15,9 @@ def expireAccepts(Block):
               "where createtxdbserialnum=%s", (amountaccepted, amountaccepted, saletxserialnum) )
 
     #credit the offers that are ready to expire back to the sellers balance
-    dbExecute("update ab set ab.balanceaccepted=ab.balanceaccepted-%s::numeric"
-              "from addressbalances as ab inner join activeoffers as ao on (ab.address=ao.seller)"
-              "where ab.propertyid = ao.propertyidselling and ao.createtxdbserialnum=%s", 
+    dbExecute("update addressbalances as ab set balanceaccepted=ab.balanceaccepted-%s::numeric "
+              "from activeoffers as ao where ab.address=ao.seller and "
+              "ab.propertyid = ao.propertyidselling and ao.createtxdbserialnum=%s", 
               (amountaccepted, saletxserialnum) )
 
     #every block we check any 'active' accepts. If their expire block has passed, we set them expired
@@ -42,9 +42,9 @@ def updateAccept(Buyer, Seller, AmountBought, PropertyIDBought, TxDBSerialNum):
       #can we have a negative amount accepted?  bad math?
  
     #update the buyers 'accept' in the offeraccepts table with the new data
-    dbExecute("update oa set oa.amountaccepted=%s, oa.amountpurchased=%s, oa.dexstate=%s "
-              "from offeraccepts as oa inner join activeoffers as ao on (oa.saletxdbserialnum=ao.createtxdbserialnum)"
-              "where oa.buyer=%s and ao.seller=%s and ao.propertyidselling=%s", 
+    dbExecute("update offeraccepts as oa set amountaccepted=%s, amountpurchased=%s, dexstate=%s "
+              "from activeoffers as ao where oa.saletxdbserialnum=ao.createtxdbserialnum "
+              "and oa.buyer=%s and ao.seller=%s and ao.propertyidselling=%s", 
               (buyeraccepted, buyerpurchased, dexstate, Buyer, Seller, PropertyIDBought) )
 
     selleraccepted= accept[0][2] - AmountBought
@@ -56,9 +56,9 @@ def updateAccept(Buyer, Seller, AmountBought, PropertyIDBought, TxDBSerialNum):
       offerstate=accept[0][4]
 
     #update the sellers sale with the information from the buyers successful buy
-    dbExecute("update ao set ao.amountaccepted=%s, ao.offerstate=%s "
-              "from offeraccepts as oa inner join activeoffers as ao on (oa.saletxdbserialnum=ao.createtxdbserialnum)"
-              "where oa.buyer=%s and ao.seller=%s and ao.propertyidselling=%s",
+    dbExecute("update activeoffers as ao set amountaccepted=%s, offerstate=%s "
+              "from offeraccepts as oa where oa.saletxdbserialnum=ao.createtxdbserialnum "
+              "and oa.buyer=%s and ao.seller=%s and ao.propertyidselling=%s",
               (selleraccepted, offerstate, Buyer, Seller, PropertyIDBought) )
 
 
@@ -106,7 +106,7 @@ def offerAccept (rawtx, TxDBSerialNum, Block):
       expiredstate='true'
 
     #insert the offer
-    dbExecute("insert into offeraccepts (buyer, amountaccepted, linkedtxdbserialnum, saletxdbserialnum, block, dexstate, expireblock, expiredstate)"
+    dbExecute("insert into offeraccepts (buyer, amountaccepted, linkedtxdbserialnum, saletxdbserialnum, block, dexstate, expireblock, expiredstate) "
               "values(%s,%s,%s,%s,%s,%s,%s,%s)", 
               (BuyerAddress, amountaccepted, TxDBSerialNum, saletxdbserialnum, Block, dexstate, expireblock,expiredstate) )
 
