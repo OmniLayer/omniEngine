@@ -121,9 +121,21 @@ def offerAccept (rawtx, TxDBSerialNum, Block):
 def updatedex(rawtx, TxDBSerialNum):
 
     Address=rawtx['result']['sendingaddress']
-    subaction=rawtx['result']['subaction']
     propertyiddesired=0
     propertyidselling=rawtx['result']['propertyid']
+
+    if getdivisible_MP(propertyidselling):
+      amountavailable=int(decimal.Decimal(rawtx['result']['amount'])*decimal.Decimal(1e8))
+    else:
+      amountavailable=int(rawtx['result']['amount'])
+
+    #work around for some dex tx's not having a subaction
+    if 'subaction' in rawtx['result']:
+      subaction=rawtx['result']['subaction']
+    elif amountavailable == 0:
+      subaction='cancel'
+    else:
+      subaction='new'
 
     #Catches, new, update, empty, cancel states from core
     if subaction.lower() == 'cancel':
@@ -140,11 +152,6 @@ def updatedex(rawtx, TxDBSerialNum):
       #insert the new/updated tx as active
       State='active'
       amountaccepted=0
-
-      if getdivisible_MP(propertyidselling):
-        amountavailable=int(decimal.Decimal(rawtx['result']['amount'])*decimal.Decimal(1e8))
-      else:
-        amountavailable=int(rawtx['result']['amount'])
 
       totalselling=amountavailable
 
