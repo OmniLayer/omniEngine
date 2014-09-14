@@ -31,7 +31,7 @@ def updateAccept(Buyer, Seller, AmountBought, PropertyIDBought, TxDBSerialNum):
 
     #find the accept data for updating
     saletx=dbSelect("select max(oa.saletxdbserialnum) from offeraccepts as oa inner join activeoffers as ao "
-                    "on (oa.saletxdbserialnum=ao.createtxdbserialnum) where "
+                    "on (oa.saletxdbserialnum=ao.createtxdbserialnum) "
                     "where oa.buyer=%s and ao.seller=%s and ao.propertyidselling=%s",
                     (Buyer, Seller, PropertyIDBought) )
 
