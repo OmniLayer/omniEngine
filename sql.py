@@ -154,7 +154,7 @@ def updatedex(rawtx, TxDBSerialNum):
                 "propertyiddesired, seller, timelimit, createtxdbserialnum, unitprice, offerstate) values "
                 "(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",
                 (amountaccepted, amountavailable, totalselling, amountdesired, minimumfee, propertyidselling, 
-                propertyiddesired, Address, timelimit, createtxdbserialnum, unitprice, State) )
+                propertyiddesired, Address, timelimit, TxDBSerialNum, unitprice, State) )
 
 def resetdextable_MP():
       #add code to handle accepts in the dex results
