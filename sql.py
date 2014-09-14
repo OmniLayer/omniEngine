@@ -7,7 +7,8 @@ from sqltools import *
 
 def expireAccepts(Block):
     #find the offers that are ready to expire and credit the 'accepted' amount back to the sellers sale
-    expiring=dbSelect("select amountaccepted, saletxdbserialnum from offeraccepts where expireblock < %s and expiredstate=false", [Block] )
+    expiring=dbSelect("select amountaccepted, saletxdbserialnum from offeraccepts where expireblock < %s and expiredstate=false "
+                      "and (dexstate='paid-partial' or dexstate='unpaid')", [Block] )
 
     #make sure we process all the offers that are expiring
     for offer in expiring:
