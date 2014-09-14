@@ -61,8 +61,6 @@ def updateAccept(Buyer, Seller, AmountBought, PropertyIDBought, TxDBSerialNum):
               "and oa.buyer=%s and ao.seller=%s and ao.propertyidselling=%s",
               (selleraccepted, offerstate, Buyer, Seller, PropertyIDBought) )
 
-
-
 def offerAccept (rawtx, TxDBSerialNum, Block):
     BuyerAddress=rawtx['result']['sendingaddress']
     SellerAddress=rawtx['result']['referenceaddress']
@@ -310,6 +308,13 @@ def insertProperty(rawtx, Protocol):
     
       PropertyDataJson = getproperty_MP(PropertyID)
       rawprop = PropertyDataJson['result'] 
+
+      if TxType == 51:
+        #get additional json info for crowdsales
+        rawprop = dict(rawprop.items() + getcrowdsale_MP(PropertyID)['result'].items())        
+      #elif TxType > 53 and TxType < 57:
+        #rawprop = dict(rawprop.items() + getgrant_MP(PropertyID)['result'].items())
+
 
       Issuer = rawprop['issuer']
       Ecosystem = getEcosystem(PropertyID)
