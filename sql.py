@@ -24,7 +24,7 @@ def expireAccepts(Block):
                 (amountaccepted, saletxserialnum) )
 
       #every block we check any 'active' accepts. If their expire block has passed, we set them expired
-      dbExecute("update offeraccepts set expiredstate=true where expireblock < $s and expiredstate=false", (Block) )
+      dbExecute("update offeraccepts set expiredstate=true where expireblock < %s and expiredstate=false", (Block) )
 
 def updateAccept(Buyer, Seller, AmountBought, PropertyIDBought, TxDBSerialNum):
     #user has paid for their accept (either partially or in full) update accordingly. 
@@ -122,13 +122,13 @@ def updatedex(rawtx, TxDBSerialNum):
     if subaction.lower() == 'cancel':
       State='cancelled'
       #Update any active offers to replace
-      dbExecute("update activeoffers set offerstate=%s, LastTxDBSerialNum=%s where seller=%s and offerstate='active' and propertyiddesired=$s and propertyidselling=%s",
+      dbExecute("update activeoffers set offerstate=%s, LastTxDBSerialNum=%s where seller=%s and offerstate='active' and propertyiddesired=%s and propertyidselling=%s",
                 (State, TxDBSerialNum, Address, propertyiddesired, propertyidselling) )
     else:
       #state new/update
       State='replaced'
       #Update any active offers to replace
-      dbExecute("update activeoffers set offerstate=%s, LastTxDBSerialNum=%s where seller=%s and offerstate='active' and propertyiddesired=$s and propertyidselling=%s",
+      dbExecute("update activeoffers set offerstate=%s, LastTxDBSerialNum=%s where seller=%s and offerstate='active' and propertyiddesired=%s and propertyidselling=%s",
                 (State, TxDBSerialNum, Address, propertyiddesired, propertyidselling) )
       #insert the new/updated tx as active
       State='active'
