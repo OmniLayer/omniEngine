@@ -680,15 +680,20 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
         AddressRole = "issuer"
 
         #temp workaround for api call not working yet
+        allgrants=dbSelect("select propertyid from smartproperties as sp inner join transactions as tx on "
+                           "(sp.createtxdbserialnum = tx.txdbserialnum) where tx.txtype=54")
 
-        temptx=getgrants_MP(PropertyID)
-        for x in temptx['result']['issuances']:
-          if x['txid'] == TxHash:
-            if rawtx['result']['divisible']:
-              BalanceAvailableCreditDebit=int(decimal.Decimal(x['grant'])*decimal.Decimal(1e8))
-            else:
-              BalanceAvailableCreditDebit=int(x['grant'])
-            break
+        for prop in allgrants:
+          tempID=prop[0]
+          temptx=getgrants_MP(tempID)
+          for x in temptx['result']['issuances']:
+            if x['txid'] == TxHash:
+              PropertyID=tempID
+              if rawtx['result']['divisible']:
+                BalanceAvailableCreditDebit=int(decimal.Decimal(x['grant'])*decimal.Decimal(1e8))
+              else:
+                BalanceAvailableCreditDebit=int(x['grant'])
+              break
 
         #update balanace table
         if Valid:
@@ -696,6 +701,15 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
           #update smart property table
           insertProperty(rawtx, Protocol)
 
+      elif type == 56:
+        AddressRole = "issuer"
+        BalanceAvailableCreditDebit=amount_neg
+
+        #update balanace table
+        if Valid:
+          updateBalance(Address, Protocol, PropertyID, Ecosystem, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDeb$
+          #update smart property table
+          insertProperty(rawtx, Protocol)
 
       #write output of the address details
       dbExecute("insert into addressesintxs "
