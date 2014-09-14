@@ -25,9 +25,12 @@ def get_TxType(text_type):
              "DEx Purchase": -22,
              "Create Property - Fixed": 50,
              "Create Property - Variable": 51,
+             "Crowdsale Purchase": -51,
              "Promote Property": 52,
              "Close Crowdsale": 53,
-             "Crowdsale Purchase": -51
+             "Create Property - Manual": 54,
+             "Grant Property Tokens": 55,
+             "Revoke Property Tokens": 56
            }
     return convert[text_type]
   except KeyError:
