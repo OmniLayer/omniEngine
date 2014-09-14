@@ -312,7 +312,7 @@ def insertProperty(rawtx, Protocol, PropertyID=None):
       if TxType == 55 or TxType == 56:
         pass
         #use propertyid passed in for workaround
-      else=:
+      else:
         PropertyID = rawtx['result']['propertyid']
     
       PropertyDataJson = getproperty_MP(PropertyID)
