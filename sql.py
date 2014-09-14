@@ -111,6 +111,7 @@ def offerAccept (rawtx, TxDBSerialNum, Block):
     else:
       dexstate='invalid'
       expiredstate='true'
+      expireBlock=-1
 
     #insert the offer
     dbExecute("insert into offeraccepts (buyer, amountaccepted, linkedtxdbserialnum, saletxdbserialnum, block, dexstate, expireblock, expiredstate) "
