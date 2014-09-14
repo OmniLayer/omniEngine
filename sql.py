@@ -32,7 +32,7 @@ def updateAccept(Buyer, Seller, AmountBought, PropertyIDBought, TxDBSerialNum):
     #find the accept data for updating
     accept=dbSelect("select oa.amountaccepted, oa.amountpurchased, ao.amountaccepted, ao.amountavailable, ao.offerstate "
                     "from offeraccepts oa inner join activeoffers ao on (oa.saletxdbserialnum=ao.createtxdbserialnum) "
-                    "where oa.buyer=%s and ao.seller=%s and ao.propertyidselling=%s", 
+                    "where oa.buyer=%s and ao.seller=%s and ao.propertyidselling=%s and ao.offerstate='active'", 
                     (Buyer, Seller, PropertyIDBought) )
 
     buyeraccepted = accept[0][0] - AmountBought
@@ -47,7 +47,7 @@ def updateAccept(Buyer, Seller, AmountBought, PropertyIDBought, TxDBSerialNum):
     #update the buyers 'accept' in the offeraccepts table with the new data
     dbExecute("update offeraccepts as oa set amountaccepted=%s, amountpurchased=%s, dexstate=%s "
               "from activeoffers as ao where oa.saletxdbserialnum=ao.createtxdbserialnum "
-              "and oa.buyer=%s and ao.seller=%s and ao.propertyidselling=%s", 
+              "and oa.buyer=%s and ao.seller=%s and ao.propertyidselling=%s and ao.offerstate='active'", 
               (buyeraccepted, buyerpurchased, dexstate, Buyer, Seller, PropertyIDBought) )
 
     selleraccepted= accept[0][2] - AmountBought
@@ -61,7 +61,7 @@ def updateAccept(Buyer, Seller, AmountBought, PropertyIDBought, TxDBSerialNum):
     #update the sellers sale with the information from the buyers successful buy
     dbExecute("update activeoffers as ao set amountaccepted=%s, offerstate=%s, lasttxdbserialnum=%s "
               "from offeraccepts as oa where oa.saletxdbserialnum=ao.createtxdbserialnum "
-              "and oa.buyer=%s and ao.seller=%s and ao.propertyidselling=%s",
+              "and oa.buyer=%s and ao.seller=%s and ao.propertyidselling=%s and ao.offerstate='active'",
               (selleraccepted, offerstate, TxDBSerialNum, Buyer, Seller, PropertyIDBought) )
 
 def offerAccept (rawtx, TxDBSerialNum, Block):
