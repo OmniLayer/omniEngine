@@ -423,8 +423,28 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
       Address = rawtx['result']['sendingaddress']
       #PropertyID=rawtx['result']['propertyid']
 
+      #temp workaround for missing rpc info
+      if type == 55 or type == 56:
+        allgrants=dbSelect("select propertyid from smartproperties as sp inner join transactions as tx on "
+                           "(sp.createtxdbserialnum = tx.txdbserialnum) where tx.txtype=54")
+        for prop in allgrants:
+          tempID=prop[0]
+          temptx=getgrants_MP(tempID)
+          for x in temptx['result']['issuances']:
+            if x['txid'] == TxHash:
+              PropertyID=tempID
+              if rawtx['result']['divisible']:
+                value=int(decimal.Decimal(x['grant'])*decimal.Decimal(1e8))
+              else:
+                value=int(x['grant'])
+              value_neg=(value*-1)
+              break
+        EcoSystem=getEcosystem(PropertyID) 
+        Valid=rawtx['result']['valid']
+
+
       #Check if we are a DEx Purchase/payment. Format is a littler different and variables below would fail if we tried. 
-      if type != -22:
+      if type != -22 and type != 55 and type != 56:
         PropertyID= rawtx['result']['propertyid']
         Ecosystem=getEcosystem(PropertyID) 
         Valid=rawtx['result']['valid']
@@ -678,22 +698,7 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
 
       elif type == 55:
         AddressRole = "issuer"
-
-        #temp workaround for api call not working yet
-        allgrants=dbSelect("select propertyid from smartproperties as sp inner join transactions as tx on "
-                           "(sp.createtxdbserialnum = tx.txdbserialnum) where tx.txtype=54")
-
-        for prop in allgrants:
-          tempID=prop[0]
-          temptx=getgrants_MP(tempID)
-          for x in temptx['result']['issuances']:
-            if x['txid'] == TxHash:
-              PropertyID=tempID
-              if rawtx['result']['divisible']:
-                BalanceAvailableCreditDebit=int(decimal.Decimal(x['grant'])*decimal.Decimal(1e8))
-              else:
-                BalanceAvailableCreditDebit=int(x['grant'])
-              break
+        BalanceAvailableCreditDebit=value
 
         #update balanace table
         if Valid:
