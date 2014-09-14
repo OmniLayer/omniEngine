@@ -63,6 +63,9 @@ while currentBlock <= endBlock:
   block_data = getblock(hash)
   height = block_data['result']['height']
 
+  #expire the current active offers if block time has passed
+  expireAccepts(height)
+
   #don't waste resources looking for MP transactions before the first one occurred
   if height >= firstMPtxBlock:
     block_data_MP = listblocktransactions_MP(height)
@@ -92,7 +95,7 @@ while currentBlock <= endBlock:
     #manualtxnum=TxDBSerialNum
     #manualtxnum=-1
     #serial=insertTx(rawtx, Protocol, height, x, TxDBSerialNum)
-    #insertTxAddr(rawtx, Protocol, serial)
+    #insertTxAddr(rawtx, Protocol, serial, currentBlock)
 
     #increment the number of transactions
     TxDBSerialNum+=1
@@ -117,7 +120,7 @@ while currentBlock <= endBlock:
     manualtxnum=TxDBSerialNum
     #manualtxnum=-1
     serial=insertTx(rawtx, Protocol, height, x, manualtxnum)
-    insertTxAddr(rawtx, Protocol, serial)
+    insertTxAddr(rawtx, Protocol, serial, currentBlock)
 
     #increment the number of transactions
     TxDBSerialNum+=1
