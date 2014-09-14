@@ -315,8 +315,8 @@ def insertProperty(rawtx, Protocol):
       if TxType == 51:
         #get additional json info for crowdsales
         rawprop = dict(rawprop.items() + getcrowdsale_MP(PropertyID)['result'].items())        
-      #elif TxType > 53 and TxType < 57:
-        #rawprop = dict(rawprop.items() + getgrant_MP(PropertyID)['result'].items())
+      elif TxType > 53 and TxType < 57:
+        rawprop = dict(rawprop.items() + getgrants_MP(PropertyID)['result'].items())
 
 
       Issuer = rawprop['issuer']
@@ -663,8 +663,39 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
         #Close Crowdsale
         AddressRole = "issuer"
         BalanceAvailableCreditDebit=0
-        #update smart property table
-        insertProperty(rawtx, Protocol)
+
+        if Valid:
+          #update smart property table
+          insertProperty(rawtx, Protocol)
+
+      elif type == 54:
+        AddressRole = "issuer"
+        BalanceAvailableCreditDebit=0
+
+        if Valid:
+          #update smart property table
+          insertProperty(rawtx, Protocol)
+
+      elif type == 55:
+        AddressRole = "issuer"
+
+        #temp workaround for api call not working yet
+
+        temptx=getgrants_MP(PropertyID)
+        for x in temptx['result']['issuances']:
+          if x['txid'] == TxHash:
+            if rawtx['result']['divisible']:
+              BalanceAvailableCreditDebit=int(decimal.Decimal(x['grant'])*decimal.Decimal(1e8))
+            else:
+              BalanceAvailableCreditDebit=int(x['grant'])
+            break
+
+        #update balanace table
+        if Valid:
+          updateBalance(Address, Protocol, PropertyID, Ecosystem, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit, TxHash)
+          #update smart property table
+          insertProperty(rawtx, Protocol)
+
 
       #write output of the address details
       dbExecute("insert into addressesintxs "
