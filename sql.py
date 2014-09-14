@@ -42,7 +42,7 @@ def updateAccept(Buyer, Seller, AmountBought, PropertyIDBought, TxDBSerialNum):
 
     accept=dbSelect("select oa.amountaccepted, oa.amountpurchased, ao.amountaccepted, ao.amountavailable, ao.offerstate "
                     "from offeraccepts oa inner join activeoffers ao on (oa.saletxdbserialnum=ao.createtxdbserialnum) "
-                    "where oa.buyer=%s and ao.seller=%s and ao.propertyidselling=%s and ao.createtxdbserialnum=%s", 
+                    "where oa.buyer=%s and ao.seller=%s and ao.propertyidselling=%s and ao.createtxdbserialnum=%s and oa.dexstate != 'invalid'", 
                     (Buyer, Seller, PropertyIDBought, saletxdbserialnum) )
 
     buyeraccepted = accept[0][0] - AmountBought
@@ -57,7 +57,7 @@ def updateAccept(Buyer, Seller, AmountBought, PropertyIDBought, TxDBSerialNum):
     #update the buyers 'accept' in the offeraccepts table with the new data
     dbExecute("update offeraccepts as oa set amountaccepted=%s, amountpurchased=%s, dexstate=%s "
               "from activeoffers as ao where oa.saletxdbserialnum=ao.createtxdbserialnum "
-              "and oa.buyer=%s and ao.seller=%s and ao.propertyidselling=%s and ao.createtxdbserialnum=%s", 
+              "and oa.buyer=%s and ao.seller=%s and ao.propertyidselling=%s and ao.createtxdbserialnum=%s and oa.dexstate != 'invalid'", 
               (buyeraccepted, buyerpurchased, dexstate, Buyer, Seller, PropertyIDBought, saletxdbserialnum) )
 
     selleraccepted= accept[0][2] - AmountBought
