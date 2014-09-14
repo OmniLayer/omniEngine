@@ -24,7 +24,7 @@ def expireAccepts(Block):
                 (amountaccepted, saletxserialnum) )
 
       #every block we check any 'active' accepts. If their expire block has passed, we set them expired
-      dbExecute("update offeraccepts set expiredstate=true where expireblock < %s and expiredstate=false", (Block) )
+      dbExecute("update offeraccepts set expiredstate=true where expireblock < %s and expiredstate=false", [Block] )
 
 def updateAccept(Buyer, Seller, AmountBought, PropertyIDBought, TxDBSerialNum):
     #user has paid for their accept (either partially or in full) update accordingly. 
