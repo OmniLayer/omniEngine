@@ -108,4 +108,4 @@ def getdivisible_MP(propertyid):
     return getproperty_MP(propertyid)['result']['divisible']
 
 def getgrants_MP(propertyid):
-    return host.call("getgrant_MP", propertyid)
+    return host.call("getgrants_MP", propertyid)
