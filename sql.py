@@ -81,20 +81,26 @@ def offerAccept (rawtx, TxDBSerialNum, Block):
     else:
       amountaccepted=int(rawtx['result']['amount'])
 
-    #get the current active dex sale this matches
+    #get the current active dex sale this matches,
     saleinfo=dbSelect("select createtxdbserialnum,timelimit,amountaccepted,amountavailable from activeoffers where seller=%s and offerstate='active'"
                       " and propertyidselling=%s and propertyiddesired=%s",
                       (SellerAddress, propertyidbuying, propertyidpaying) )
-    saletxdbserialnum=saleinfo[0][0]
-    #how long does user have to pay
-    timelimit=saleinfo[0][1]
-    #how much in the sale is currently accepted
-    currentamountaccepted=saleinfo[0][2]
-    amountavailable=saleinfo[0][3]
 
-    #calculate when the offer should expire
-    expireblock=timelimit+Block
+    #catch/check if there is a valid sale it's trying to lookup, we can still attribute invalid tx's to the sale they tried to buy
+    if len(saleinfo) > 0:
+      saletxdbserialnum=saleinfo[0][0]
+    else:
+      saletxdbserialnum=-1
+
     if valid:
+      #how long does user have to pay
+      timelimit=saleinfo[0][1]
+      #how much in the sale is currently accepted
+      currentamountaccepted=saleinfo[0][2]
+      amountavailable=saleinfo[0][3]
+
+      #calculate when the offer should expire
+      expireblock=timelimit+Block
       dexstate='unpaid'
       expiredstate='false'
       #update original sale to reflect accept
@@ -440,9 +446,15 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
             if x['txid'] == TxHash:
               PropertyID=tempID
               if rawtx['result']['divisible']:
-                value=int(decimal.Decimal(x['grant'])*decimal.Decimal(1e8))
+                if 'grant' in x:
+                  value=int(decimal.Decimal(x['grant'])*decimal.Decimal(1e8))
+                elif 'revoke' in x:
+                  value=int(decimal.Decimal(x['revoke'])*decimal.Decimal(1e8))
               else:
-                value=int(x['grant'])
+                if 'grant' in x:
+                  value=int(x['grant'])
+                elif 'revoke' in x:
+                  value=int(x['revoke'])
               value_neg=(value*-1)
               break
         Ecosystem=getEcosystem(PropertyID) 
