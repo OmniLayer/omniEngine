@@ -30,10 +30,17 @@ def updateAccept(Buyer, Seller, AmountBought, PropertyIDBought, TxDBSerialNum):
     #user has paid for their accept (either partially or in full) update accordingly. 
 
     #find the accept data for updating
+    saletx=dbSelect("select max(oa.saletxdbserialnum) from offeraccepts as oa inner join activeoffers as ao "
+                    "on (oa.saletxdbserialnum=ao.createtxdbserialnum) where "
+                    "where oa.buyer=%s and ao.seller=%s and ao.propertyidselling=%s",
+                    (Buyer, Seller, PropertyIDBought) )
+
+    saletxdbserialnum=saletx[0][0]
+
     accept=dbSelect("select oa.amountaccepted, oa.amountpurchased, ao.amountaccepted, ao.amountavailable, ao.offerstate "
                     "from offeraccepts oa inner join activeoffers ao on (oa.saletxdbserialnum=ao.createtxdbserialnum) "
-                    "where oa.buyer=%s and ao.seller=%s and ao.propertyidselling=%s and ao.offerstate='active'", 
-                    (Buyer, Seller, PropertyIDBought) )
+                    "where oa.buyer=%s and ao.seller=%s and ao.propertyidselling=%s and ao.createtxdbserialnum=%s", 
+                    (Buyer, Seller, PropertyIDBought, saletxdbserialnum) )
 
     buyeraccepted = accept[0][0] - AmountBought
     buyerpurchased= AmountBought + accept[0][1]
@@ -47,8 +54,8 @@ def updateAccept(Buyer, Seller, AmountBought, PropertyIDBought, TxDBSerialNum):
     #update the buyers 'accept' in the offeraccepts table with the new data
     dbExecute("update offeraccepts as oa set amountaccepted=%s, amountpurchased=%s, dexstate=%s "
               "from activeoffers as ao where oa.saletxdbserialnum=ao.createtxdbserialnum "
-              "and oa.buyer=%s and ao.seller=%s and ao.propertyidselling=%s and ao.offerstate='active'", 
-              (buyeraccepted, buyerpurchased, dexstate, Buyer, Seller, PropertyIDBought) )
+              "and oa.buyer=%s and ao.seller=%s and ao.propertyidselling=%s and ao.createtxdbserialnum=%s", 
+              (buyeraccepted, buyerpurchased, dexstate, Buyer, Seller, PropertyIDBought, saletxdbserialnum) )
 
     selleraccepted= accept[0][2] - AmountBought
     selleravailable=accept[0][3]
@@ -61,8 +68,8 @@ def updateAccept(Buyer, Seller, AmountBought, PropertyIDBought, TxDBSerialNum):
     #update the sellers sale with the information from the buyers successful buy
     dbExecute("update activeoffers as ao set amountaccepted=%s, offerstate=%s, lasttxdbserialnum=%s "
               "from offeraccepts as oa where oa.saletxdbserialnum=ao.createtxdbserialnum "
-              "and oa.buyer=%s and ao.seller=%s and ao.propertyidselling=%s and ao.offerstate='active'",
-              (selleraccepted, offerstate, TxDBSerialNum, Buyer, Seller, PropertyIDBought) )
+              "and oa.buyer=%s and ao.seller=%s and ao.propertyidselling=%s and  ao.createtxdbserialnum=%s",
+              (selleraccepted, offerstate, TxDBSerialNum, Buyer, Seller, PropertyIDBought, saletxdbserialnum) )
 
 def offerAccept (rawtx, TxDBSerialNum, Block):
     BuyerAddress=rawtx['result']['sendingaddress']
