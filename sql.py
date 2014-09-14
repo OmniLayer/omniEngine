@@ -303,11 +303,17 @@ def updateBalance(Address, Protocol, PropertyID, Ecosystem, BalanceAvailable, Ba
                   (BalanceAvailable, BalanceReserved, BalanceAccepted, LastTxHash, Address, PropertyID, Protocol) )
 
 
-def insertProperty(rawtx, Protocol):
+def insertProperty(rawtx, Protocol, PropertyID=None):
     #only insert valid updates. ignore invalid data?
     if rawtx['result']['valid']:
-      PropertyID = rawtx['result']['propertyid']
+
+
       TxType = get_TxType(rawtx['result']['type'])
+      if TxType == 55 or TxType == 56:
+        pass
+        #use propertyid passed in for workaround
+      else=:
+        PropertyID = rawtx['result']['propertyid']
     
       PropertyDataJson = getproperty_MP(PropertyID)
       rawprop = PropertyDataJson['result'] 
@@ -454,7 +460,6 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
         else:
           value=int(rawtx['result']['amount'])
         value_neg=(value*-1)
-
 
 
       if type == 0:
@@ -704,7 +709,7 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
         if Valid:
           updateBalance(Address, Protocol, PropertyID, Ecosystem, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit, TxHash)
           #update smart property table
-          insertProperty(rawtx, Protocol)
+          insertProperty(rawtx, Protocol, PropertyID)
 
       elif type == 56:
         AddressRole = "issuer"
@@ -714,7 +719,7 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
         if Valid:
           updateBalance(Address, Protocol, PropertyID, Ecosystem, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit, TxHash)
           #update smart property table
-          insertProperty(rawtx, Protocol)
+          insertProperty(rawtx, Protocol, PropertyID)
 
       #write output of the address details
       dbExecute("insert into addressesintxs "
