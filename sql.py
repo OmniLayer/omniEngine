@@ -439,7 +439,7 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
                 value=int(x['grant'])
               value_neg=(value*-1)
               break
-        EcoSystem=getEcosystem(PropertyID) 
+        Ecosystem=getEcosystem(PropertyID) 
         Valid=rawtx['result']['valid']
 
 
