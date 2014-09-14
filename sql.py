@@ -59,10 +59,10 @@ def updateAccept(Buyer, Seller, AmountBought, PropertyIDBought, TxDBSerialNum):
       offerstate=accept[0][4]
 
     #update the sellers sale with the information from the buyers successful buy
-    dbExecute("update activeoffers as ao set amountaccepted=%s, offerstate=%s "
+    dbExecute("update activeoffers as ao set amountaccepted=%s, offerstate=%s, lasttxdbserialnum=%s "
               "from offeraccepts as oa where oa.saletxdbserialnum=ao.createtxdbserialnum "
               "and oa.buyer=%s and ao.seller=%s and ao.propertyidselling=%s",
-              (selleraccepted, offerstate, Buyer, Seller, PropertyIDBought) )
+              (selleraccepted, offerstate, TxDBSerialNum, Buyer, Seller, PropertyIDBought) )
 
 def offerAccept (rawtx, TxDBSerialNum, Block):
     BuyerAddress=rawtx['result']['sendingaddress']
