@@ -703,11 +703,11 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
 
       elif type == 56:
         AddressRole = "issuer"
-        BalanceAvailableCreditDebit=amount_neg
+        BalanceAvailableCreditDebit=value_neg
 
         #update balanace table
         if Valid:
-          updateBalance(Address, Protocol, PropertyID, Ecosystem, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDeb$
+          updateBalance(Address, Protocol, PropertyID, Ecosystem, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit, TxHash)
           #update smart property table
           insertProperty(rawtx, Protocol)
 
