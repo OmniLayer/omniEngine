@@ -38,7 +38,7 @@ def updateAccept(Buyer, Seller, AmountBought, PropertyIDBought, TxDBSerialNum):
     if buyeraccepted > 0:
       dexstate = 'paid-partial'
     else:
-      dexstate == 'paid-complete'
+      dexstate = 'paid-complete'
       #can we have a negative amount accepted?  bad math?
  
     #update the buyers 'accept' in the offeraccepts table with the new data
