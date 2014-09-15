@@ -112,6 +112,7 @@ else:
         print "Database rolledback, last successful block", (currentBlock -1)
       else:
         print "Problem rolling database back, check block data for", currentBlock
+      os.remove(lockFile)
       exit(1)
 
     #increment/process next block if everything went clean
