@@ -335,7 +335,7 @@ def insertProperty(rawtx, Protocol, PropertyID=None):
 
 
       TxType = get_TxType(rawtx['result']['type'])
-      if TxType == 55 or TxType == 56:
+      if TxType == 54 or TxType == 55 or TxType == 56:
         pass
         #use propertyid passed in for workaround
       else:
