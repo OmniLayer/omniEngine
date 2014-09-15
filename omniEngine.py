@@ -50,7 +50,7 @@ else:
         block_data_MP = {"error": None, "id": None, "result": []}
 
       #Status update every 10 blocks
-      if height % 10 == 0 or currentBlock == initialBlock:
+      if height % 10 == 0 or currentBlock:
         print "Block", height, "of", endBlock
 
       #Process Bitcoin Transacations
