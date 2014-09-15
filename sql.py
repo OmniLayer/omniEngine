@@ -335,10 +335,9 @@ def insertProperty(rawtx, Protocol, PropertyID=None):
 
 
       TxType = get_TxType(rawtx['result']['type'])
-      if TxType == 54 or TxType == 55 or TxType == 56:
-        pass
-        #use propertyid passed in for workaround
-      else:
+
+      #User PropertyID from tx unless specifically overwritten
+      if PropertyID == None:
         PropertyID = rawtx['result']['propertyid']
     
       PropertyDataJson = getproperty_MP(PropertyID)
@@ -455,34 +454,8 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
       Address = rawtx['result']['sendingaddress']
       #PropertyID=rawtx['result']['propertyid']
 
-      #temp workaround for missing rpc info
-      if type == 55 or type == 56:
-        allgrants=dbSelect("select propertyid from smartproperties as sp inner join transactions as tx on "
-                           "(sp.createtxdbserialnum = tx.txdbserialnum) where tx.txtype=54")
-        for prop in allgrants:
-          tempID=prop[0]
-          temptx=getgrants_MP(tempID)
-          for x in temptx['result']['issuances']:
-            if x['txid'] == TxHash:
-              PropertyID=tempID
-              if rawtx['result']['divisible']:
-                if 'grant' in x:
-                  value=int(decimal.Decimal(x['grant'])*decimal.Decimal(1e8))
-                elif 'revoke' in x:
-                  value=int(decimal.Decimal(x['revoke'])*decimal.Decimal(1e8))
-              else:
-                if 'grant' in x:
-                  value=int(x['grant'])
-                elif 'revoke' in x:
-                  value=int(x['revoke'])
-              value_neg=(value*-1)
-              break
-        Ecosystem=getEcosystem(PropertyID) 
-        Valid=rawtx['result']['valid']
-
-
       #Check if we are a DEx Purchase/payment. Format is a littler different and variables below would fail if we tried. 
-      if type != -22 and type != 55 and type != 56:
+      if type != -22:
         PropertyID= rawtx['result']['propertyid']
         Ecosystem=getEcosystem(PropertyID) 
         Valid=rawtx['result']['valid']
@@ -741,7 +714,7 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
         if Valid:
           updateBalance(Address, Protocol, PropertyID, Ecosystem, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit, TxHash)
           #update smart property table
-          insertProperty(rawtx, Protocol, PropertyID)
+          insertProperty(rawtx, Protocol)
 
       elif type == 56:
         AddressRole = "issuer"
@@ -751,7 +724,7 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
         if Valid:
           updateBalance(Address, Protocol, PropertyID, Ecosystem, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit, TxHash)
           #update smart property table
-          insertProperty(rawtx, Protocol, PropertyID)
+          insertProperty(rawtx, Protocol)
 
       #write output of the address details
       dbExecute("insert into addressesintxs "
