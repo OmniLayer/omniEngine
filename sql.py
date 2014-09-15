@@ -33,20 +33,22 @@ def updateAccept(Buyer, Seller, AmountBought, PropertyIDBought, TxDBSerialNum):
     #user has paid for their accept (either partially or in full) update accordingly. 
 
     #find the accept data for updating
-    saletx=dbSelect("select max(oa.saletxdbserialnum) from offeraccepts as oa inner join activeoffers as ao "
-                    "on (oa.saletxdbserialnum=ao.createtxdbserialnum) "
-                    "where oa.buyer=%s and ao.seller=%s and ao.propertyidselling=%s",
-                    (Buyer, Seller, PropertyIDBought) )
+    #saletx=dbSelect("select max(oa.saletxdbserialnum) from offeraccepts as oa inner join activeoffers as ao "
+    #                "on (oa.saletxdbserialnum=ao.createtxdbserialnum) "
+    #                "where oa.buyer=%s and ao.seller=%s and ao.propertyidselling=%s and oa.expiredstate=false",
+    #                (Buyer, Seller, PropertyIDBought) )
 
-    saletxdbserialnum=saletx[0][0]
+    #saletxdbserialnum=saletx[0][0]
 
-    accept=dbSelect("select oa.amountaccepted, oa.amountpurchased, ao.amountaccepted, ao.amountavailable, ao.offerstate "
+    accept=dbSelect("select oa.amountaccepted, oa.amountpurchased, ao.amountaccepted, ao.amountavailable, ao.offerstate, oa.saletxdbserialnum "
                     "from offeraccepts oa inner join activeoffers ao on (oa.saletxdbserialnum=ao.createtxdbserialnum) "
-                    "where oa.buyer=%s and ao.seller=%s and ao.propertyidselling=%s and ao.createtxdbserialnum=%s and oa.dexstate != 'invalid'", 
-                    (Buyer, Seller, PropertyIDBought, saletxdbserialnum) )
+                    "where oa.buyer=%s and ao.seller=%s and ao.propertyidselling=%s "
+                    "and oa.dexstate != 'invalid' and oa.dexstate != 'paid-complete' and oa.expiredstate=false", 
+                    (Buyer, Seller, PropertyIDBought) )
 
     buyeraccepted = accept[0][0] - AmountBought
     buyerpurchased= AmountBought + accept[0][1]
+    saletxdbserialnum = accept[0][5]
 
     if buyeraccepted > 0:
       dexstate = 'paid-partial'
