@@ -13,7 +13,7 @@ if os.path.isfile(lockFile):
 else:
   #start/create our lock file
   file = open(lockFile, "w")
-  file.write(now)
+  file.write(str(now))
   file.close() 
 
   #start db connection 
