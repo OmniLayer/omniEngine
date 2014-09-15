@@ -58,8 +58,9 @@ def updateAccept(Buyer, Seller, AmountBought, PropertyIDBought, TxDBSerialNum):
  
     #update the buyers 'accept' in the offeraccepts table with the new data
     dbExecute("update offeraccepts as oa set amountaccepted=%s, amountpurchased=%s, dexstate=%s "
-              "from activeoffers as ao where oa.saletxdbserialnum=ao.createtxdbserialnum "
-              "and oa.buyer=%s and ao.seller=%s and ao.propertyidselling=%s and ao.createtxdbserialnum=%s and oa.dexstate != 'invalid'", 
+              "from activeoffers as ao where oa.saletxdbserialnum=ao.createtxdbserialnum and oa.buyer=%s and ao.seller=%s "
+              "and ao.propertyidselling=%s and ao.createtxdbserialnum=%s and oa.dexstate != 'invalid' and "
+              "oa.dexstate != 'paid-complete' and oa.expiredstate=false", 
               (buyeraccepted, buyerpurchased, dexstate, Buyer, Seller, PropertyIDBought, saletxdbserialnum) )
 
     selleraccepted= accept[0][2] - AmountBought
