@@ -898,7 +898,7 @@ def gettxdbserialnum(txhash):
         return ROWS[0][0]
 
 def gettxhash(txdbserialnum):
-   ROWS=dbSelect("select txhash from transactions where txdbserialnum=%s",txdbserialnum)
+   ROWS=dbSelect("select txhash from transactions where txdbserialnum=%s",[txdbserialnum])
    if len(ROWS)==0:
         return -1
    else:
