@@ -6,13 +6,24 @@ lockFile='/tmp/omniEngine.lock'
 now=datetime.now()
 
 if os.path.isfile(lockFile):
+  #open the lock file to read pid and timestamp
   file=open(lockFile,'r')
-  print "Exiting: OmniEngine already running, Last parse started at ", file.read()
+  pid=file.readline()
+  timestamp=file.readline()
   file.close()
+  #check if the pid is still running
+  if os.path.exists("/proc/"+str(pid)):
+    print "Exiting: OmniEngine already running with pid:", pid, "  Last parse started at ", timestamp
+  else:
+    print "Stale OmniEngine found, no running pid:", pid, " Process last started at: ", timestamp
+    print "Removing lock file and waiting for restart"
+    os.remove(lockFile)
+  #exit program and wait for next run
   exit(1)
 else:
   #start/create our lock file
   file = open(lockFile, "w")
+  file.write(str(os.getpid()))
   file.write(str(now))
   file.close() 
 
