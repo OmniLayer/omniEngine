@@ -1,9 +1,84 @@
 import datetime
 import decimal
+import math
 import sys
 from rpcclient import *
 from mscutils import *
 from sqltools import *
+
+
+def keyByAddress(item):
+    return item[0]
+
+def keyByAmount(item):
+    return item[1]
+
+def sortSTO(list):
+    #First,  sort by Address alphabetically
+    list=sorted(list, key=keyByAddress)
+    #Second, sort by the amount. Largest to smallest
+    list=sorted(list, key=keyByAmount, reverse=True)
+    return list
+
+def sentToOwners(Sender, Amount, PropertyID, Protocol, TxDBSerialNum):
+
+    #get list of owners sorted by most held to least held and by address alphabetically
+    owners=sortSTO(dbSelect("select address, balanceavailable from addressbalances where balanceavailable > 0 "
+                            "and address != %s and propertyid=%s", (Sender, PropertyID))) 
+
+    #find out how much is actually owned/held in total 
+    toDistribute=Amount
+    sumTotal=sum([holder[1] for holder in owners])
+
+    #prime first position and set role
+    AddressTxIndex=1
+    AddressRole='payee'
+    Ecosystem=getEcosystem(PropertyID)
+    LastHash=gettxhash(TxDBSerialNum)
+
+    #process all holders from the sorted ownerslist
+    for holder in owners:
+      #who gets it
+      Address=holder[0]
+
+      #calculate percentage owed to the holder rounding up always
+      amountToSend=int( math.ceil((holder[1]/sumTotal) * Amount))
+
+      #if we sent this amount how much will we have left to send after (used to validate later)
+      remaining = toDistribute-amountToSend
+
+      #make sure its a valid amount to send
+      if amountToSend > 0:
+         #make sure amountToSend is actually available
+         if remaining >= 0:
+           #send/credit amountToSend to the holder
+           amountSent=amountToSend
+         else:
+           #send/credit whatever is left (toDistribute) to the holder
+           amountSent=toDistribute
+
+         #Insert the amountSent record into the addressesintx table?
+         dbExecute("insert into addressesintxs "
+                  "(Address, PropertyID, Protocol, TxDBSerialNum, AddressTxIndex, AddressRole, BalanceAvailableCreditDebit)"
+                  "values(%s, %s, %s, %s, %s, %s, %s, %s, %s)",
+                  (Address, PropertyID, Protocol, TxDBSerialNum, AddressTxIndex, AddressRole, amountSent))
+         #update balance table
+         updateBalance(Address, Protocol, PropertyID, Ecosystem, amountSent, None, None, LastHash)
+
+         #make sure we keep track of how much was sent/left to send
+         toDistribute-=amountSent
+
+      #/end if amountToSend > 0
+
+      #relative position of the recipiant
+      AddressTxIndex+=1
+
+      #no money left to distribute. Done
+      if toDistribute == 0:
+        break
+
+    #/end for holder in owners
+
 
 def expireAccepts(Block):
     #find the offers that are ready to expire and credit the 'accepted' amount back to the sellers sale
@@ -491,8 +566,10 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
 
       #elif type == 3:
         #Send To Owners
-	#Do something smart
-        #return
+        if Valid:
+           sentToOwners(Address, value, PropertyID, Protocol, TxDBSerialNum)
+        #Debit the sender
+        BalanceAvailableCreditDebit=value_neg
 
       elif type == 20:
         #DEx Sell Offer
@@ -816,6 +893,13 @@ def insertBlock(block_data, Protocol, block_height, txcount):
 def gettxdbserialnum(txhash):
     ROWS=dbSelect("select txdbserialnum from transactions where txhash=%s",[txhash])
     if len(ROWS)==0:
+        return -1
+    else:
+        return ROWS[0][0]
+
+def gettxhash(txdbserialnum):
+   ROWS=dbSelect("select txhash from transactions where txdbserialnum=%s",txdbserialnum)
+   if len(ROWS)==0:
         return -1
     else:
         return ROWS[0][0]
