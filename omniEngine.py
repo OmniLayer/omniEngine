@@ -55,16 +55,17 @@ else:
 
       #Process Bitcoin Transacations
       Protocol="Bitcoin"
-      #Prime tx sequence number based on number of tx
-      y=len(block_data['result']['tx'])
-      print  y, "BTC tx"
-      x=1
+
+      #Find number of tx's in block
+      txcount=len(block_data['result']['tx'])
+      print  txcount, "BTC tx"
 
       #Write the blocks table row
-      insertBlock(block_data, Protocol, height, x)
+      insertBlock(block_data, Protocol, height, txcount)
 
-      #btx tx are returned in reverse order, so flip them to process
-      for tx in reversed(block_data['result']['tx']):
+      #count position in block
+      x=1
+      for tx in block_data['result']['tx']:
         #rawtx=getrawtransaction(tx)
         #serial=insertTx(rawtx, Protocol, height, x, TxDBSerialNum)
         #serial=insertTx(rawtx, Protocol, height, x)
@@ -77,13 +78,15 @@ else:
 
       #Process Mastercoin Transacations (if any)
       Protocol="Mastercoin"
-      #prime tx sequence number based on number of msc tx
+
+      #Find number of msc tx
       y=len(block_data_MP['result'])
       if y != 0:
         print  y, "MSC tx"
 
+      #count position in block
       x=1
-      #MP tx are returned in order
+      #MP tx processing
       for tx in block_data_MP['result']:
         rawtx=gettransaction_MP(tx)
   
