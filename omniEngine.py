@@ -8,7 +8,7 @@ now=datetime.now()
 if os.path.isfile(lockFile):
   #open the lock file to read pid and timestamp
   file=open(lockFile,'r')
-  pid=file.readline()
+  pid=file.readline().replace("\n", "")
   timestamp=file.readline()
   file.close()
   #check if the pid is still running
