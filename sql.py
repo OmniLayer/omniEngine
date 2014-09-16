@@ -60,7 +60,7 @@ def sentToOwners(Sender, Amount, PropertyID, Protocol, TxDBSerialNum):
          #Insert the amountSent record into the addressesintx table?
          dbExecute("insert into addressesintxs "
                   "(Address, PropertyID, Protocol, TxDBSerialNum, AddressTxIndex, AddressRole, BalanceAvailableCreditDebit)"
-                  "values(%s, %s, %s, %s, %s, %s, %s, %s, %s)",
+                  "values(%s, %s, %s, %s, %s, %s, %s)",
                   (Address, PropertyID, Protocol, TxDBSerialNum, AddressTxIndex, AddressRole, amountSent))
          #update balance table
          updateBalance(Address, Protocol, PropertyID, Ecosystem, amountSent, None, None, LastHash)
