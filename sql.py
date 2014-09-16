@@ -31,7 +31,7 @@ def sentToOwners(Sender, Amount, PropertyID, Protocol, TxDBSerialNum):
     sumTotal=sum([holder[1] for holder in owners])
 
     #prime first position and set role
-    AddressTxIndex=1
+    AddressTxIndex=0
     AddressRole='payee'
     Ecosystem=getEcosystem(PropertyID)
     LastHash=gettxhash(TxDBSerialNum)
