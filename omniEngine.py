@@ -63,6 +63,7 @@ else:
       #Write the blocks table row
       insertBlock(block_data, Protocol, height, x)
 
+      #btx tx are returned in reverse order, so flip them to process
       for tx in reversed(block_data['result']['tx']):
         #rawtx=getrawtransaction(tx)
         #serial=insertTx(rawtx, Protocol, height, x, TxDBSerialNum)
@@ -82,7 +83,8 @@ else:
         print  y, "MSC tx"
 
       x=1
-      for tx in reversed(block_data_MP['result']):
+      #MP tx are returned in order
+      for tx in block_data_MP['result']:
         rawtx=gettransaction_MP(tx)
   
         #Process the bare tx and insert it into the db
