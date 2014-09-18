@@ -597,7 +597,7 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
       #elif type == 2:
 	#Restricted Send does nothing yet?
 
-      #elif type == 3:
+      elif type == 3:
         #Send To Owners
         if Valid:
            sentToOwners(Address, value, PropertyID, Protocol, TxDBSerialNum)
