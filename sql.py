@@ -405,10 +405,43 @@ def updateBalance(Address, Protocol, PropertyID, Ecosystem, BalanceAvailable, Ba
                   (BalanceAvailable, BalanceReserved, BalanceAccepted, LastTxHash, Address, PropertyID, Protocol) )
 
 
+def expireCrowdsales(BlockTime, Protocol):
+    #find the offers that are ready to expire and credit the 'accepted' amount back to the sellers sale
+    expiring=dbSelect("select propertyid from smartproperties as sp inner join transactions as tx on "
+                      "(sp.createtxdbserialnum=tx.txdbserialnum) where tx.txtype=51 and "
+                      "cast(propertydata::json->>'endedtime' as numeric) < %s and propertydata::json->>'active'='true'", [BlockTime])
+
+    #Process all the crowdsales that should have expired by now
+    for property in expiring:
+      updateProperty(property[0], Protocol)
+
+
+def updateProperty(PropertyID, Protocol, LastTxDBSerialNum=None):
+    PropertyDataJson=getproperty_MP(PropertyID)
+    rawtx=gettransaction_MP(PropertyDataJson['result']['creationtxid'])
+    TxType = get_TxType(rawtx['result']['type'])
+    rawprop = PropertyDataJson['result']
+
+    if TxType == 51 or TxType == 53:
+      #get additional json info for crowdsales
+       rawprop = dict(rawprop.items() + getcrowdsale_MP(PropertyID)['result'].items())
+    elif TxType > 53 and TxType < 57:
+       rawprop = dict(rawprop.items() + getgrants_MP(PropertyID)['result'].items())
+
+    #if we where called with a tx update that otherwise jsut update json (expired by time update)
+    if LastTxDBSerialNum == None:
+      dbExecute("update smartproperties set PropertyData=%s "
+                "where Protocol=%s and PropertyID=%s",
+                (json.dumps(rawprop), Protocol, PropertyID))
+    else:
+      dbExecute("update smartproperties set LastTxDBSerialNum=%s, PropertyData=%s "
+                "where Protocol=%s and PropertyID=%s",
+                (LastTxDBSerialNum, json.dumps(rawprop), Protocol, PropertyID))
+
+
 def insertProperty(rawtx, Protocol, PropertyID=None):
     #only insert valid updates. ignore invalid data?
     if rawtx['result']['valid']:
-
 
       TxType = get_TxType(rawtx['result']['type'])
 
@@ -419,7 +452,7 @@ def insertProperty(rawtx, Protocol, PropertyID=None):
       PropertyDataJson = getproperty_MP(PropertyID)
       rawprop = PropertyDataJson['result'] 
 
-      if TxType == 51:
+      if TxType == 51 or TxType == 53:
         #get additional json info for crowdsales
         rawprop = dict(rawprop.items() + getcrowdsale_MP(PropertyID)['result'].items())        
       elif TxType > 53 and TxType < 57:
@@ -710,9 +743,6 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
         insertProperty(rawtx, Protocol)
 
       elif type == -51:
-        #Participating in crowdsale
-        dbExecute("insert into PropertyHistory (Protocol, PropertyID, TxDBSerialNum) Values(%s, %s, %s)", (Protocol, PropertyID, TxDBSerialNum))
-
         #First deduct the amount the participant sent to 'buyin'  (BTC Amount might need to be excluded?)
         AddressRole = 'participant'
         BalanceAvailableCreditDebit = value_neg
@@ -721,7 +751,6 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
                   "(Address, PropertyID, Protocol, TxDBSerialNum, AddressTxIndex, AddressRole, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit)"
                   "values(%s, %s, %s, %s, %s, %s, %s, %s, %s)",
                   (Address, PropertyID, Protocol, TxDBSerialNum, AddressTxIndex, AddressRole, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit))
-
         if Valid:
           updateBalance(Address, Protocol, PropertyID, Ecosystem, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit, TxHash)
 
@@ -733,36 +762,36 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
                   "(Address, PropertyID, Protocol, TxDBSerialNum, AddressTxIndex, AddressRole, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit)"
                   "values(%s, %s, %s, %s, %s, %s, %s, %s, %s)",
                   (Address, PropertyID, Protocol, TxDBSerialNum, AddressTxIndex, AddressRole, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit))
-
         if Valid:
           updateBalance(Address, Protocol, PropertyID, Ecosystem, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit, TxHash)
 
         #Now start updating the crowdsale propertyid balance info
         PropertyID = rawtx['result']['purchasedpropertyid']
 
-        #add additional functionalty to check/credit the issue when there is a % bonus to issuer
-        cstx = getcrowdsale_MP(PropertyID)
-        if cstx['result']['percenttoissuer'] > 0:
-          if getdivisible_MP(PropertyID):
-            BalanceAvailableCreditDebit = int(decimal.Decimal(rawtx['result']['amount'])*decimal.Decimal(cstx['result']['tokensperunit'])*(decimal.Decimal(cstx['result']['percenttoissuer'])/decimal.Decimal(100))*decimal.Decimal(1e8))
-          else:  
-            BalanceAvailableCreditDebit = int(decimal.Decimal(rawtx['result']['amount'])*decimal.Decimal(cstx['result']['tokensperunit'])*decimal.Decimal((cstx['result']['percenttoissuer'])/decimal.Decimal(100)))
-        dbExecute("insert into addressesintxs "
-                  "(Address, PropertyID, Protocol, TxDBSerialNum, AddressTxIndex, AddressRole, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit)"
-                  "values(%s, %s, %s, %s, %s, %s, %s, %s, %s)",
-                  (Address, PropertyID, Protocol, TxDBSerialNum, AddressTxIndex, AddressRole, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit))
-
-        if Valid:
-          updateBalance(Address, Protocol, PropertyID, Ecosystem, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit, TxHash)
-
-        #now update with crowdsale specific property details
-        Address = rawtx['result']['sendingaddress']
         if getdivisible_MP(PropertyID):
-          value=int(decimal.Decimal(rawtx['result']['purchasedtokens'])*decimal.Decimal(1e8))
-        else:
-          value=int(rawtx['result']['purchasedtokens'])
-        value_neg=(value*-1)
-        BalanceAvailableCreditDebit=value
+          IssuerCreditDebit = int(decimal.Decimal(rawtx['result']['issuertokens'])*decimal.Decimal(1e8))
+          BalanceAvailableCreditDebit = int(decimal.Decimal(rawtx['result']['purchasedtokens'])*decimal.Decimal(1e8))
+        else:  
+          IssuerCreditDebit = int(decimal.Decimal(rawtx['result']['issuertokens']))
+          BalanceAvailableCreditDebit = int(rawtx['result']['purchasedtokens'])
+
+        #If there is an amount to issuer > 0 insert into db otherwise skip
+        if IssuerCreditDebit > 0:
+          dbExecute("insert into addressesintxs "
+                    "(Address, PropertyID, Protocol, TxDBSerialNum, AddressTxIndex, AddressRole, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit)"
+                    "values(%s, %s, %s, %s, %s, %s, %s, %s, %s)",
+                    (Address, PropertyID, Protocol, TxDBSerialNum, AddressTxIndex, AddressRole, IssuerCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit))
+          if Valid:
+            updateBalance(Address, Protocol, PropertyID, Ecosystem, IssuerCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit, TxHash)
+
+        #Participating in crowdsale, update smartproperty history table with the propertyid bought
+        dbExecute("insert into PropertyHistory (Protocol, PropertyID, TxDBSerialNum) Values(%s, %s, %s)", (Protocol, PropertyID, TxDBSerialNum))
+        #Trigger update smartproperty json data 
+        updateProperty(PropertyID, Protocol, TxDBSerialNum)
+
+        #now set the final variables to update addressesintxs/addressbalances with participant crowdsale specific property details
+        Address = rawtx['result']['sendingaddress']
+        AddressRole = 'participant'
  
       #elif type == 52:
         #promote crowdsale does what?
@@ -770,39 +799,39 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
       elif type == 53:
         #Close Crowdsale
         AddressRole = "issuer"
-        BalanceAvailableCreditDebit=0
+        BalanceAvailableCreditDebit=None
 
-        if Valid:
-          #update smart property table
-          insertProperty(rawtx, Protocol)
+        #update smart property table
+        insertProperty(rawtx, Protocol)
 
       elif type == 54:
         AddressRole = "issuer"
         BalanceAvailableCreditDebit=0
 
-        if Valid:
-          #update smart property table
-          insertProperty(rawtx, Protocol)
+        #update smart property table
+        insertProperty(rawtx, Protocol)
 
       elif type == 55:
         AddressRole = "issuer"
         BalanceAvailableCreditDebit=value
 
+        #update smart property table
+        insertProperty(rawtx, Protocol)
+
         #update balanace table
         if Valid:
           updateBalance(Address, Protocol, PropertyID, Ecosystem, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit, TxHash)
-          #update smart property table
-          insertProperty(rawtx, Protocol)
 
       elif type == 56:
         AddressRole = "issuer"
         BalanceAvailableCreditDebit=value_neg
 
+        #update smart property table
+        insertProperty(rawtx, Protocol)
+
         #update balanace table
         if Valid:
           updateBalance(Address, Protocol, PropertyID, Ecosystem, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit, TxHash)
-          #update smart property table
-          insertProperty(rawtx, Protocol)
 
       #write output of the address details
       dbExecute("insert into addressesintxs "

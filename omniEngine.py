@@ -90,6 +90,9 @@ else:
       #Process Mastercoin Transacations (if any)
       Protocol="Mastercoin"
 
+      #check any active crowdsales and update json if the endtime has passed (based on block time)
+      expireCrowdsales(block_data['result']['time'], Protocol)
+
       #Find number of msc tx
       y=len(block_data_MP['result'])
       if y != 0:
