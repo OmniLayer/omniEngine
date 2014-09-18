@@ -39,6 +39,9 @@ else:
   #Find most recent block mastercore has available
   endBlock=getinfo()['result']['blocks']
 
+  if currentBlock > endBlock:
+    print "Already up to date"
+
   #get highest TxDBSerialNum (number of rows in the Transactions table)
   TxDBSerialNum=dbSelect('select last_value from transactions_txdbserialnum_seq',None)[0][0]+1
   #21479844 btc tx's before block 249948
