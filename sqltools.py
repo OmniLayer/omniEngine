@@ -23,7 +23,6 @@ def sql_connect():
     except IOError as e:
       response='{"error": "Unable to load sql config file. Please Notify Site Administrator"}'
       return response
-
     try:     
         con = psycopg2.connect(database=DBNAME, user=DBUSER, password=DBPASS, host=DBHOST, port=DBPORT)
         cur = con.cursor(cursor_factory=psycopg2.extras.DictCursor)
@@ -33,14 +32,16 @@ def sql_connect():
         sys.exit(1)
 
 def dbInit():
-    global dbc
     #Prime the DB Connection, it can be restarted in the select/execute statement if it gets closed prematurely. 
-    dbc=sql_connect()
-
+    global dbc
+    try:
+      if dbc.closed:
+        dbc=sql_connect()
+    except NameError:
+      dbc=sql_connect()
 
 def dbSelect(statement, values=None):
-    if dbc.closed:
-        dbInit()
+    dbInit()
     try:
         dbc.execute(statement, values)
         ROWS = dbc.fetchall()
@@ -50,8 +51,7 @@ def dbSelect(statement, values=None):
         sys.exit(1)
 
 def dbExecute(statement, values=None):
-    if dbc.closed:
-        dbInit()
+    dbInit()
     try:
         dbc.execute(statement, values)
     except psycopg2.DatabaseError, e:
@@ -72,3 +72,7 @@ def dbRollback():
     else:
        return 0
 
+def decimal_default(obj):
+    if isinstance(obj, decimal.Decimal):
+        return float(obj)
+    raise TypeError

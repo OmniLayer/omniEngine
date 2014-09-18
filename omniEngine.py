@@ -27,9 +27,6 @@ else:
   file.write(str(now))
   file.close() 
 
-  #start db connection 
-  dbInit()
-
   #block with first MP transaction
   firstMPtxBlock=249948
 
