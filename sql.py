@@ -343,6 +343,86 @@ def resetbalances_MP():
           dbExecute("UPDATE AddressBalances set BalanceAvailable=%s, BalanceReserved=%s where address=%s and PropertyID=%s", 
                     (BalanceAvailable, BalanceReserved, Address, PropertyID) )
 
+def checkbalances_MP():
+    #for now sync / reset balance data from mastercore balance list
+    Protocol="Mastercoin"
+
+    #get DEx sales to process 'accepted' amounts
+    DExSales=getactivedexsells_MP()
+
+    #Find all known properties in mastercore
+    for property in listproperties_MP()['result']:
+      PropertyID = property['propertyid']
+      Ecosystem=getEcosystem(PropertyID)
+      #if PropertyID == 2 or ( PropertyID >= 2147483651 and PropertyID <= 4294967295 ):
+      #  Ecosystem= "Test"
+      #else:
+      #  Ecosystem= "Production"
+      bal_data=getallbalancesforid_MP(PropertyID)
+
+      #Check each address and get balance info
+      for addr in bal_data['result']:
+        Address=addr['address']
+
+        #find reserved balance (if exists)
+        for x in DExSales['result']:
+          if x['seller'] == Address:
+            accept = x['amountaccepted']
+            break
+          else:
+            accept=0
+
+        if property['divisible']:
+          BalanceAvailable=int(decimal.Decimal(addr['balance'])*decimal.Decimal(1e8))
+          BalanceReserved=int(decimal.Decimal(addr['reserved'])*decimal.Decimal(1e8))
+          BalanceAccepted=int(decimal.Decimal(accept)*decimal.Decimal(1e8))
+        else:
+          BalanceAvailable=int(addr['balance'])
+          BalanceReserved=int(addr['reserved'])
+          BalanceAccepted=int(decimal.Decimal(accept))
+
+        rows=dbSelect("select address,BalanceAvailable,balancereserved,balanceaccepted from AddressBalances "
+                      "where address=%s and Protocol=%s and propertyid=%s",
+                      (Address, Protocol, PropertyID) )
+
+        #check db for None/Null returns and convert to match core 0 output
+        if rows[0][1] == None:
+          dbBalanceAvailable = 0
+        else:
+          dbBalanceAvailable = rows[0][1]
+
+        if rows[0][2] == None:
+          dbBalanceReserved = 0
+        else:
+          dbBalanceReserved = rows[0][2]
+
+        if rows[0][3] == None:
+          dbBalanceAccepted = 0
+        else:
+          dbBalanceAccepted = rows[0][3]
+
+        retval={}
+        if len(rows) == 0:
+          #address not in database, insert
+          retval[PropertyID] ={'Address':address, 'bal':{'Status': 'Missing', 'PropertyID': PropertyID, 'BalanceAvailable':BalanceAvailable,'BalanceReserved': BalanceReserved,'BalanceAccepted':BalanceAccepted }}
+        else:
+          #address in database update
+          if BalanceAvailable != dbBalanceAvailable:
+            retval[PropertyID] ={'Address':Address, 'bal':{'Status': 'Mismatch', 'PropertyID': PropertyID, 'BalanceAvailable':BalanceAvailable, 'dbBalanceAvailable': dbBalanceAvailable, 
+                                'dbBalanceReserved': dbBalanceReserved, 'BalanceReserved': BalanceReserved,
+                                'dbBalanceAccepted':dbBalanceAccepted, 'BalanceAccepted':BalanceAccepted }}
+          elif BalanceReserved != dbBalanceReserved:
+            retval[PropertyID] ={'Address':Address, 'bal':{'Status': 'Mismatch', 'PropertyID': PropertyID, 'BalanceAvailable':BalanceAvailable, 'dbBalanceAvailable': dbBalanceAvailable,
+                                'dbBalanceReserved': dbBalanceReserved, 'BalanceReserved': BalanceReserved,
+                                'dbBalanceAccepted':dbBalanceAccepted, 'BalanceAccepted':BalanceAccepted }}
+          elif BalanceAccepted != dbBalanceAccepted:
+            retval[PropertyID] ={'Address':Address, 'bal':{'Status': 'Mismatch', 'PropertyID': PropertyID, 'BalanceAvailable':BalanceAvailable, 'dbBalanceAvailable': dbBalanceAvailable,
+                                'dbBalanceReserved': dbBalanceReserved, 'BalanceReserved': BalanceReserved,
+                                'dbBalanceAccepted':dbBalanceAccepted, 'BalanceAccepted':BalanceAccepted }}
+    return retval
+
+
+
 def updateBalance(Address, Protocol, PropertyID, Ecosystem, BalanceAvailable, BalanceReserved, BalanceAccepted, LastTxHash):
     
       rows=dbSelect("select BalanceAvailable, BalanceReserved, BalanceAccepted "
