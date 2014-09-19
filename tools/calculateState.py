@@ -1,7 +1,7 @@
 from sql import *
 
 txs=dbSelect("select tx.txblocknumber,tx.txdbserialnum,atx.address,atx.propertyid,atx.balanceavailablecreditdebit from transactions tx, addressesintxs atx "
-             "where tx.txdbserialnum=atx.txdbserialnum and tx.txtype =3 and atx.addressrole='sender' and txstate='valid' order by txdbserialnum")
+             "where tx.txdbserialnum=atx.txdbserialnum and tx.txtype =3 and atx.addressrole='sender' and txstate='valid' order by txdbserialnum desc")
 
 Protocol="Mastercoin"
 
@@ -64,7 +64,7 @@ for x in txs:
     balance[Address]={'available': available, 'reserved': reserved, 'accepted': accepted}
 
   #Purge the sender from our list for final conversion
-  balance.pop(Address, None)
+  balance.pop(Sender, None)
 
   owners=[]
   #Now dump the updated addressbalance to a list for sendToOwners call to use

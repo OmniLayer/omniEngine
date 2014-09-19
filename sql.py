@@ -354,6 +354,8 @@ def checkbalances_MP():
     #get DEx sales to process 'accepted' amounts
     DExSales=getactivedexsells_MP()
 
+    retval={}
+
     #Find all known properties in mastercore
     for property in listproperties_MP()['result']:
       PropertyID = property['propertyid']
@@ -370,7 +372,7 @@ def checkbalances_MP():
 
         #find reserved balance (if exists)
         for x in DExSales['result']:
-          if x['seller'] == Address:
+          if x['seller'] == Address and x['propertyid']==PropertyID:
             accept = x['amountaccepted']
             break
           else:
@@ -405,24 +407,33 @@ def checkbalances_MP():
         else:
           dbBalanceAccepted = rows[0][3]
 
-        retval={}
+        item={}
         if len(rows) == 0:
           #address not in database, insert
-          retval[PropertyID] ={'Address':address, 'bal':{'Status': 'Missing', 'PropertyID': PropertyID, 'BalanceAvailable':BalanceAvailable,'BalanceReserved': BalanceReserved,'BalanceAccepted':BalanceAccepted }}
+          item[PropertyID] ={'Address':address, 'bal':{'Status': 'Missing', 'PropertyID': PropertyID, 'BalanceAvailable':BalanceAvailable,'BalanceReserved': BalanceReserved,'BalanceAccepted':BalanceAccepted }}
+          #add the missing/incorrect item to our list to return
+          retval.update(item) 
         else:
           #address in database update
           if BalanceAvailable != dbBalanceAvailable:
-            retval[PropertyID] ={'Address':Address, 'bal':{'Status': 'Mismatch', 'PropertyID': PropertyID, 'BalanceAvailable':BalanceAvailable, 'dbBalanceAvailable': dbBalanceAvailable, 
+            item[PropertyID] ={'Address':Address, 'bal':{'Status': 'Mismatch', 'PropertyID': PropertyID, 'BalanceAvailable':BalanceAvailable, 'dbBalanceAvailable': dbBalanceAvailable, 
                                 'dbBalanceReserved': dbBalanceReserved, 'BalanceReserved': BalanceReserved,
                                 'dbBalanceAccepted':dbBalanceAccepted, 'BalanceAccepted':BalanceAccepted }}
+            #add the missing/incorrect item to our list to return
+            retval.update(item) 
           elif BalanceReserved != dbBalanceReserved:
-            retval[PropertyID] ={'Address':Address, 'bal':{'Status': 'Mismatch', 'PropertyID': PropertyID, 'BalanceAvailable':BalanceAvailable, 'dbBalanceAvailable': dbBalanceAvailable,
+            item[PropertyID] ={'Address':Address, 'bal':{'Status': 'Mismatch', 'PropertyID': PropertyID, 'BalanceAvailable':BalanceAvailable, 'dbBalanceAvailable': dbBalanceAvailable,
                                 'dbBalanceReserved': dbBalanceReserved, 'BalanceReserved': BalanceReserved,
                                 'dbBalanceAccepted':dbBalanceAccepted, 'BalanceAccepted':BalanceAccepted }}
+            #add the missing/incorrect item to our list to return
+            retval.update(item) 
           elif BalanceAccepted != dbBalanceAccepted:
-            retval[PropertyID] ={'Address':Address, 'bal':{'Status': 'Mismatch', 'PropertyID': PropertyID, 'BalanceAvailable':BalanceAvailable, 'dbBalanceAvailable': dbBalanceAvailable,
+            item[PropertyID] ={'Address':Address, 'bal':{'Status': 'Mismatch', 'PropertyID': PropertyID, 'BalanceAvailable':BalanceAvailable, 'dbBalanceAvailable': dbBalanceAvailable,
                                 'dbBalanceReserved': dbBalanceReserved, 'BalanceReserved': BalanceReserved,
                                 'dbBalanceAccepted':dbBalanceAccepted, 'BalanceAccepted':BalanceAccepted }}
+            #add the missing/incorrect item to our list to return
+            retval.update(item) 
+
     return retval
 
 
