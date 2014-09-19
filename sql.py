@@ -438,7 +438,7 @@ def checkbalances_MP():
 
 
 
-def updateBalance(Address, Protocol, PropertyID, Ecosystem, BalanceAvailable, BalanceReserved, BalanceAccepted, LastTxHash):
+def updateBalance(Address, Protocol, PropertyID, Ecosystem, BalanceAvailable, BalanceReserved, BalanceAccepted, LastTxDBSerialNum):
     
       rows=dbSelect("select BalanceAvailable, BalanceReserved, BalanceAccepted "
                     "from AddressBalances where address=%s and Protocol=%s and propertyid=%s",
@@ -462,9 +462,9 @@ def updateBalance(Address, Protocol, PropertyID, Ecosystem, BalanceAvailable, Ba
 
         #address not in database, insert
         dbExecute("INSERT into AddressBalances "
-                    "(Address, Protocol, PropertyID, Ecosystem, BalanceAvailable, BalanceReserved, BalanceAccepted, LastTxHash) "
+                    "(Address, Protocol, PropertyID, Ecosystem, BalanceAvailable, BalanceReserved, BalanceAccepted, LastTxDBSerialNum) "
                     "VALUES (%s,%s,%s,%s,%s,%s,%s, %s)",
-                    (Address, Protocol, PropertyID, Ecosystem, BalanceAvailable, BalanceReserved, BalanceAccepted, LastTxHash) )
+                    (Address, Protocol, PropertyID, Ecosystem, BalanceAvailable, BalanceReserved, BalanceAccepted, LastTxDBSerialNum) )
       else:
         #address in database update
         #check if null values and default to no change on update
@@ -496,8 +496,8 @@ def updateBalance(Address, Protocol, PropertyID, Ecosystem, BalanceAvailable, Ba
           except (ValueError, TypeError):
             BalanceAccepted=0
 
-        dbExecute("UPDATE AddressBalances set BalanceAvailable=%s, BalanceReserved=%s, BalanceAccepted=%s, LastTxHash=%s where address=%s and PropertyID=%s and Protocol=%s",
-                  (BalanceAvailable, BalanceReserved, BalanceAccepted, LastTxHash, Address, PropertyID, Protocol) )
+        dbExecute("UPDATE AddressBalances set BalanceAvailable=%s, BalanceReserved=%s, BalanceAccepted=%s, LastTxDBSerialNum=%s where address=%s and PropertyID=%s and Protocol=%s",
+                  (BalanceAvailable, BalanceReserved, BalanceAccepted, LastTxDBSerialNum, Address, PropertyID, Protocol) )
 
 
 def expireCrowdsales(BlockTime, Protocol):
