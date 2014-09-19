@@ -20,11 +20,15 @@ def sortSTO(list):
     list=sorted(list, key=keyByAmount, reverse=True)
     return list
 
-def sentToOwners(Sender, Amount, PropertyID, Protocol, TxDBSerialNum):
+def sendToOwners(Sender, Amount, PropertyID, Protocol, TxDBSerialNum, owners=None):
 
-    #get list of owners sorted by most held to least held and by address alphabetically
-    owners=sortSTO(dbSelect("select address, balanceavailable from addressbalances where balanceavailable > 0 "
-                            "and address != %s and propertyid=%s", (Sender, PropertyID))) 
+    if owners == None:
+      #get list of owners sorted by most held to least held and by address alphabetically
+      owners=sortSTO(dbSelect("select address, balanceavailable from addressbalances where balanceavailable > 0 "
+                              "and address != %s and propertyid=%s", (Sender, PropertyID)))
+    else:
+      #use the addresslist sent to us
+      owners=sortSTO(owners)
 
     #find out how much is actually owned/held in total 
     toDistribute=Amount
@@ -680,7 +684,7 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
       elif type == 3:
         #Send To Owners
         if Valid:
-           sentToOwners(Address, value, PropertyID, Protocol, TxDBSerialNum)
+           sendToOwners(Address, value, PropertyID, Protocol, TxDBSerialNum)
         #Debit the sender
         BalanceAvailableCreditDebit=value_neg
 
