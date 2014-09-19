@@ -318,7 +318,7 @@ def resetbalances_MP():
 
         #find reserved balance (if exists)
         for x in DExSales['result']:
-          if x['seller'] == Address:
+          if x['seller'] == Address and x['propertyid']==PropertyID:
             accept = x['amountaccepted']
             break
           else:
@@ -339,13 +339,13 @@ def resetbalances_MP():
         if len(rows) == 0:
           #address not in database, insert
           dbExecute("INSERT into AddressBalances "
-                    "(Address, Protocol, PropertyID, Ecosystem, BalanceAvailable, BalanceReserved) "
-                    "VALUES (%s,%s,%s,%s,%s,%s)",
-                    (Address, Protocol, PropertyID, Ecosystem, BalanceAvailable, BalanceReserved) )
+                    "(Address, Protocol, PropertyID, Ecosystem, BalanceAvailable, BalanceReserved, BalanceAccepted) "
+                    "VALUES (%s,%s,%s,%s,%s,%s,%s)",
+                    (Address, Protocol, PropertyID, Ecosystem, BalanceAvailable, BalanceReserved, BalanceAccepted) )
         else:
           #address in database update
-          dbExecute("UPDATE AddressBalances set BalanceAvailable=%s, BalanceReserved=%s where address=%s and PropertyID=%s", 
-                    (BalanceAvailable, BalanceReserved, Address, PropertyID) )
+          dbExecute("UPDATE AddressBalances set BalanceAvailable=%s, BalanceReserved=%s, BalanceAccepted=%s where address=%s and PropertyID=%s", 
+                    (BalanceAvailable, BalanceReserved, BalanceAccepted, Address, PropertyID) )
 
 def checkbalances_MP():
     #for now sync / reset balance data from mastercore balance list
