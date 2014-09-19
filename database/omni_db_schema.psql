@@ -62,7 +62,7 @@ create table if not exists AddressBalances (
 	, BalanceAvailable numeric(19) not null default 0
 	, BalanceReserved numeric(19) null
 	, BalanceAccepted numeric(19) null
-	, LastTxHash varchar(64) null			/* last tx that affected this currency for this address, null if no tx's */
+	, LastTxDBSerialNum int8 null			/* last tx that affected this currency for this address, null if no tx's */
 
 	, primary key (Address, Protocol, PropertyID)
 )
@@ -201,8 +201,8 @@ create table if not exists SmartProperties (
 	, PropertyID bigint				/* signed 64-bit, to store unsigned 32 bit values */
 	, Issuer varchar(64) not null			/* Address that created it */
 	, Ecosystem Ecosystem null			/* Production or Test (for now) */
-	, CreateTxDBSerialNum int8 unique not null	/* the tx that created this SP, for faster joins */
-	, LastTxDBSerialNum int8 unique not null	/* the last tx that updated this SP, for faster joins */
+	, CreateTxDBSerialNum int8 not null		/* the tx that created this SP, for faster joins */
+	, LastTxDBSerialNum int8 not null		/* the last tx that updated this SP, for faster joins */
 	, PropertyName varchar(256) null
 	, PropertyType smallint null		
 	, PrevPropertyID bigint null default 0
@@ -288,7 +288,7 @@ create table if not exists OfferAccepts (
       , Block int not null                             /* Block the accept was received in */
       , DExState DExState not null                     /* unpaid, paid-partial, paid-complete */
       , ExpireBlock int not null                       /* Last block payment for this accept can be received in */
-      , ExpiredState boolean default false             /* true/false if this offer is expired*/
+      , ExpiredState boolean default false             /* true/false if this offer is expired */
 )
 ;
 
