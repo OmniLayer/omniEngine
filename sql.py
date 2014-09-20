@@ -67,7 +67,7 @@ def sendToOwners(Sender, Amount, PropertyID, Protocol, TxDBSerialNum, owners=Non
                   "values(%s, %s, %s, %s, %s, %s, %s)",
                   (Address, PropertyID, Protocol, TxDBSerialNum, AddressTxIndex, AddressRole, amountSent))
          #update balance table
-         updateBalance(Address, Protocol, PropertyID, Ecosystem, amountSent, None, None, LastHash)
+         updateBalance(Address, Protocol, PropertyID, Ecosystem, amountSent, None, None, TxDBSerialNum)
 
          #make sure we keep track of how much was sent/left to send
          toDistribute-=amountSent
@@ -616,7 +616,7 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
                       "(Address, PropertyID, Protocol, TxDBSerialNum, AddressTxIndex, AddressRole, BalanceAvailableCreditDebit)"
                       "values(%s, %s, %s, %s, %s, %s, %s)",
                       (addr, PropertyID, Protocol, TxDBSerialNum, AddressTxIndex, AddressRole, BalanceAvailableCreditDebit))
-            updateBalance(addr, Protocol, PropertyID, Ecosystem, BalanceAvailableCreditDebit, 0, 0, TxHash)
+            updateBalance(addr, Protocol, PropertyID, Ecosystem, BalanceAvailableCreditDebit, 0, 0, TxDBSerialNum)
 
 
       #process all inputs, Start AddressTxIndex=0 since inputs don't have a Index number in json and iterate for each input
@@ -645,7 +645,7 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
                       "(Address, PropertyID, Protocol, TxDBSerialNum, LinkedTxDBSerialNum, AddressTxIndex, AddressRole, BalanceAvailableCreditDebit)"
                       "values(%s, %s, %s, %s, %s, %s, %s, %s)",
                       (addr, PropertyID, Protocol, TxDBSerialNum, LinkedTxDBSerialNum, AddressTxIndex, AddressRole, BalanceAvailableCreditDebit))
-            updateBalance(addr, Protocol, PropertyID, Ecosystem, BalanceAvailableCreditDebit, 0, 0, TxHash)
+            updateBalance(addr, Protocol, PropertyID, Ecosystem, BalanceAvailableCreditDebit, 0, 0, TxDBSerialNum)
           AddressTxIndex+=1
 
     elif Protocol == "Mastercoin":
@@ -682,7 +682,7 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
                   (Address, PropertyID, Protocol, TxDBSerialNum, AddressTxIndex, AddressRole, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit))
   
         if Valid:
-          updateBalance(Address, Protocol, PropertyID, Ecosystem, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit, TxHash)
+          updateBalance(Address, Protocol, PropertyID, Ecosystem, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit, TxDBSerialNum)
 
 	#credit the receiver
         Address = rawtx['result']['referenceaddress']
@@ -731,7 +731,7 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
         Address = rawtx['result']['referenceaddress']
         #credit the sellers 'accepted' balance
         if Valid:
-          updateBalance(Address, Protocol, PropertyID, Ecosystem, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit, TxHash)
+          updateBalance(Address, Protocol, PropertyID, Ecosystem, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit, TxDBSerialNum)
 
         #update the accepted offers (actually track invalid offers for reporting as well)
         offerAccept(rawtx, TxDBSerialNum, Block)
@@ -804,7 +804,7 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
           if Valid:
             #deduct the amount bought from both reserved and accepted fields, since we track it twice to match core (it only tracks reserved)
             BalanceAcceptedCreditDebit=AmountBoughtNeg
-            updateBalance(Receiver, Protocol, PropertyIDBought, Ecosystem, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit, TxHash)
+            updateBalance(Receiver, Protocol, PropertyIDBought, Ecosystem, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit, TxDBSerialNum)
             #reset it to null to not screw up next insert
             BalanceAcceptedCreditDebit=None
 
@@ -847,7 +847,7 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
                   "values(%s, %s, %s, %s, %s, %s, %s, %s, %s)",
                   (Address, PropertyID, Protocol, TxDBSerialNum, AddressTxIndex, AddressRole, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit))
         if Valid:
-          updateBalance(Address, Protocol, PropertyID, Ecosystem, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit, TxHash)
+          updateBalance(Address, Protocol, PropertyID, Ecosystem, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit, TxDBSerialNum)
 
         #Credit the buy in to the issuer
         AddressRole = 'issuer'
@@ -858,7 +858,7 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
                   "values(%s, %s, %s, %s, %s, %s, %s, %s, %s)",
                   (Address, PropertyID, Protocol, TxDBSerialNum, AddressTxIndex, AddressRole, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit))
         if Valid:
-          updateBalance(Address, Protocol, PropertyID, Ecosystem, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit, TxHash)
+          updateBalance(Address, Protocol, PropertyID, Ecosystem, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit, TxDBSerialNum)
 
         #Now start updating the crowdsale propertyid balance info
         PropertyID = rawtx['result']['purchasedpropertyid']
@@ -877,7 +877,7 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
                     "values(%s, %s, %s, %s, %s, %s, %s, %s, %s)",
                     (Address, PropertyID, Protocol, TxDBSerialNum, AddressTxIndex, AddressRole, IssuerCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit))
           if Valid:
-            updateBalance(Address, Protocol, PropertyID, Ecosystem, IssuerCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit, TxHash)
+            updateBalance(Address, Protocol, PropertyID, Ecosystem, IssuerCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit, TxDBSerialNum)
 
         #Participating in crowdsale, update smartproperty history table with the propertyid bought
         dbExecute("insert into PropertyHistory (Protocol, PropertyID, TxDBSerialNum) Values(%s, %s, %s)", (Protocol, PropertyID, TxDBSerialNum))
@@ -915,7 +915,7 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
 
         #update balanace table
         if Valid:
-          updateBalance(Address, Protocol, PropertyID, Ecosystem, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit, TxHash)
+          updateBalance(Address, Protocol, PropertyID, Ecosystem, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit, TxDBSerialNum)
 
       elif type == 56:
         AddressRole = "issuer"
@@ -926,7 +926,7 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
 
         #update balanace table
         if Valid:
-          updateBalance(Address, Protocol, PropertyID, Ecosystem, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit, TxHash)
+          updateBalance(Address, Protocol, PropertyID, Ecosystem, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit, TxDBSerialNum)
 
       #write output of the address details
       dbExecute("insert into addressesintxs "
@@ -935,7 +935,7 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
                 (Address, PropertyID, Protocol, TxDBSerialNum, AddressTxIndex, AddressRole, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit))
 
       if Valid:
-        updateBalance(Address, Protocol, PropertyID, Ecosystem, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit, TxHash)
+        updateBalance(Address, Protocol, PropertyID, Ecosystem, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit, TxDBSerialNum)
 
 
 def insertTx(rawtx, Protocol, blockheight, seq, TxDBSerialNum):
