@@ -307,8 +307,8 @@ def syncAddress(Address, Protocol):
 
       #get available/reserved balances
       if getdivisible_MP(PropertyID):
-        Available=int(decimal.Decimal(propertyt['balance'])*decimal.Decimal(1e8))
-        Reserved=int(decimal.Decimal(propertyt['reserved'])*decimal.Decimal(1e8))
+        Available=int(decimal.Decimal(property['balance'])*decimal.Decimal(1e8))
+        Reserved=int(decimal.Decimal(property['reserved'])*decimal.Decimal(1e8))
       else:
         Available=int(property['balance'])
         Available=int(property['reserved'])
