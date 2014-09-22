@@ -121,6 +121,8 @@ else:
       expireAccepts(height)
       #check any active crowdsales and update json if the endtime has passed (based on block time)
       expireCrowdsales(block_data['result']['time'], Protocol)
+      #exodus address generates dev msc, sync our balance to match the generated balanace
+      syncAddress('1EXoDusjGwvnjZUyKkxZ4UHEf77z6A5S4P', Protocol)
 
       #make sure we store the last serialnumber used
       dbExecute("select setval('transactions_txdbserialnum_seq', %s)", [TxDBSerialNum-1])

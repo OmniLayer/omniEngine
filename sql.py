@@ -295,6 +295,51 @@ def resetdextable_MP():
                   (amountaccepted, amountavailable, totalselling, amountdesired, minimumfee, propertyidselling, propertyiddesired,
                    seller, timelimit, createtxdbserialnum, unitprice, offerstate) )    
 
+def syncAddress(Address, Protocol):
+    #sync address balance in db to match core's balance
+    #mainly used for exodus dev msc distribution sync but is abstracted for any address
+
+    baldata=getallbalancesforaddress_MP(Address)['result']
+    DExSales=getactivedexsells_MP()['result']
+
+    for property in baldata:
+      PropertyID=property['propertyid']
+
+      #get available/reserved balances
+      if getdivisible_MP(PropertyID):
+        Available=int(decimal.Decimal(propertyt['balance'])*decimal.Decimal(1e8))
+        Reserved=int(decimal.Decimal(propertyt['reserved'])*decimal.Decimal(1e8))
+      else:
+        Available=int(property['balance'])
+        Available=int(property['reserved'])
+
+      #find accepted balances (if exists)
+      for x in DExSales:
+        if x['seller'] == Address and x['propertyid']==PropertyID:
+          Accepted = x['amountaccepted']
+          break
+        else:
+          Accepted=0
+
+      #check for the address
+      rows=dbSelect("select address from AddressBalances where address=%s and Protocol=%s and propertyid=%s",
+                    (Address, Protocol, PropertyID) )
+
+      if len(rows) == 0:
+        Ecosystem=getEcosystem(PropertyID)
+        #address not in database, insert
+        dbExecute("INSERT into AddressBalances "
+                  "(Address, Protocol, PropertyID, Ecosystem, BalanceAvailable, BalanceReserved, BalanceAccepted) "
+                  "VALUES (%s,%s,%s,%s,%s,%s,%s)",
+                  (Address, Protocol, PropertyID, Ecosystem, Available, Reserved, Accepted) )
+      else:
+        #address in database update
+        dbExecute("UPDATE AddressBalances set BalanceAvailable=%s, BalanceReserved=%s, BalanceAccepted=%s where address=%s and PropertyID=%s",
+                  (Available, Reserved, Accepted, Address, PropertyID) )
+
+      
+
+
 def resetbalances_MP():
     #for now sync / reset balance data from mastercore balance list
     Protocol="Mastercoin"
