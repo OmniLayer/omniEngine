@@ -1,7 +1,7 @@
-create database "Omniwallet";
+create database "omniwallet";
 
 /* psql command to use the newly created database */
-\connect Omniwallet;
+\connect omniwallet;
 
 /*
  * Notes:
