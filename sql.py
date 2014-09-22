@@ -717,33 +717,31 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
 
       elif type == 22:
         #DEx Accept Offer
-        #Update the amount  Reserved for Accept
 
-        #update the buyer
+        #insert record for the buyer
         AddressRole='buyer'
-        BalanceAcceptedCreditDebit = value
         dbExecute("insert into addressesintxs "
                   "(Address, PropertyID, Protocol, TxDBSerialNum, AddressTxIndex, AddressRole, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit)"
                   "values(%s, %s, %s, %s, %s, %s, %s, %s, %s)", 
                   (Address, PropertyID, Protocol, TxDBSerialNum, AddressTxIndex, AddressRole, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit))
-  
+
+        #Process records for the seller
         AddressRole='seller'
         Address = rawtx['result']['referenceaddress']
-        #credit the sellers 'accepted' balance
-        if Valid:
-          updateBalance(Address, Protocol, PropertyID, Ecosystem, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit, TxDBSerialNum)
 
         #update the accepted offers (actually track invalid offers for reporting as well)
         offerAccept(rawtx, TxDBSerialNum, Block)
 
-        #track the address as part of the tx, but it has no balance changing values for the addressesintx table
-        BalanceAcceptedCreditDebit = None
+        #track the amount accepted from the seller
+        BalanceAcceptedCreditDebit = value
 
         dbExecute("insert into addressesintxs "
                   "(Address, PropertyID, Protocol, TxDBSerialNum, AddressTxIndex, AddressRole, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit)"
                   "values(%s, %s, %s, %s, %s, %s, %s, %s, %s)",
                   (Address, PropertyID, Protocol, TxDBSerialNum, AddressTxIndex, AddressRole, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit))
-
+        #credit the sellers 'accepted' balance
+        if Valid:
+          updateBalance(Address, Protocol, PropertyID, Ecosystem, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit, TxDBSerialNum)
 
         #we processed everything for this tx, return
         return
