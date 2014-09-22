@@ -51,9 +51,6 @@ else:
       block_data = getblock(hash)
       height = block_data['result']['height']
 
-      #expire the current active offers if block time has passed
-      expireAccepts(height)
-
       #don't waste resources looking for MP transactions before the first one occurred
       if height >= firstMPtxBlock:
         block_data_MP = listblocktransactions_MP(height)
@@ -90,9 +87,6 @@ else:
       #Process Mastercoin Transacations (if any)
       Protocol="Mastercoin"
 
-      #check any active crowdsales and update json if the endtime has passed (based on block time)
-      expireCrowdsales(block_data['result']['time'], Protocol)
-
       #Find number of msc tx
       y=len(block_data_MP['result'])
       if y != 0:
@@ -118,6 +112,13 @@ else:
 
         #increment tx sequence number in block
         x+=1    
+
+      #Clean up any offers/crowdsales that expired in this block
+      #Run these after we processes the tx's in the block as tx in the current block would be valid
+      #expire the current active offers if block time has passed
+      expireAccepts(height)
+      #check any active crowdsales and update json if the endtime has passed (based on block time)
+      expireCrowdsales(block_data['result']['time'], Protocol)
 
       #make sure we store the last serialnumber used
       dbExecute("select setval('transactions_txdbserialnum_seq', %s)", [TxDBSerialNum-1])
