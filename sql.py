@@ -487,7 +487,7 @@ def updateBalance(Address, Protocol, PropertyID, Ecosystem, BalanceAvailable, Ba
     
       print "Updating balance state:"
       print "Address, Protocol, PropertyID, Ecosystem, BalanceAvailable, BalanceReserved, BalanceAccepted, TxDBSerialNum"
-      print Address, Protocol, PropertyID, Ecosystem, BalanceAvailable, BalanceReserved, BalanceAccepted, LastTxDBSerialNum
+      print Address, Protocol, PropertyID, Ecosystem, BalanceAvailable, BalanceReserved, BalanceAccepted, LastTxDBSerialNum, "\n"
 
       rows=dbSelect("select BalanceAvailable, BalanceReserved, BalanceAccepted "
                     "from AddressBalances where address=%s and Protocol=%s and propertyid=%s",
@@ -960,20 +960,12 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
         #update smart property table
         insertProperty(rawtx, Protocol)
 
-        #update balanace table
-        if Valid:
-          updateBalance(Address, Protocol, PropertyID, Ecosystem, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit, TxDBSerialNum)
-
       elif type == 56:
         AddressRole = "issuer"
         BalanceAvailableCreditDebit=value_neg
 
         #update smart property table
         insertProperty(rawtx, Protocol)
-
-        #update balanace table
-        if Valid:
-          updateBalance(Address, Protocol, PropertyID, Ecosystem, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit, TxDBSerialNum)
 
       #write output of the address details
       dbExecute("insert into addressesintxs "
