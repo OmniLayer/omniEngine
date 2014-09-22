@@ -811,7 +811,7 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
           #Credit tokens tco buyer and reduce their accepted amount by amount bought
           AddressRole = 'buyer'
           BalanceAvailableCreditDebit=AmountBought
-          BalanceReservedCreditDebut=None
+          BalanceReservedCreditDebit=None
           dbExecute("insert into addressesintxs "
                     "(Address, PropertyID, Protocol, TxDBSerialNum, AddressTxIndex, AddressRole, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit)"
                     "values(%s, %s, %s, %s, %s, %s, %s, %s, %s)",
