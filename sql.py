@@ -794,11 +794,11 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
       elif type == -22:
         #DEx Accept Payment
 
-        Sender =  Address
+        Buyer =  Address
         #process all purchases in the transaction 
         for payment in rawtx['result']['purchases']:
 
-          Receiver = payment['referenceaddress']
+          Seller = payment['referenceaddress']
           PropertyIDBought = payment['propertyid']
           Valid=payment['valid']
 
@@ -842,12 +842,12 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
           dbExecute("insert into addressesintxs "
                     "(Address, PropertyID, Protocol, TxDBSerialNum, AddressTxIndex, AddressRole, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit)"
                     "values(%s, %s, %s, %s, %s, %s, %s, %s, %s)",
-                    (Receiver, PropertyIDBought, Protocol, TxDBSerialNum, AddressTxIndex, AddressRole, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit))
+                    (Seller, PropertyIDBought, Protocol, TxDBSerialNum, AddressTxIndex, AddressRole, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit))
 
           if Valid:
             #deduct the amount bought from both reserved and accepted fields, since we track it twice to match core (it only tracks reserved)
             BalanceAcceptedCreditDebit=AmountBoughtNeg
-            updateBalance(Receiver, Protocol, PropertyIDBought, Ecosystem, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit, TxDBSerialNum)
+            updateBalance(Seller, Protocol, PropertyIDBought, Ecosystem, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit, TxDBSerialNum)
             #reset it to null to not screw up next insert
             BalanceAcceptedCreditDebit=None
 
@@ -858,11 +858,11 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
           dbExecute("insert into addressesintxs "
                     "(Address, PropertyID, Protocol, TxDBSerialNum, AddressTxIndex, AddressRole, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit)"
                     "values(%s, %s, %s, %s, %s, %s, %s, %s, %s)",
-                    (Sender, PropertyIDBought, Protocol, TxDBSerialNum, AddressTxIndex, AddressRole, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit))
+                    (Buyer, PropertyIDBought, Protocol, TxDBSerialNum, AddressTxIndex, AddressRole, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit))
 
           if Valid:
-            updateBalance(Sender, Protocol, PropertyIDBought, Ecosystem, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit, TxDBSerialNum)
-            updateAccept(Sender, Receiver, BalanceAvailableCreditDebit, PropertyIDBought, TxDBSerialNum)
+            updateBalance(Buyer, Protocol, PropertyIDBought, Ecosystem, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit, TxDBSerialNum)
+            updateAccept(Buyer, Receiver, BalanceAvailableCreditDebit, PropertyIDBought, TxDBSerialNum)
 
           #end //for payment in rawtx['result']['purchases']
 
