@@ -27,6 +27,8 @@ else:
   file.write(str(now))
   file.close() 
 
+  print "Processing started at ", now
+
   #block with first MP transaction
   firstMPtxBlock=249948
 
