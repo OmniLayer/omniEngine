@@ -395,17 +395,17 @@ def checkbalances_MP():
         if rows[0][1] == None:
           dbBalanceAvailable = 0
         else:
-          dbBalanceAvailable = rows[0][1]
+          dbBalanceAvailable = int(rows[0][1])
 
         if rows[0][2] == None:
           dbBalanceReserved = 0
         else:
-          dbBalanceReserved = rows[0][2]
+          dbBalanceReserved = int(rows[0][2])
 
         if rows[0][3] == None:
           dbBalanceAccepted = 0
         else:
-          dbBalanceAccepted = rows[0][3]
+          dbBalanceAccepted = int(rows[0][3])
 
         item={}
         if len(rows) == 0:
