@@ -818,7 +818,7 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
                     (Sender, PropertyIDBought, Protocol, TxDBSerialNum, AddressTxIndex, AddressRole, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit))
 
           if Valid:
-            updateBalance(Sender, Protocol, PropertyIDBought, Ecosystem, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit, TxHash)
+            updateBalance(Sender, Protocol, PropertyIDBought, Ecosystem, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit, TxDBSerialNum)
             updateAccept(Sender, Receiver, BalanceAvailableCreditDebit, PropertyIDBought, TxDBSerialNum)
 
           #end //for payment in rawtx['result']['purchases']
