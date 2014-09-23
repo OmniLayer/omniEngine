@@ -30,7 +30,7 @@ else:
   #set our debug level, all outputs will be controlled by this
   setdebug(9)
 
-  printdebug("Processing started at "+str(now), 0)
+  printdebug(("Processing started at",now), 0)
 
   #block with first MP transaction
   firstMPtxBlock=249948
@@ -64,14 +64,14 @@ else:
 
       #Status update every 10 blocks
       if height % 10 == 0 or currentBlock:
-        printdebug("Block"+str(height)+"of"+str(endBlock),1)
+        printdebug(("Block",height,"of",endBlock),1)
 
       #Process Bitcoin Transacations
       Protocol="Bitcoin"
 
       #Find number of tx's in block
       txcount=len(block_data['result']['tx'])
-      printdebug(str(txcount)+"BTC tx", 1)
+      printdebug((txcount,"BTC tx"), 1)
 
       #Write the blocks table row
       insertBlock(block_data, Protocol, height, txcount)
@@ -95,7 +95,7 @@ else:
       #Find number of msc tx
       y=len(block_data_MP['result'])
       if y != 0:
-        printdebug(str(y)+"MSC tx", 1)
+        printdebug((y,"MSC tx"), 1)
 
       #count position in block
       x=1
