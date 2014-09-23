@@ -5,7 +5,7 @@ import sys
 from rpcclient import *
 from mscutils import *
 from sqltools import *
-
+from common import *
 
 def keyByAddress(item):
     return item[0]
@@ -102,6 +102,7 @@ def expireAccepts(Block):
                 "where createtxdbserialnum=%s", (amountaccepted, amountaccepted, saletxserialnum) )
 
       if salestate=='replaced' or salestate=='cancelled':
+        printdebug(("Found replaced/expired sale",saletxserialnum,"for expiring accept with amount",amountaccepted),4)
         #sale ended credit the expired accepts' amount back to the users available balance and deduct it from the reserved/accepted balances
         dbExecute("update addressbalances as ab set balanceavailable=ab.balanceavailable+%s::numeric, "
                   "balancereserved=ab.balancereserved-%s::numeric, balanceaccepted=ab.balanceaccepted-%s::numeric "
@@ -109,6 +110,7 @@ def expireAccepts(Block):
                   "ab.propertyid = ao.propertyidselling and ao.createtxdbserialnum=%s",
                   (amountaccepted, amountaccepted, amountaccepted, saletxserialnum) )
       else:
+        printdebug(("sale",saletxserialnum,"still active, crediting expired offer amount back"),4)
         #Sale still active, use the offers that are ready to expire to update the sellers accepted balance (reserved reflects total unsold amount left)
         dbExecute("update addressbalances as ab set balanceaccepted=ab.balanceaccepted-%s::numeric "
                   "from activeoffers as ao where ab.address=ao.seller and "
@@ -241,12 +243,14 @@ def updatedex(rawtx, TxDBSerialNum, Protocol):
 
 
     #find any balances left in the active sales to credit back to user 
-    remaining=dbSelect("select amountavailable from activeoffers where seller=%s and offerstate='active' and propertyiddesired=%s and propertyidselling=%s",
+    remaining=dbSelect("select amountavailable,createtxdbserialnum from activeoffers where seller=%s and offerstate='active' and propertyiddesired=%s and propertyidselling=%s",
                          ( Address, propertyiddesired, propertyidselling) )
     if remaining != []:
       amount=remaining[0][0]
+      createtxdbserialnum=remaining[0][1]
     else:
       amount=None
+      createtxdbserialnum=None
 
     #Catches, new, update, empty, cancel states from core
     if subaction.lower() == 'cancel':
@@ -254,6 +258,14 @@ def updatedex(rawtx, TxDBSerialNum, Protocol):
       #Update any active offers to replace
       dbExecute("update activeoffers set offerstate=%s, LastTxDBSerialNum=%s where seller=%s and offerstate='active' and propertyiddesired=%s and propertyidselling=%s",
                 (State, TxDBSerialNum, Address, propertyiddesired, propertyidselling) )
+
+      #debug statements
+      printdebug("cancelling any active offers for :", 4)
+      printdebug("State, TxDBSerialNum, Address, propertyiddesired, propertyidselling",4)
+      printdebug((State, TxDBSerialNum, Address, propertyiddesired, propertyidselling),4)
+      if amount != None:
+        printdebug(("found old sale",createtxdbserialnum,"with amount remaining",amount),4)
+
       #we'll let the insertaddressintx function handle updating the balanace for cancels
       return amount
     else:
@@ -264,6 +276,7 @@ def updatedex(rawtx, TxDBSerialNum, Protocol):
                 (State, TxDBSerialNum, Address, propertyiddesired, propertyidselling) )
 
       if amount != None:
+        printdebug(("replacing old sale",createtxdbserialnum,"with amount remaining",amount,"with newsale",TxDBSerialNum),4)
         #return the amount available/not accepted to users Available balance
         BalanceAvailable=amount
         #deduct whats left from the Reserved balanace (should be all unless there is an outstanding accept)
@@ -519,9 +532,9 @@ def checkbalances_MP():
 
 def updateBalance(Address, Protocol, PropertyID, Ecosystem, BalanceAvailable, BalanceReserved, BalanceAccepted, LastTxDBSerialNum):
     
-      print "Updating balance state:"
-      print "Address, Protocol, PropertyID, Ecosystem, BalanceAvailable, BalanceReserved, BalanceAccepted, TxDBSerialNum"
-      print Address, Protocol, PropertyID, Ecosystem, BalanceAvailable, BalanceReserved, BalanceAccepted, LastTxDBSerialNum, "\n"
+      printdebug("Updating balance state:", 4)
+      printdebug("Address, Protocol, PropertyID, Ecosystem, BalanceAvailable, BalanceReserved, BalanceAccepted, TxDBSerialNum", 4)
+      printdebug((Address, Protocol, PropertyID, Ecosystem, BalanceAvailable, BalanceReserved, BalanceAccepted, LastTxDBSerialNum, "\n"), 4)
 
       rows=dbSelect("select BalanceAvailable, BalanceReserved, BalanceAccepted "
                     "from AddressBalances where address=%s and Protocol=%s and propertyid=%s",
@@ -793,7 +806,7 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
         #Update our DEx tables if its a valid dex sale
         if rawtx['result']['valid']:
           remainder=updatedex(rawtx, TxDBSerialNum, Protocol)
-          #if we got anything back from the updatedex function it means it was a cancel/replace
+          #if we got anything back from the updatedex function it means it was a cancel, update our values to use the cancel numbers
           if remainder != None:
             BalanceAvailableCreditDebit=remainder
             BalanceReservedCreditDebit=remainder*-1

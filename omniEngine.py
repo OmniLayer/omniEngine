@@ -27,7 +27,10 @@ else:
   file.write(str(now))
   file.close() 
 
-  print "Processing started at ", now
+  #set our debug level, all outputs will be controlled by this
+  setdebug(9)
+
+  printdebug("Processing started at "+str(now), 0)
 
   #block with first MP transaction
   firstMPtxBlock=249948
@@ -39,7 +42,7 @@ else:
   endBlock=getinfo()['result']['blocks']
 
   if currentBlock > endBlock:
-    print "Already up to date"
+    printdebug("Already up to date",0)
 
   #get highest TxDBSerialNum (number of rows in the Transactions table)
   TxDBSerialNum=dbSelect('select last_value from transactions_txdbserialnum_seq',None)[0][0]+1
@@ -61,14 +64,14 @@ else:
 
       #Status update every 10 blocks
       if height % 10 == 0 or currentBlock:
-        print "Block", height, "of", endBlock
+        printdebug("Block"+str(height)+"of"+str(endBlock),1)
 
       #Process Bitcoin Transacations
       Protocol="Bitcoin"
 
       #Find number of tx's in block
       txcount=len(block_data['result']['tx'])
-      print  txcount, "BTC tx"
+      printdebug(str(txcount)+"BTC tx", 1)
 
       #Write the blocks table row
       insertBlock(block_data, Protocol, height, txcount)
@@ -92,7 +95,7 @@ else:
       #Find number of msc tx
       y=len(block_data_MP['result'])
       if y != 0:
-        print  y, "MSC tx"
+        printdebug(str(y)+"MSC tx", 1)
 
       #count position in block
       x=1
