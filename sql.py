@@ -930,6 +930,7 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
       elif type == 50:
         #Fixed Issuance, create property
         AddressRole = "issuer"
+        BalanceAvailableCreditDebit = value
         #update smart property table
         insertProperty(rawtx, Protocol)
      
