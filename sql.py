@@ -505,7 +505,7 @@ def checkbalances_MP():
         item={}
         if len(rows) == 0:
           #address not in database, insert
-          item[PropertyID] ={'Address':address, 'bal':{'Status': 'Missing', 'PropertyID': PropertyID, 'BalanceAvailable':BalanceAvailable,'BalanceReserved': BalanceReserved,'BalanceAccepted':BalanceAccepted }}
+          item[PropertyID] ={'Address':Address, 'bal':{'Status': 'Missing', 'PropertyID': PropertyID, 'BalanceAvailable':BalanceAvailable,'BalanceReserved': BalanceReserved,'BalanceAccepted':BalanceAccepted }}
           #add the missing/incorrect item to our list to return
           retval.update(item) 
         else:
