@@ -222,12 +222,11 @@ def expireAccepts(Block):
       if Block < 0:
         #invert our calculations to work the reorg backwards
         amountaccepted=offer[0]*-1
-        saletxserialnum=offer[1]*-1
-        salestate=offer[2]*-1
       else:
         amountaccepted=offer[0]
-        saletxserialnum=offer[1]
-        salestate=offer[2]
+
+      saletxserialnum=offer[1]
+      salestate=offer[2]
 
       dbExecute("update activeoffers set amountaccepted=amountaccepted-%s::numeric, amountavailable=amountavailable+%s::numeric "
                 "where createtxdbserialnum=%s", (amountaccepted, amountaccepted, saletxserialnum) )
