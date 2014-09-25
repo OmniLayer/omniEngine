@@ -32,6 +32,16 @@ create type WalletState as enum ('Active', 'Inactive', 'Suspended');
 create type DExState as enum ('invalid', 'unpaid', 'paid-partial', 'paid-complete');
 create type OfferState as enum ('active', 'cancelled', 'replaced', 'sold');
 
+
+create table if not exists Sessions (
+        SessionID varchar(64) not null
+        , Challenge varchar(32) not null
+        , PChallenge varchar(32) not null
+
+        , primary key (SessionID)
+)
+;
+
 /* Wallets have addresses with private keys. Objects being watched are in the Following table */
 create table if not exists Wallets (
 	WalletID uuid
