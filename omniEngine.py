@@ -41,6 +41,21 @@ else:
   #Find most recent block mastercore has available
   endBlock=getinfo()['result']['blocks']
 
+  #reorg protection/check go back 10 blocks from where we last parsed
+  checkBlock=currentBlock-10
+  while checkBlock < currentBlock:
+    hash = getblockhash(checkBlock)['result']
+    dbhash=dbSelect('select blockhash from blocks where blocknumber=%s',[checkBlock])[0][0]
+    if hash == dbhash:
+      #everything looks good, go to next block
+      checkBlock+=1
+    else:
+      #reorg took place
+      reorgRollback(checkBlock-1)
+      currentBlock=checkBlock
+      break
+
+
   if currentBlock > endBlock:
     printdebug("Already up to date",0)
 

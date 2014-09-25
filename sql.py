@@ -7,6 +7,123 @@ from mscutils import *
 from sqltools import *
 from common import *
 
+def reorgRollback(block):
+
+    printdebug(("Reorg Detected, Rolling back to block ",block),4)
+
+    #list of tx's we have processed since the reorg 
+    txs=dbSelect("select txdbserialnum,txtype,txstate,txblocknumber from transactions where txblocknumber >%s order by txdbserialnum desc",[block])
+
+    #(need to reset txdbserialnum counter when done)
+    txcount=len(txs)
+
+    #================================================================
+    #--------------Remove this block when BTC tx's go in-------------
+    #don't have btc tx's yet in db add extra step to get count of those
+    txcount+=dbSelect("select sum(txcount) from blocks where blocknumber >%s",[block])[0][0]
+    #================================================================
+    
+    newTxDBSerialNum=dbSelect('select last_value from transactions_txdbserialnum_seq',None)[0][0]-txcount
+
+    printdebug(("Removing",txcount,"transactions and setting txdbserialnum to",newTxDBSerialNum),4)
+
+    #last block in the db parsed, we'll work backwards from there to block
+    #lastBlock=dbSelect("select max(blocknumber) from blocks", None)[0][0]
+
+    #walk backwards undoing each tx we have a record for
+    for tx in txs:
+      TxDbSerialNum=tx[0]
+      txtype=tx[1]
+      txstate=tx[2]
+      txblocknumber=tx[3]
+
+      #undo any expired accepts before we walk back the tx in that block, we'll need to call again once done just in case we didn't have any tx for the first block
+      expireAccepts(-txblocknumber)
+
+      #only undo balance/state changes a valid tx created
+      if txstate=='valid':
+        addressesintxs=dbSelect("select address, addressrole, protocol, propertyid, balanceavailablecreditdebit, balancereservedcreditdebit, balanceacceptedcreditdebit,linkedtxdbserialnum "
+                                "from addressesintxs where txdbserialnum=$s", [TxDbSerialNum])
+
+        for entry in addressesintxs:
+          Address=entry[0]
+          Role=entry[1]
+          Protocol=entry[2]
+          PropertyID=entry[3]
+          Ecosystem=getEcosystem(PropertyID)
+          linkedtxdbserialnum=entry[7]
+
+          #figure out how much 'moved' and undo it in addressbalances
+          if entry[4] == None:
+            dbBalanceAvailable = 0
+          else:
+            dbBalanceAvailable = entry[4]*-1
+          if entry[5] == None:
+            dbBalanceReserved = 0
+          else:
+            dbBalanceReserved = entry[5]*-1
+          if entry[6] == None:
+            dbBalanceAccepted = 0
+          else:
+            dbBalanceAccepted = entry[6]*-1
+
+          #use -1 for txdbserialnum as we don't know what the previous tx that last modified it's balanace was. 
+          updateBalance(Address, Protocol, PropertyID, Ecosystem, dbBalanceAvailable, dbBalanceReserved, dbBalanceAccepted, -TxDbSerialNum)
+
+          if Protocol=="Mastercoin":
+            #any special actions need to be undone as well
+            if txtype == 20 and Role=='seller':
+              if dbBalanceAvailable == 0:
+                #cancellation, undo the cancellation (not sure about the lasttxdbserialnum yet
+                dbExecute("update activeoffers set offerstate='active',lasttxdbserialnum=-1 where createtxdbserialnum=%s", [TxDbSerialNum])
+              else:
+                #was a new sale, delete it
+                dbExecute("delete from activeoffers where createtxdbserialnum=%s", [TxDbSerialNum])
+
+            elif txtype == 22 and Role=='seller':
+              #unaccept a dex sale and update the sale balance info (don't know about lasttxdbserialnum yet)
+              saletxdbserialnum=dbExecute("select saletxdbserialnum from offeraccepts where linkedtxdbserialnum=%s", [TxDbSerialNum])[0][0]
+              dbExecute("update activeoffers set amountaccepted=amountaccepted-%s::numeric, amountavailable=amountavailable+%s::numeric, "
+                        "lasttxdbserialnum=-1, where createtxdbserialnum=%s",(dbBalanceAccepted,dbBalanceAccepted,saletxdbserialnum))
+              #remove the entry from the offeraccepts table
+              dbExecute("delete from offeraccepts where linkedtxdbserialnum=%s", [TxDbSerialNum])
+
+            elif txtype == -22:
+              #we have inverse of the balance numbers coming from the db variables so do the 'opposite' of what we would expect
+              if Role=='seller':
+                dbExecute("update activeoffers set offerstate='active', amountaccepted=amountaccepted+%s::numeric where createtxdbserialnum=%s",
+                          (dbBalanceReserved,linkedtxdbserialnum))
+              elif Role=='buyer':
+                dbExecute("update offeraccepts set dexstate='unpaid', amountaccepted=amountaccepted-%s::numeric, amountpurchased=amountpurchased+%s::numeric "
+                          "where createtxdbserialnum=%s",(dbBalanceAvailable,dbBalanceAvailable,linkedtxdbserialnum))
+
+            elif txtype == 50 or txtype == 51 or type == 54:
+              #remove the property and the property history information
+              dbExecute("delete from smartproperties where createtxdbserialnum=%s and propertyid=%s and protocol=%s",
+                        (TxDbSerialNum,PropertyID,Protocol))
+              dbExecute("delete from propertyhistory where txdbserialnum=%s and propertyid=%s and protocol=%s",
+                        (TxDbSerialNum,PropertyID,Protocol))
+            elif txtype == -51 or txtype == 53 or type == 55 or txtype == 56:
+              #remove entries from the property history table only
+              dbExecute("delete from propertyhistory where txdbserialnum=%s and propertyid=%s and protocol=%s",
+                        (TxDbSerialNum,PropertyID,Protocol))
+        #/end for entry in addressesintxs
+      #/end if txstate='valid'
+
+      #purge the transaction from the tables
+      dbExecute("delete from txjson where txdbserialnum=%s",[TxDbSerialNum])
+      dbExecute("delete from addressesintxs where txdbserialnum=%s",[TxDbSerialNum])
+      dbExecute("delete from transactions where txdbserialnum=%s",[TxDbSerialNum])
+    #/end for tx in txs:
+
+    #Make sure we process any remaining expires that need to be undone if we didn't have an msc tx in the block
+    expireAccepts(-(block+1))
+      
+    #delete from blocks once we rollback all other data
+    dbExecute("delete from blocks where blocknumber>%s",[block])
+    #reset txdbserialnum field to what it was before these blocks/tx went in
+    dbExecute("select setval('transactions_txdbserialnum_seq', %s)",[newTxDBSerialNum])
+
 def keyByAddress(item):
     return item[0]
 
@@ -85,18 +202,32 @@ def sendToOwners(Sender, Amount, PropertyID, Protocol, TxDBSerialNum, owners=Non
 
 
 def expireAccepts(Block):
-    #find the offers that are ready to expire and credit the 'accepted' amount back to the sellers sale
-    expiring=dbSelect("select oa.amountaccepted, oa.saletxdbserialnum, ao.offerstate from offeraccepts as oa, activeoffers as ao "
-                      "where oa.saletxdbserialnum=ao.createtxdbserialnum and oa.expireblock < %s and oa.expiredstate=false and "
-                      "(oa.dexstate='paid-partial' or oa.dexstate='unpaid')", [Block] )
+
+    if Block < 0 :
+      #reorg undo expire
+      #find the offers that are ready to expire and credit the 'accepted' amount back to the sellers sale
+      expiring=dbSelect("select oa.amountaccepted, oa.saletxdbserialnum, ao.offerstate from offeraccepts as oa, activeoffers as ao "
+                        "where oa.saletxdbserialnum=ao.createtxdbserialnum and oa.expireblock >= %s and oa.expiredstate=true and "
+                        "(oa.dexstate='paid-partial' or oa.dexstate='unpaid')", [-Block] )
+    else:
+      #find the offers that are ready to expire and credit the 'accepted' amount back to the sellers sale
+      expiring=dbSelect("select oa.amountaccepted, oa.saletxdbserialnum, ao.offerstate from offeraccepts as oa, activeoffers as ao "
+                        "where oa.saletxdbserialnum=ao.createtxdbserialnum and oa.expireblock < %s and oa.expiredstate=false and "
+                        "(oa.dexstate='paid-partial' or oa.dexstate='unpaid')", [Block] )
 
     #make sure we process all the offers that are expiring
     for offer in expiring:
 
       #only process if there is anything to process
-      amountaccepted=offer[0]
-      saletxserialnum=offer[1]
-      salestate=offer[2]
+      if Block < 0:
+        #invert our calculations to work the reorg backwards
+        amountaccepted=offer[0]*-1
+        saletxserialnum=offer[1]*-1
+        salestate=offer[2]*-1
+      else:
+        amountaccepted=offer[0]
+        saletxserialnum=offer[1]
+        salestate=offer[2]
 
       dbExecute("update activeoffers set amountaccepted=amountaccepted-%s::numeric, amountavailable=amountavailable+%s::numeric "
                 "where createtxdbserialnum=%s", (amountaccepted, amountaccepted, saletxserialnum) )
@@ -117,8 +248,11 @@ def expireAccepts(Block):
                   "ab.propertyid = ao.propertyidselling and ao.createtxdbserialnum=%s", 
                   (amountaccepted, saletxserialnum) )
 
-    #every block we check any 'active' accepts. If their expire block has passed, we set them expired
-    dbExecute("update offeraccepts set expiredstate=true where expireblock < %s and expiredstate=false", [Block] )
+    if Block < 0:
+      dbExecute("update offeraccepts set expiredstate=false where expireblock >= %s and expiredstate=true", [-Block] )
+    else:
+      #every block we check any 'active' accepts. If their expire block has passed, we set them expired
+      dbExecute("update offeraccepts set expiredstate=true where expireblock < %s and expiredstate=false", [Block] )
 
 def updateAccept(Buyer, Seller, AmountBought, PropertyIDBought, TxDBSerialNum):
     #user has paid for their accept (either partially or in full) update accordingly. 
@@ -131,7 +265,7 @@ def updateAccept(Buyer, Seller, AmountBought, PropertyIDBought, TxDBSerialNum):
 
     #saletxdbserialnum=saletx[0][0]
 
-    accept=dbSelect("select oa.amountaccepted, oa.amountpurchased, ao.amountaccepted, ao.amountavailable, ao.offerstate, oa.saletxdbserialnum "
+    accept=dbSelect("select oa.amountaccepted, oa.amountpurchased, ao.amountaccepted, ao.amountavailable, ao.offerstate, oa.saletxdbserialnum, oa.linkedtxdbserialnum "
                     "from offeraccepts oa inner join activeoffers ao on (oa.saletxdbserialnum=ao.createtxdbserialnum) "
                     "where oa.buyer=%s and ao.seller=%s and ao.propertyidselling=%s "
                     "and oa.dexstate != 'invalid' and oa.dexstate != 'paid-complete' and oa.expiredstate=false", 
@@ -140,6 +274,7 @@ def updateAccept(Buyer, Seller, AmountBought, PropertyIDBought, TxDBSerialNum):
     buyeraccepted = accept[0][0] - AmountBought
     buyerpurchased= AmountBought + accept[0][1]
     saletxdbserialnum = accept[0][5]
+    offertxdbserialnum = accept[0][6]
 
     if buyeraccepted > 0:
       dexstate = 'paid-partial'
@@ -167,6 +302,8 @@ def updateAccept(Buyer, Seller, AmountBought, PropertyIDBought, TxDBSerialNum):
               "from offeraccepts as oa where oa.saletxdbserialnum=ao.createtxdbserialnum "
               "and oa.buyer=%s and ao.seller=%s and ao.propertyidselling=%s and  ao.createtxdbserialnum=%s",
               (selleraccepted, offerstate, TxDBSerialNum, Buyer, Seller, PropertyIDBought, saletxdbserialnum) )
+
+    return saletxdbserialnum,offertxdbserialnum
 
 def offerAccept (rawtx, TxDBSerialNum, Block):
     BuyerAddress=rawtx['result']['sendingaddress']
@@ -210,8 +347,8 @@ def offerAccept (rawtx, TxDBSerialNum, Block):
       #update original sale to reflect accept
       currentamountaccepted+=amountaccepted
       amountavailable-=amountaccepted      
-      dbExecute("update activeoffers set amountaccepted=%s, amountavailable=%s where  seller=%s and offerstate='active' and propertyidselling=%s and propertyiddesired=%s",
-                (currentamountaccepted,amountavailable,SellerAddress,propertyidbuying,propertyidpaying) )
+      dbExecute("update activeoffers set amountaccepted=%s, amountavailable=%s, lasttxdbserialnum=%s  where  seller=%s and offerstate='active' and propertyidselling=%s and propertyiddesired=%s",
+                (currentamountaccepted,amountavailable,TxDBSerialNum,SellerAddress,propertyidbuying,propertyidpaying) )
     else:
       dexstate='invalid'
       expiredstate='true'
@@ -542,6 +679,17 @@ def updateBalance(Address, Protocol, PropertyID, Ecosystem, BalanceAvailable, Ba
       rows=dbSelect("select BalanceAvailable, BalanceReserved, BalanceAccepted "
                     "from AddressBalances where address=%s and Protocol=%s and propertyid=%s",
                     (Address, Protocol, PropertyID) )
+
+      #check if we have unknown txdbserialnum or if its from a reorg and try to find the last known txdbserialnum
+      if LastTxDBSerialNum < 0:
+        txrow=dbSelect("select max(txdbserialnum) from addressesintxs atx, transactions tx where atx.txdbserialnum=tx.txdbserialnum and "
+                       "tx.txstate='valid' and atx.txdbserialnum!=%s and atx.address=%s and atx.propertyid=%s and atx.protocol=%s"
+                       "(atx.balanceavailablecreditdebit is not null or atx.balancereservedcreditdebit is not null or atx.balanceacceptedcreditdebit is not null)",
+                       (-LastTxDBSerialNum, Address, PropertyID, Protocol) )
+        try:
+          LastTxDBSerialNum=txrow[0][0]
+        except IndexError:
+          LastTxDBSerialNum=None
 
       if len(rows) == 0:
         try:
@@ -893,14 +1041,23 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
           #     'BalanceReservedCreditDebit': BalanceReservedCreditDebit, 'BalanceAcceptedCreditDebit': BalanceAcceptedCreditDebit }
           #csvwb.writerow(row)
 
+          #get the sale/offer serial nums so we can insert them into the tx (used mostly for reorg calculations)
+          if Valid:
+            txdbnumarray=updateAccept(Buyer, Seller, AmountBought, PropertyIDBought, TxDBSerialNum)
+            saletxdbserialnum=txdbnumarray[0]
+            offertxdbserialnum=txdbnumarray[1]
+          else:
+            saletxdbserialnum=-1
+            offertxdbserialnum=-1
+
           #deduct tokens from seller
           AddressRole = 'seller'
           BalanceReservedCreditDebit=AmountBoughtNeg
           Ecosystem=getEcosystem(PropertyIDBought)
           dbExecute("insert into addressesintxs "
-                    "(Address, PropertyID, Protocol, TxDBSerialNum, AddressTxIndex, AddressRole, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit)"
-                    "values(%s, %s, %s, %s, %s, %s, %s, %s, %s)",
-                    (Seller, PropertyIDBought, Protocol, TxDBSerialNum, AddressTxIndex, AddressRole, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit))
+                    "(Address, PropertyID, Protocol, TxDBSerialNum, AddressTxIndex, AddressRole, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit, linkedtxdbserialnum)"
+                    "values(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
+                    (Seller, PropertyIDBought, Protocol, TxDBSerialNum, AddressTxIndex, AddressRole, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit, saletxdbserialnum))
 
           if Valid:
             #deduct the amount bought from both reserved and accepted fields, since we track it twice to match core (it only tracks reserved)
@@ -914,13 +1071,12 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
           BalanceAvailableCreditDebit=AmountBought
           BalanceReservedCreditDebit=None
           dbExecute("insert into addressesintxs "
-                    "(Address, PropertyID, Protocol, TxDBSerialNum, AddressTxIndex, AddressRole, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit)"
-                    "values(%s, %s, %s, %s, %s, %s, %s, %s, %s)",
-                    (Buyer, PropertyIDBought, Protocol, TxDBSerialNum, AddressTxIndex, AddressRole, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit))
+                    "(Address, PropertyID, Protocol, TxDBSerialNum, AddressTxIndex, AddressRole, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit, linkedtxdbserialnum)"
+                    "values(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
+                    (Buyer, PropertyIDBought, Protocol, TxDBSerialNum, AddressTxIndex, AddressRole, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit,offertxdbserialnum))
 
           if Valid:
             updateBalance(Buyer, Protocol, PropertyIDBought, Ecosystem, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit, TxDBSerialNum)
-            updateAccept(Buyer, Seller, BalanceAvailableCreditDebit, PropertyIDBought, TxDBSerialNum)
 
           #end //for payment in rawtx['result']['purchases']
 
