@@ -683,7 +683,7 @@ def updateBalance(Address, Protocol, PropertyID, Ecosystem, BalanceAvailable, Ba
       #check if we have unknown txdbserialnum or if its from a reorg and try to find the last known txdbserialnum
       if LastTxDBSerialNum < 0:
         txrow=dbSelect("select max(txdbserialnum) from addressesintxs atx, transactions tx where atx.txdbserialnum=tx.txdbserialnum and "
-                       "tx.txstate='valid' and atx.txdbserialnum!=%s and atx.address=%s and atx.propertyid=%s and atx.protocol=%s"
+                       "tx.txstate='valid' and atx.txdbserialnum!=%s and atx.address=%s and atx.propertyid=%s and atx.protocol=%s and "
                        "(atx.balanceavailablecreditdebit is not null or atx.balancereservedcreditdebit is not null or atx.balanceacceptedcreditdebit is not null)",
                        (-LastTxDBSerialNum, Address, PropertyID, Protocol) )
         try:
