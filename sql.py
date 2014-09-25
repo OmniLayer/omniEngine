@@ -483,21 +483,24 @@ def checkbalances_MP():
                       "where address=%s and Protocol=%s and propertyid=%s",
                       (Address, Protocol, PropertyID) )
 
-        #check db for None/Null returns and convert to match core 0 output
-        if rows[0][1] == None:
-          dbBalanceAvailable = 0
-        else:
-          dbBalanceAvailable = int(rows[0][1])
+        try:
+          #check db for None/Null returns and convert to match core 0 output
+          if rows[0][1] == None:
+            dbBalanceAvailable = 0
+          else:
+            dbBalanceAvailable = int(rows[0][1])
 
-        if rows[0][2] == None:
-          dbBalanceReserved = 0
-        else:
-          dbBalanceReserved = int(rows[0][2])
+          if rows[0][2] == None:
+            dbBalanceReserved = 0
+          else:
+            dbBalanceReserved = int(rows[0][2])
 
-        if rows[0][3] == None:
-          dbBalanceAccepted = 0
-        else:
-          dbBalanceAccepted = int(rows[0][3])
+          if rows[0][3] == None:
+            dbBalanceAccepted = 0
+          else:
+            dbBalanceAccepted = int(rows[0][3])
+        except IndexError:
+          print "error looking up Address:", Address, "Protocol:", Protocol, "PropertyID:",PropertyID
 
         item={}
         if len(rows) == 0:
