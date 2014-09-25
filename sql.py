@@ -43,7 +43,7 @@ def reorgRollback(block):
       #only undo balance/state changes a valid tx created
       if txstate=='valid':
         addressesintxs=dbSelect("select address, addressrole, protocol, propertyid, balanceavailablecreditdebit, balancereservedcreditdebit, balanceacceptedcreditdebit,linkedtxdbserialnum "
-                                "from addressesintxs where txdbserialnum=$s", [TxDbSerialNum])
+                                "from addressesintxs where txdbserialnum=%s", [TxDbSerialNum])
 
         for entry in addressesintxs:
           Address=entry[0]
