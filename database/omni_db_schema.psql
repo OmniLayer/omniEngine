@@ -24,7 +24,7 @@ create database "omniwallet";
  *	sender sent a Simple Send
  */
 create type AddressRole as enum ('buyer', 'issuer', 'participant', 'payee', 'recipient', 'seller', 'sender');
-create type Protocol as enum ('Bitcoin', 'Mastercoin');
+create type Protocol as enum ('Fiat', 'Bitcoin', 'Mastercoin');
 create type Ecosystem as enum ('Production', 'Test');
 create type ObjectType as enum ('address', 'property', 'tx_version_type');
 create type TxState as enum ('pending', 'valid', 'not valid');
