@@ -12,15 +12,12 @@ def updatePrices():
   dbCommit()
 
 def fiat2propertyid(abv):
-  #create a fiat property id system and use it for storing information in database
-  try:
-    convert={"USD": 0 ,
-             "EUR": 1 ,
-             "AUD": 2 , 
-           }
-    return convert[abv.upper()]
-  except KeyError:
+  ROWS=dbSelect("select propertyid from smartproperties where protocol='Fiat' and propertyname=%s",[abv.upper()])
+  if len(ROWS) == 0:
     return -1
+  else:
+    return ROWS[0][0]
+
 
 def getSource(sp):
   try:
@@ -31,31 +28,41 @@ def getSource(sp):
   except KeyError:
     return None
 
-def upsertRate(protocol1, propertyid1, protocol2, propertyid2, rate, source):
+def upsertRate(protocol1, propertyid1, protocol2, propertyid2, rate, source, timestamp=None):
 
   if propertyid1 < 0 or propertyid2 < 0:
     printdebug(("Error, can't insert invalid propertyids", propertyid1, "for", propertyid2), 4)
     return
 
-  # if we have a record with the same exchangerate / source just update timestamp, otherwise insert new record
-  dbExecute("with upsert as "
-              "(update exchangerates set asof=DEFAULT where protocol1=%s and propertyid1=%s and "
-              " protocol2=%s and propertyid2=%s and rate1for2=%s and source=%s  returning *) "
-            "insert into exchangerates (protocol1, propertyid1, protocol2, propertyid2, rate1for2, source) select %s,%s,%s,%s,%s,%s "
-            "where not exists (select * from upsert)",
-            (protocol1, propertyid1, protocol2, propertyid2, rate, source, protocol1, propertyid1, protocol2, propertyid2, rate, source))
-
+  if timestamp==None:
+    # if we have a record with the same exchangerate / source just update timestamp, otherwise insert new record
+    dbExecute("with upsert as "
+                "(update exchangerates set asof=DEFAULT where protocol1=%s and propertyid1=%s and "
+                " protocol2=%s and propertyid2=%s and rate1for2=%s and source=%s  returning *) "
+              "insert into exchangerates (protocol1, propertyid1, protocol2, propertyid2, rate1for2, source) select %s,%s,%s,%s,%s,%s "
+              "where not exists (select * from upsert)",
+              (protocol1, propertyid1, protocol2, propertyid2, rate, source, protocol1, propertyid1, protocol2, propertyid2, rate, source))
+  else:
+    # if we have a record with the same exchangerate / source just update timestamp, otherwise insert new record
+    dbExecute("with upsert as "
+                "(update exchangerates set asof=%s where protocol1=%s and propertyid1=%s and "
+                " protocol2=%s and propertyid2=%s and rate1for2=%s and source=%s  returning *) "
+              "insert into exchangerates (protocol1, propertyid1, protocol2, propertyid2, rate1for2, source, asof) select %s,%s,%s,%s,%s,%s,%s "
+              "where not exists (select * from upsert)",
+              (timestamp, protocol1, propertyid1, protocol2, propertyid2, rate, source, protocol1, propertyid1, protocol2, propertyid2, rate, source, timestamp))
 
 def updateBTC():
     try:
       source='https://api.bitcoinaverage.com/all'
       r= requests.get( source, timeout=15 )
-      value=r.json()['USD']['averages']['last']
-
-      #get our fiat property id using internal conversion schema  
-      fpid=fiat2propertyid('USD')
-
-      upsertRate('Fiat', fpid, 'Bitcoin', 0, value, source)
+      curlist=r.json()
+      timestamp=curlist.pop('timestamp')
+      curlist.pop('ignored_exchanges')
+      for abv in curlist:
+        value=curlist[abv]['averages']['last']
+        #get our fiat property id using internal conversion schema  
+        fpid=fiat2propertyid(abv)
+        upsertRate('Fiat', fpid, 'Bitcoin', 0, value, source, timestamp)
 
     except requests.exceptions.RequestException, e:
       #error or timeout, skip for now
@@ -66,7 +73,7 @@ def updateBTC():
 def updateMSCSP():
   try:
     #get list of smart properties we know about
-    ROWS=dbSelect("select propertyid from smartproperties where propertyid >0 order by propertyid")
+    ROWS=dbSelect("select propertyid from smartproperties where propertyid >0 and Protocol='Mastercoin' order by propertyid")
     for x in ROWS:
 
       sp=x[0]  
@@ -87,6 +94,7 @@ def updateMSCSP():
       else:
         #no Known source for a valuation, set to 0
         value=0
+        source='Local'
 
       upsertRate('Bitcoin', 0, 'Mastercoin', sp, value, source)
 
