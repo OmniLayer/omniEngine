@@ -14,6 +14,9 @@ insert into Protocols values (
 )
 ;
 
+/*Load the Bitcoin property*/
+insert into smartproperties (Protocol, propertyid, issuer, createtxdbserialnum, lasttxdbserialnum, propertyname) values (
+     'Bitcoin', 0, 'Satoshi Nakamoto', -1, -1, 'BTC');
 
 /*Load the list of Fiat Currencies we track */
 
