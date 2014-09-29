@@ -15,7 +15,7 @@ insert into Protocols values (
 ;
 
 
-/Load the list of Fiat Currencies we track */
+/*Load the list of Fiat Currencies we track */
 
 insert into smartproperties (Protocol, propertyid, issuer, createtxdbserialnum, lasttxdbserialnum, propertyname) values (
      'Fiat', 0, 'United States Dollar', -1, -1, 'USD');
