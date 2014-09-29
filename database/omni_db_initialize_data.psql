@@ -1,0 +1,84 @@
+/* Load the initial known protocols */
+insert into Protocols values (
+	'Bitcoin', 'Bitcoin', 'http://bitcoin.org'
+)
+; 
+
+insert into Protocols values (
+	'Mastercoin', 'Bitcoin', 'http://mastercoin.org'
+)
+;
+
+insert into Protocols values (
+        'Fiat', 'Fiat', 'http://en.wikipedia.org/wiki/Fiat_money'
+)
+;
+
+
+/Load the list of Fiat Currencies we track */
+
+insert into smartproperties (Protocol, propertyid, issuer, createtxdbserialnum, lasttxdbserialnum, propertyname) values (
+     'Fiat', 0, 'United States Dollar', -1, -1, 'USD');
+	 
+insert into smartproperties (Protocol, propertyid, issuer, createtxdbserialnum, lasttxdbserialnum, propertyname) values (
+     'Fiat', 1, 'Canadian Dollar', -1, -1, 'CAD');
+
+insert into smartproperties (Protocol, propertyid, issuer, createtxdbserialnum, lasttxdbserialnum, propertyname) values (
+     'Fiat', 2, 'Euro', -1, -1, 'EUR');
+
+insert into smartproperties (Protocol, propertyid, issuer, createtxdbserialnum, lasttxdbserialnum, propertyname) values (
+     'Fiat', 3, 'Australian Dollar', -1, -1, 'AUD');
+
+insert into smartproperties (Protocol, propertyid, issuer, createtxdbserialnum, lasttxdbserialnum, propertyname) values (
+     'Fiat', 4, 'Indonesian Rupiah', -1, -1, 'IDR');
+
+insert into smartproperties (Protocol, propertyid, issuer, createtxdbserialnum, lasttxdbserialnum, propertyname) values (
+     'Fiat', 5, 'Israeli New Sheqel', -1, -1, 'ILS');
+
+insert into smartproperties (Protocol, propertyid, issuer, createtxdbserialnum, lasttxdbserialnum, propertyname) values (
+     'Fiat', 6, 'British Pound Sterling', -1, -1, 'GBP');	 
+	 
+insert into smartproperties (Protocol, propertyid, issuer, createtxdbserialnum, lasttxdbserialnum, propertyname) values (
+     'Fiat', 7, 'Romanian Leu', -1, -1, 'RON');
+
+insert into smartproperties (Protocol, propertyid, issuer, createtxdbserialnum, lasttxdbserialnum, propertyname) values (
+     'Fiat', 8, 'Swedish Krona', -1, -1, 'SEK');
+
+insert into smartproperties (Protocol, propertyid, issuer, createtxdbserialnum, lasttxdbserialnum, propertyname) values (
+     'Fiat', 9, 'Singapore Dollar', -1, -1, 'SGD');
+
+insert into smartproperties (Protocol, propertyid, issuer, createtxdbserialnum, lasttxdbserialnum, propertyname) values (
+     'Fiat', 10, 'Hong Kong Dollar', -1, -1, 'HKD');
+
+insert into smartproperties (Protocol, propertyid, issuer, createtxdbserialnum, lasttxdbserialnum, propertyname) values (
+     'Fiat', 11, 'Swiss Franc', -1, -1, 'CHF');
+
+insert into smartproperties (Protocol, propertyid, issuer, createtxdbserialnum, lasttxdbserialnum, propertyname) values (
+     'Fiat', 12, 'Chinese Yuan', -1, -1, 'CNY');
+
+insert into smartproperties (Protocol, propertyid, issuer, createtxdbserialnum, lasttxdbserialnum, propertyname) values (
+     'Fiat', 13, 'Turkish Lira', -1, -1, 'TRY');
+
+insert into smartproperties (Protocol, propertyid, issuer, createtxdbserialnum, lasttxdbserialnum, propertyname) values (
+     'Fiat', 14, 'New Zealand Dollar', -1, -1, 'NZD');
+
+insert into smartproperties (Protocol, propertyid, issuer, createtxdbserialnum, lasttxdbserialnum, propertyname) values (
+     'Fiat', 15, 'Norwegian Krone', -1, -1, 'NOK');
+
+insert into smartproperties (Protocol, propertyid, issuer, createtxdbserialnum, lasttxdbserialnum, propertyname) values (
+     'Fiat', 16, 'Russian Ruble', -1, -1, 'RUB');
+
+insert into smartproperties (Protocol, propertyid, issuer, createtxdbserialnum, lasttxdbserialnum, propertyname) values (
+     'Fiat', 17, 'Mexican Peso', -1, -1, 'MXN');
+
+insert into smartproperties (Protocol, propertyid, issuer, createtxdbserialnum, lasttxdbserialnum, propertyname) values (
+     'Fiat', 18, 'Brazilian Real', -1, -1, 'BRL');
+
+insert into smartproperties (Protocol, propertyid, issuer, createtxdbserialnum, lasttxdbserialnum, propertyname) values (
+     'Fiat', 19, 'Polish Zloty', -1, -1, 'PLN');
+
+insert into smartproperties (Protocol, propertyid, issuer, createtxdbserialnum, lasttxdbserialnum, propertyname) values (
+     'Fiat', 20, 'South African Rand', -1, -1, 'ZAR');
+
+
+

@@ -269,7 +269,7 @@ create table if not exists ExchangeRates (
 	, AsOf timestamp(0)
 	, Source varchar(256)		/* URL */
 
-	, primary key (PropertyID1, Protocol1, PropertyID2, Protocol2) 
+	, primary key (PropertyID1, Protocol1, PropertyID2, Protocol2, AsOf, Source) 
 )
 ;
 
@@ -311,13 +311,3 @@ create table if not exists Protocols (
 )
 ;
 
-/* Load the initial known protocols */
-insert into Protocols values (
-	'Bitcoin', 'Bitcoin', 'http://bitcoin.org'
-)
-; 
-
-insert into Protocols values (
-	'Mastercoin', 'Bitcoin', 'http://mastercoin.org'
-)
-;
