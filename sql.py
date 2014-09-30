@@ -97,13 +97,13 @@ def reorgRollback(block):
                 dbExecute("update offeraccepts set dexstate='unpaid', amountaccepted=amountaccepted-%s::numeric, amountpurchased=amountpurchased+%s::numeric "
                           "where createtxdbserialnum=%s",(dbBalanceAvailable,dbBalanceAvailable,linkedtxdbserialnum))
 
-            elif txtype == 50 or txtype == 51 or type == 54:
+            elif txtype == 50 or txtype == 51 or txtype == 54:
               #remove the property and the property history information
               dbExecute("delete from smartproperties where createtxdbserialnum=%s and propertyid=%s and protocol=%s",
                         (TxDbSerialNum,PropertyID,Protocol))
               dbExecute("delete from propertyhistory where txdbserialnum=%s and propertyid=%s and protocol=%s",
                         (TxDbSerialNum,PropertyID,Protocol))
-            elif txtype == -51 or txtype == 53 or type == 55 or txtype == 56:
+            elif txtype == -51 or txtype == 53 or txtype == 55 or txtype == 56:
               #remove entries from the property history table only
               dbExecute("delete from propertyhistory where txdbserialnum=%s and propertyid=%s and protocol=%s",
                         (TxDbSerialNum,PropertyID,Protocol))
@@ -522,7 +522,6 @@ def syncAddress(Address, Protocol):
 
       
 
-
 def resetbalances_MP():
     #for now sync / reset balance data from mastercore balance list
     Protocol="Mastercoin"
@@ -749,8 +748,8 @@ def updateBalance(Address, Protocol, PropertyID, Ecosystem, BalanceAvailable, Ba
 def expireCrowdsales(BlockTime, Protocol):
     #find the offers that are ready to expire and credit the 'accepted' amount back to the sellers sale
     expiring=dbSelect("select propertyid from smartproperties as sp inner join transactions as tx on "
-                      "(sp.createtxdbserialnum=tx.txdbserialnum) where tx.txtype=51 and "
-                      "cast(propertydata::json->>'endedtime' as numeric) < %s and propertydata::json->>'active'='true'", [BlockTime])
+                      "(sp.createtxdbserialnum=tx.txdbserialnum) where tx.txtype=51 and sp.protocol=%s "
+                      "cast(propertydata::json->>'endedtime' as numeric) < %s and propertydata::json->>'active'='true'", (Protocol, BlockTime)
 
     #Process all the crowdsales that should have expired by now
     for property in expiring:
@@ -867,13 +866,13 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
 
       #process all inputs, Start AddressTxIndex=0 since inputs don't have a Index number in json and iterate for each input
       AddressTxIndex=0
-      for input in rawtx['result']['vin']:
+      for _input in rawtx['result']['vin']:
         #check if we have previous input txids we need to lookup or if its a coinbase (newly minted coin ) which needs to be skipped
-        if 'txid' in input:
+        if 'txid' in _input:
           AddressRole="sender"
           #existing json doesn't have raw address only prev tx. Get prev tx to decipher address/values
-          prevtxhash=input['txid']
-          prevtxindex=input['vout']
+          prevtxhash=_input['txid']
+          prevtxindex=_input['vout']
           prevtx=getrawtransaction(prevtxhash)
 
           #get prev txdbserial num and update output/recipient of previous tx for utxo stuff
@@ -883,10 +882,10 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
                     " and addresstxindex=%s and addressrole='recipient'",
                     (TxDBSerialNum, Protocol, LinkedTxDBSerialNum, prevtxindex) )
 
-          BalanceAvailableCreditDebit=int(decimal.Decimal(prevtx['result']['vout'][input['vout']]['value'])*decimal.Decimal("1e8")*decimal.Decimal(-1))
-          #BalanceAvailableCreditDebit=int(prevtx['result']['vout'][input['vout']]['value'] * 1e8 * -1)
+          BalanceAvailableCreditDebit=int(decimal.Decimal(prevtx['result']['vout'][_input['vout']]['value'])*decimal.Decimal("1e8")*decimal.Decimal(-1))
+          #BalanceAvailableCreditDebit=int(prevtx['result']['vout'][_input['vout']]['value'] * 1e8 * -1)
           #multisigs have more than 1 address, make sure we find/credit all multisigs for a tx
-          for addr in prevtx['result']['vout'][input['vout']]['scriptPubKey']['addresses']:
+          for addr in prevtx['result']['vout'][_input['vout']]['scriptPubKey']['addresses']:
             dbExecute("insert into addressesintxs "
                       "(Address, PropertyID, Protocol, TxDBSerialNum, LinkedTxDBSerialNum, AddressTxIndex, AddressRole, BalanceAvailableCreditDebit)"
                       "values(%s, %s, %s, %s, %s, %s, %s, %s)",
@@ -897,7 +896,7 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
     elif Protocol == "Mastercoin":
       AddressTxIndex=0
       AddressRole="sender"
-      type=get_TxType(rawtx['result']['type'])
+      txtype=get_TxType(rawtx['result']['type'])
       BalanceAvailableCreditDebit=None
       BalanceReservedCreditDebit=None
       BalanceAcceptedCreditDebit=None
@@ -905,7 +904,7 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
       #PropertyID=rawtx['result']['propertyid']
 
       #Check if we are a DEx Purchase/payment. Format is a littler different and variables below would fail if we tried. 
-      if type != -22:
+      if txtype != -22:
         PropertyID= rawtx['result']['propertyid']
         Ecosystem=getEcosystem(PropertyID) 
         Valid=rawtx['result']['valid']
@@ -917,7 +916,7 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
         value_neg=(value*-1)
 
 
-      if type == 0:
+      if txtype == 0:
         #Simple Send
         BalanceAvailableCreditDebit=value_neg 
 
@@ -935,17 +934,17 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
 	AddressRole="recipient"
         BalanceAvailableCreditDebit=value
 
-      #elif type == 2:
+      #elif txtype == 2:
 	#Restricted Send does nothing yet?
 
-      elif type == 3:
+      elif txtype == 3:
         #Send To Owners
         if Valid:
            sendToOwners(Address, value, PropertyID, Protocol, TxDBSerialNum)
         #Debit the sender
         BalanceAvailableCreditDebit=value_neg
 
-      elif type == 20:
+      elif txtype == 20:
         #DEx Sell Offer
         #Move the amount from Available balance to reserved for Offer
         ##Sell offer cancel doesn't display an amount from core, not sure what we do here yet
@@ -961,11 +960,11 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
             BalanceAvailableCreditDebit=remainder
             BalanceReservedCreditDebit=remainder*-1
 
-      #elif type == 21:
+      #elif txtype == 21:
         #MetaDEx: Offer/Accept one Master Protocol Coins for another
         #return
 
-      elif type == 22:
+      elif txtype == 22:
         #DEx Accept Offer
 
         #insert record for the buyer
@@ -996,7 +995,7 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
         #we processed everything for this tx, return
         return
 
-      elif type == -22:
+      elif txtype == -22:
         #DEx Accept Payment
 
         Buyer =  Address
@@ -1082,19 +1081,19 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
         #We've updated all the records in the DEx payment, don't let the last write command run, not needed
         return
 
-      elif type == 50:
+      elif txtype == 50:
         #Fixed Issuance, create property
         AddressRole = "issuer"
         BalanceAvailableCreditDebit = value
         #update smart property table
         insertProperty(rawtx, Protocol)
      
-      elif type == 51:
+      elif txtype == 51:
         AddressRole = "issuer"
         #update smart property table
         insertProperty(rawtx, Protocol)
 
-      elif type == -51:
+      elif txtype == -51:
         #First deduct the amount the participant sent to 'buyin'  (BTC Amount might need to be excluded?)
         AddressRole = 'participant'
         BalanceAvailableCreditDebit = value_neg
@@ -1145,10 +1144,10 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
         Address = rawtx['result']['sendingaddress']
         AddressRole = 'participant'
  
-      #elif type == 52:
+      #elif txtype == 52:
         #promote crowdsale does what?
 
-      elif type == 53:
+      elif txtype == 53:
         #Close Crowdsale
         AddressRole = "issuer"
         BalanceAvailableCreditDebit=None
@@ -1156,21 +1155,21 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
         #update smart property table
         insertProperty(rawtx, Protocol)
 
-      elif type == 54:
+      elif txtype == 54:
         AddressRole = "issuer"
         BalanceAvailableCreditDebit=0
 
         #update smart property table
         insertProperty(rawtx, Protocol)
 
-      elif type == 55:
+      elif txtype == 55:
         AddressRole = "issuer"
         BalanceAvailableCreditDebit=value
 
         #update smart property table
         insertProperty(rawtx, Protocol)
 
-      elif type == 56:
+      elif txtype == 56:
         AddressRole = "issuer"
         BalanceAvailableCreditDebit=value_neg
 
