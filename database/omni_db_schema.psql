@@ -133,6 +133,7 @@ create table if not exists Transactions (
 	, TxSeqInBlock integer null		/* determined by order of tx's in the block */
 
 	, primary key (TxHash, Protocol, TxBlockNumber)
+	, foreign key (TxBlockNumber) references Blocks
 )
 ;
 
@@ -240,6 +241,7 @@ create table if not exists PropertyHistory (
 	, TxDBSerialNum int8 not null		/* the tx that affected this SP, for faster joins */
 
 	, primary key (PropertyID, Protocol)
+	, foreign key (PropertyID, Protocol) references SmartProperties
 )
 ;
 
@@ -287,7 +289,14 @@ create table if not exists ActiveOffers (
       , UnitPrice numeric(19) not null                  /* Amount of PropertyIdDesired per one token of PropertyIdSelling */
       , OfferState OfferState not null                  /* active, cancelled, replaced, soldout  */
       , LastTxDBSerialNum int8 not null default -1      /* last tx that produced a cancelled, replaced or soldout state */
+      
+      , primary key (PropertyIdSelling, PropertyIdDesired, Seller)
+      , foreign key (PropertyIdSelling) references SmartProperties (PropertyId)
+      , foreign key (PropertyIdDesired) references SmartProperties (PropertyId)
 )
+;
+
+create index Sellers on ActiveOffers (Seller)
 ;
 
 create table if not exists OfferAccepts (
@@ -297,9 +306,31 @@ create table if not exists OfferAccepts (
       , LinkedTxDBSerialNum int8 not null              /* tx with the associated accept offer */
       , SaleTxDbSerialNum int8 not null                /* tx the offer is actually accepting against */
       , Block int not null                             /* Block the accept was received in */
-      , DExState DExState not null                     /* unpaid, paid-partial, paid-complete */
+      , DExState DExState not null                     /* invalid, unpaid, paid-partial, paid-complete */
       , ExpireBlock int not null                       /* Last block payment for this accept can be received in */
-      , ExpiredState boolean default false             /* true/false if this offer is expired */
+      , ExpiredState boolean default false             /* true/false if this accept is expired */
+      
+      , primary key (SaleTxDbSerialNum)
+      , foreign key (SaleTxDbSerialNum) references ActiveOffers (CreateTxDBSerialNum)
+      , foreign key (LinkedTxDBSerialNum) references Transactions (TxDBSerialNum)
+)
+;
+
+create index Buyers on OfferAccepts (Buyer)
+;
+
+/* directional exchange rates between pairs of properties; can work with fiat currencies as well */
+/* rate for 1 --> 2 not necessarily the same as the reciprocal of rate for 2 --> 1 */
+create table if not exists ExchangeRates (			
+	Protocol1 Protocol		/* see Protocols */
+	, PropertyID1 bigint		/* need exchange rates for fiat currencies */
+	, Protocol2 Protocol
+	, PropertyID2 bigint			
+	, Rate1For2 float		/* (1 for 2) */		
+	, AsOf timestamp(0)
+	, Source varchar(256)		/* URL */
+
+	, primary key (PropertyID1, Protocol1, PropertyID2, Protocol2) 
 )
 ;
 
