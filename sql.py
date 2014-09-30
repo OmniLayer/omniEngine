@@ -748,7 +748,7 @@ def updateBalance(Address, Protocol, PropertyID, Ecosystem, BalanceAvailable, Ba
 def expireCrowdsales(BlockTime, Protocol):
     #find the offers that are ready to expire and credit the 'accepted' amount back to the sellers sale
     expiring=dbSelect("select propertyid from smartproperties as sp inner join transactions as tx on "
-                      "(sp.createtxdbserialnum=tx.txdbserialnum) where tx.txtype=51 and sp.protocol=%s and"
+                      "(sp.createtxdbserialnum=tx.txdbserialnum) where tx.txtype=51 and sp.protocol=%s and "
                       "cast(propertydata::json->>'endedtime' as numeric) < %s and propertydata::json->>'active'='true'", (Protocol, BlockTime))
 
     #Process all the crowdsales that should have expired by now
