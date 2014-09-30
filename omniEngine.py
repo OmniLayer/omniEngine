@@ -51,9 +51,19 @@ else:
       checkBlock+=1
     else:
       #reorg took place
-      reorgRollback(checkBlock-1)
-      currentBlock=checkBlock
-      break
+      try:
+        reorgRollback(checkBlock-1)
+        currentBlock=checkBlock
+        dbCommit()
+        break
+      except Exception,e:
+        #Catch any issues and stop processing. Try to undo any incomplete changes
+        print "Problem with ", e
+        if dbRollback():
+          print "Database rolledback, last successful block", (currentBlock -1)
+        else:
+          print "Problem rolling database back, check block data for", currentBlock
+        exit(1)
 
 
   if currentBlock > endBlock:
