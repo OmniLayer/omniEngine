@@ -809,9 +809,9 @@ def insertProperty(rawtx, Protocol, PropertyID=None):
       PropertyName = rawprop['name']
       #propertyurl = rawprop['url']
       if rawprop['divisible']:
-        PropertyType = 1
+        PropertyType = 2
       else:
-        PropertyType = 0
+        PropertyType = 1
       PropertyData = rawprop['data']
       PropertyCategory = rawprop['category']
       PropertySubcategory =rawprop['subcategory'] 
