@@ -73,8 +73,8 @@ create table if not exists AddressBalances (
 	, PropertyID bigint not null default 0		/* Bitcoin */		
 	, Ecosystem Ecosystem null
 	, BalanceAvailable numeric(19) not null default 0
-	, BalanceReserved numeric(19) null
-	, BalanceAccepted numeric(19) null
+	, BalanceReserved numeric(19) not null default 0
+	, BalanceAccepted numeric(19) not null default 0
 	, LastTxDBSerialNum int8 null			/* last tx that affected this currency for this address, null if no tx's */
 
 	, primary key (Address, Protocol, PropertyID)
