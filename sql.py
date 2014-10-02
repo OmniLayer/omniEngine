@@ -635,7 +635,10 @@ def checkbalances_MP():
           else:
             dbBalanceAccepted = int(rows[0][3])
         except IndexError:
-          print "error looking up Address:", Address, "Protocol:", Protocol, "PropertyID:",PropertyID
+          print "No DB entry, error looking up Address:", Address, "Protocol:", Protocol, "PropertyID:",PropertyID
+          dbBalanceAvailable = 0
+          dbBalanceReserved = 0
+          dbBalanceAccepted = 0
 
         item={}
         if len(rows) == 0:
