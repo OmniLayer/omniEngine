@@ -317,7 +317,7 @@ def offerAccept (rawtx, TxDBSerialNum, Block):
 
     #convert accepted amount to non divisible quantity to store in db
     if rawtx['result']['divisible']:
-      amountaccepted=int(decimal.Decimal(rawtx['result']['amount'])*decimal.Decimal(1e8))
+      amountaccepted=int(math.ceil(decimal.Decimal(rawtx['result']['amount'])*decimal.Decimal(1e8)))
     else:
       amountaccepted=int(rawtx['result']['amount'])
 
@@ -365,7 +365,7 @@ def updatedex(rawtx, TxDBSerialNum, Protocol):
     propertyidselling=rawtx['result']['propertyid']
 
     if getdivisible_MP(propertyidselling):
-      amountavailable=int(decimal.Decimal(rawtx['result']['amount'])*decimal.Decimal(1e8))
+      amountavailable=int(math.ceil(decimal.Decimal(rawtx['result']['amount'])*decimal.Decimal(1e8)))
     else:
       amountavailable=int(rawtx['result']['amount'])
 
@@ -430,8 +430,8 @@ def updatedex(rawtx, TxDBSerialNum, Protocol):
       totalselling=amountavailable
 
       #convert all btc stuff, need additional logic for metadex  
-      amountdesired=int(decimal.Decimal(rawtx['result']['bitcoindesired'])*decimal.Decimal(1e8))
-      minimumfee=int(decimal.Decimal(rawtx['result']['fee'])*decimal.Decimal(1e8))
+      amountdesired=int(math.ceil(decimal.Decimal(rawtx['result']['bitcoindesired'])*decimal.Decimal(1e8)))
+      minimumfee=int(math.ceil(decimal.Decimal(rawtx['result']['fee'])*decimal.Decimal(1e8)))
 
       #rawtx does't have ppc, do the calculation to store
       unitprice=int(amountdesired/amountavailable)
@@ -454,8 +454,8 @@ def resetdextable_MP():
         propertyidselling=sale['propertyid']
 
         if getdivisible_MP(propertyidselling):
-          amountaccepted=int(decimal.Decimal(sale['amountaccepted'])*decimal.Decimal(1e8))
-          amountavailable=int(decimal.Decimal(sale['amountavailable'])*decimal.Decimal(1e8))
+          amountaccepted=int(math.ceil(decimal.Decimal(sale['amountaccepted'])*decimal.Decimal(1e8)))
+          amountavailable=int(math.ceil(decimal.Decimal(sale['amountavailable'])*decimal.Decimal(1e8)))
         else:
           amountaccepted=int(sale['amountaccepted'])
           amountavailable=int(sale['amountavailable'])
@@ -463,9 +463,9 @@ def resetdextable_MP():
         totalselling=amountaccepted
 
         #convert all btc stuff, need additional logic for metadex  
-        amountdesired=int(decimal.Decimal(sale['bitcoindesired'])*decimal.Decimal(1e8))
-        minimumfee=int(decimal.Decimal(sale['minimumfee'])*decimal.Decimal(1e8))
-        unitprice=int(decimal.Decimal(sale['unitprice'])*decimal.Decimal(1e8))
+        amountdesired=int(math.ceil(decimal.Decimal(sale['bitcoindesired'])*decimal.Decimal(1e8)))
+        minimumfee=int(math.ceil(decimal.Decimal(sale['minimumfee'])*decimal.Decimal(1e8)))
+        unitprice=int(math.ceil(decimal.Decimal(sale['unitprice'])*decimal.Decimal(1e8)))
         
         seller=sale['seller']
         timelimit=sale['timelimit']
@@ -490,8 +490,8 @@ def syncAddress(Address, Protocol):
 
       #get available/reserved balances
       if getdivisible_MP(PropertyID):
-        Available=int(decimal.Decimal(property['balance'])*decimal.Decimal(1e8))
-        Reserved=int(decimal.Decimal(property['reserved'])*decimal.Decimal(1e8))
+        Available=int(math.ceil(decimal.Decimal(property['balance'])*decimal.Decimal(1e8)))
+        Reserved=int(math.ceil(decimal.Decimal(property['reserved'])*decimal.Decimal(1e8)))
       else:
         Available=int(property['balance'])
         Available=int(property['reserved'])
@@ -552,13 +552,13 @@ def resetbalances_MP():
             accept=0
 
         if property['divisible']:
-          BalanceAvailable=int(decimal.Decimal(addr['balance'])*decimal.Decimal(1e8))
-          BalanceReserved=int(decimal.Decimal(addr['reserved'])*decimal.Decimal(1e8))
-          BalanceAccepted=int(decimal.Decimal(accept)*decimal.Decimal(1e8))
+          BalanceAvailable=int(math.ceil(decimal.Decimal(addr['balance'])*decimal.Decimal(1e8)))
+          BalanceReserved=int(math.ceil(decimal.Decimal(addr['reserved'])*decimal.Decimal(1e8)))
+          BalanceAccepted=int(math.ceil(decimal.Decimal(accept)*decimal.Decimal(1e8)))
         else:
           BalanceAvailable=int(addr['balance'])
           BalanceReserved=int(addr['reserved'])
-          BalanceAccepted=int(decimal.Decimal(accept))
+          BalanceAccepted=int(math.ceil(decimal.Decimal(accept)))
 
         rows=dbSelect("select address from AddressBalances where address=%s and Protocol=%s and propertyid=%s", 
                       (Address, Protocol, PropertyID) )
@@ -596,6 +596,9 @@ def checkbalances_MP():
       #Check each address and get balance info
       for addr in bal_data['result']:
         Address=addr['address']
+        dbBalanceAvailable = 0
+        dbBalanceReserved = 0
+        dbBalanceAccepted = 0
 
         #find reserved balance (if exists)
         for x in DExSales['result']:
@@ -606,13 +609,13 @@ def checkbalances_MP():
             accept=0
 
         if property['divisible']:
-          BalanceAvailable=int(decimal.Decimal(addr['balance'])*decimal.Decimal(1e8))
-          BalanceReserved=int(decimal.Decimal(addr['reserved'])*decimal.Decimal(1e8))
-          BalanceAccepted=int(decimal.Decimal(accept)*decimal.Decimal(1e8))
+          BalanceAvailable=int(math.ceil(decimal.Decimal(addr['balance'])*decimal.Decimal(1e8)))
+          BalanceReserved=int(math.ceil(decimal.Decimal(addr['reserved'])*decimal.Decimal(1e8)))
+          BalanceAccepted=int(math.ceil(decimal.Decimal(accept)*decimal.Decimal(1e8)))
         else:
           BalanceAvailable=int(addr['balance'])
           BalanceReserved=int(addr['reserved'])
-          BalanceAccepted=int(decimal.Decimal(accept))
+          BalanceAccepted=int(math.ceil(decimal.Decimal(accept)))
 
         rows=dbSelect("select address,BalanceAvailable,balancereserved,balanceaccepted from AddressBalances "
                       "where address=%s and Protocol=%s and propertyid=%s",
@@ -635,10 +638,10 @@ def checkbalances_MP():
           else:
             dbBalanceAccepted = int(rows[0][3])
         except IndexError:
-          print "error looking up Address:", Address, "Protocol:", Protocol, "PropertyID:",PropertyID
+          print "No DB entry, Address:", Address, "Protocol:", Protocol, "PropertyID:",PropertyID
 
         item={}
-        if len(rows) == 0:
+        if len(rows) == 0 and ( BalanceAvailable!=0 or BalanceReserved!=0 or BalanceAccepted!=0) :
           #address not in database, insert
           item[PropertyID] ={'Address':Address, 'bal':{'Status': 'Missing', 'PropertyID': PropertyID, 'BalanceAvailable':BalanceAvailable,'BalanceReserved': BalanceReserved,'BalanceAccepted':BalanceAccepted }}
           #add the missing/incorrect item to our list to return
@@ -809,9 +812,9 @@ def insertProperty(rawtx, Protocol, PropertyID=None):
       PropertyName = rawprop['name']
       #propertyurl = rawprop['url']
       if rawprop['divisible']:
-        PropertyType = 1
+        PropertyType = 2
       else:
-        PropertyType = 0
+        PropertyType = 1
       PropertyData = rawprop['data']
       PropertyCategory = rawprop['category']
       PropertySubcategory =rawprop['subcategory'] 
@@ -854,7 +857,7 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
           AddressRole="recipient"
           AddressTxIndex=output['n']
           #store values as satoshi/willits etc''. Client converts
-          BalanceAvailableCreditDebit=int(decimal.Decimal(output['value'])*decimal.Decimal("1e8"))
+          BalanceAvailableCreditDebit=int(math.ceil(decimal.Decimal(output['value'])*decimal.Decimal("1e8")))
           #multisigs have more than 1 address, make sure we find/credit all multisigs for a tx
           for addr in output['scriptPubKey']['addresses']:
             dbExecute("insert into addressesintxs "
@@ -882,7 +885,7 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
                     " and addresstxindex=%s and addressrole='recipient'",
                     (TxDBSerialNum, Protocol, LinkedTxDBSerialNum, prevtxindex) )
 
-          BalanceAvailableCreditDebit=int(decimal.Decimal(prevtx['result']['vout'][_input['vout']]['value'])*decimal.Decimal("1e8")*decimal.Decimal(-1))
+          BalanceAvailableCreditDebit=int(math.ceil(decimal.Decimal(prevtx['result']['vout'][_input['vout']]['value'])*decimal.Decimal("1e8")*decimal.Decimal(-1)))
           #BalanceAvailableCreditDebit=int(prevtx['result']['vout'][_input['vout']]['value'] * 1e8 * -1)
           #multisigs have more than 1 address, make sure we find/credit all multisigs for a tx
           for addr in prevtx['result']['vout'][_input['vout']]['scriptPubKey']['addresses']:
@@ -910,7 +913,7 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
         Valid=rawtx['result']['valid']
 
         if rawtx['result']['divisible']:
-          value=int(decimal.Decimal(rawtx['result']['amount'])*decimal.Decimal(1e8))
+          value=int(math.ceil(decimal.Decimal(rawtx['result']['amount'])*decimal.Decimal(1e8)))
         else:
           value=int(rawtx['result']['amount'])
         value_neg=(value*-1)
@@ -1012,7 +1015,7 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
           #AddressTxIndex =  Do we need to change this?
 
           if getdivisible_MP(PropertyIDBought):
-            AmountBought=int(decimal.Decimal(payment['amountbought'])*decimal.Decimal(1e8))
+            AmountBought=int(math.ceil(decimal.Decimal(payment['amountbought'])*decimal.Decimal(1e8)))
           else:
             AmountBought=int(payment['amountbought'])
           AmountBoughtNeg=(AmountBought * -1)
@@ -1120,10 +1123,10 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
         PropertyID = rawtx['result']['purchasedpropertyid']
 
         if getdivisible_MP(PropertyID):
-          IssuerCreditDebit = int(decimal.Decimal(rawtx['result']['issuertokens'])*decimal.Decimal(1e8))
-          BalanceAvailableCreditDebit = int(decimal.Decimal(rawtx['result']['purchasedtokens'])*decimal.Decimal(1e8))
+          IssuerCreditDebit = int(math.ceil(decimal.Decimal(rawtx['result']['issuertokens'])*decimal.Decimal(1e8)))
+          BalanceAvailableCreditDebit = int(math.ceil(decimal.Decimal(rawtx['result']['purchasedtokens'])*decimal.Decimal(1e8)))
         else:  
-          IssuerCreditDebit = int(decimal.Decimal(rawtx['result']['issuertokens']))
+          IssuerCreditDebit = int(rawtx['result']['issuertokens'])
           BalanceAvailableCreditDebit = int(rawtx['result']['purchasedtokens'])
 
         #If there is an amount to issuer > 0 insert into db otherwise skip
