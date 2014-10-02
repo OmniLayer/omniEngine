@@ -1,7 +1,9 @@
-create database "omniwallet";
-
-/* psql command to use the newly created database */
-\connect omniwallet;
+/*
+ * "omniwallet" schema
+ *
+ * The database name is no longer contained in this SQL script.
+ * You'll need to specify it on the command-line or with whatever tool you're using to connect.
+ */
 
 /*
  * Notes:
