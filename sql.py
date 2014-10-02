@@ -596,7 +596,9 @@ def checkbalances_MP():
       #Check each address and get balance info
       for addr in bal_data['result']:
         Address=addr['address']
-        
+        dbBalanceAvailable = 0
+        dbBalanceReserved = 0
+        dbBalanceAccepted = 0
 
         #find reserved balance (if exists)
         for x in DExSales['result']:
@@ -637,10 +639,6 @@ def checkbalances_MP():
             dbBalanceAccepted = int(rows[0][3])
         except IndexError:
           print "No DB entry, Address:", Address, "Protocol:", Protocol, "PropertyID:",PropertyID
-          dbBalanceAvailable = 0
-          dbBalanceReserved = 0
-          dbBalanceAccepted = 0
-
 
         item={}
         if len(rows) == 0 and ( BalanceAvailable!=0 or BalanceReserved!=0 or BalanceAccepted!=0) :
