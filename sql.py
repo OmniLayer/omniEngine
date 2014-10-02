@@ -635,13 +635,10 @@ def checkbalances_MP():
           else:
             dbBalanceAccepted = int(rows[0][3])
         except IndexError:
-          print "No DB entry, error looking up Address:", Address, "Protocol:", Protocol, "PropertyID:",PropertyID
-          dbBalanceAvailable = 0
-          dbBalanceReserved = 0
-          dbBalanceAccepted = 0
+          print "No DB entry, Address:", Address, "Protocol:", Protocol, "PropertyID:",PropertyID
 
         item={}
-        if len(rows) == 0:
+        if len(rows) == 0 and ( BalanceAvailable!=0 or BalanceReserved!=0 or BalanceAccepted!=0) :
           #address not in database, insert
           item[PropertyID] ={'Address':Address, 'bal':{'Status': 'Missing', 'PropertyID': PropertyID, 'BalanceAvailable':BalanceAvailable,'BalanceReserved': BalanceReserved,'BalanceAccepted':BalanceAccepted }}
           #add the missing/incorrect item to our list to return
