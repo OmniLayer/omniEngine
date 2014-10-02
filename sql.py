@@ -609,13 +609,13 @@ def checkbalances_MP():
             accept=0
 
         if property['divisible']:
-          BalanceAvailable=int(math.ceil(decimal.Decimal(addr['balance'])*decimal.Decimal(1e8)))
-          BalanceReserved=int(math.ceil(decimal.Decimal(addr['reserved'])*decimal.Decimal(1e8)))
-          BalanceAccepted=int(math.ceil(decimal.Decimal(accept)*decimal.Decimal(1e8)))
+          BalanceAvailable=int(math.ceil(decimal.Decimal(str(addr['balance']))*decimal.Decimal(1e8)))
+          BalanceReserved=int(math.ceil(decimal.Decimal(str(addr['reserved']))*decimal.Decimal(1e8)))
+          BalanceAccepted=int(math.ceil(decimal.Decimal(str(accept))*decimal.Decimal(1e8)))
         else:
           BalanceAvailable=int(addr['balance'])
           BalanceReserved=int(addr['reserved'])
-          BalanceAccepted=int(math.ceil(decimal.Decimal(accept)))
+          BalanceAccepted=int(accept)
 
         rows=dbSelect("select address,BalanceAvailable,balancereserved,balanceaccepted from AddressBalances "
                       "where address=%s and Protocol=%s and propertyid=%s",
