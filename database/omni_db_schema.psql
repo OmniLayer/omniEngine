@@ -112,7 +112,7 @@ create table if not exists Blocks (
 	, Size integer null
 	, TxCount integer null		/* Number of transaction entries */
 
-	, primary key (BlockTime, BlockNumber, Protocol)
+	, primary key (Protocol, BlockNumber)
 )
 ;
 
@@ -135,7 +135,7 @@ create table if not exists Transactions (
 	, TxSeqInBlock integer null		/* determined by order of tx's in the block */
 
 	, primary key (TxHash, Protocol, TxBlockNumber)
-	, foreign key (TxBlockNumber) references Blocks
+	, foreign key (Protocol, TxBlockNumber) references Blocks
 )
 ;
 
@@ -226,9 +226,9 @@ create table if not exists SmartProperties (
 	, PropertyData json null			/* with the current data for this SP, varies by SP type */
 
 	, primary key (PropertyID, Protocol)
-	, foreign key (Issuer, Protocol, PropertyID) references AddressBalances (Address, Protocol, PropertyID)
-	, foreign key (CreateTxDBSerialNum, Protocol) references Transactions (TxDBSerialNum, Protocol)
-	, foreign key (LastTxDBSerialNum, Protocol) references Transactions (TxDBSerialNum, Protocol)
+/*	, foreign key (Issuer, Protocol, PropertyID) references AddressBalances (Address, Protocol, PropertyID) */
+/*	, foreign key (CreateTxDBSerialNum, Protocol) references Transactions (TxDBSerialNum, Protocol) */
+/*	, foreign key (LastTxDBSerialNum, Protocol) references Transactions (TxDBSerialNum, Protocol) */
 )
 ;
 
@@ -283,6 +283,7 @@ create table if not exists ActiveOffers (
       , TotalSelling numeric(19) not null               /* Total Amount put up for sale regardless of current accepts/sales */
       , AmountDesired numeric(19) not null              /* If total amountavailable where purchased, this would be cost */
       , MinimumFee numeric(19) not null                 /* Min fee buyer has to pay */
+      , Protocol Protocol not null                      /* Protocol plus PropertyID uniquely identify a property */
       , PropertyIdSelling bigint not null               /* Property ID for sale  */
       , PropertyIdDesired bigint not null default 0     /* Defaults to 0 for btc for now, allows MetaDEx support ? */
       , Seller varchar(64) not null                     /* Sellers address */
@@ -293,8 +294,8 @@ create table if not exists ActiveOffers (
       , LastTxDBSerialNum int8 not null default -1      /* last tx that produced a cancelled, replaced or soldout state */
       
       , primary key (PropertyIdSelling, PropertyIdDesired, Seller)
-      , foreign key (PropertyIdSelling) references SmartProperties (PropertyId)
-      , foreign key (PropertyIdDesired) references SmartProperties (PropertyId)
+      , foreign key (PropertyIdSelling, Protocol) references SmartProperties
+      , foreign key (PropertyIdDesired, Protocol) references SmartProperties
 )
 ;
 
@@ -313,7 +314,7 @@ create table if not exists OfferAccepts (
       , ExpiredState boolean default false             /* true/false if this accept is expired */
       
       , primary key (SaleTxDbSerialNum)
-      , foreign key (SaleTxDbSerialNum) references ActiveOffers (CreateTxDBSerialNum)
+/*      , foreign key (SaleTxDbSerialNum) references ActiveOffers (CreateTxDBSerialNum) */
       , foreign key (LinkedTxDBSerialNum) references Transactions (TxDBSerialNum)
 )
 ;
