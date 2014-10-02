@@ -638,7 +638,8 @@ def checkbalances_MP():
           else:
             dbBalanceAccepted = int(rows[0][3])
         except IndexError:
-          print "No DB entry, Address:", Address, "Protocol:", Protocol, "PropertyID:",PropertyID
+          #print "No DB entry, Address:", Address, "Protocol:", Protocol, "PropertyID:",PropertyID
+           pass
 
         item={}
         if len(rows) == 0 and ( BalanceAvailable!=0 or BalanceReserved!=0 or BalanceAccepted!=0) :
@@ -1159,6 +1160,7 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
         insertProperty(rawtx, Protocol)
 
       elif txtype == 54:
+        #create a new grant property
         AddressRole = "issuer"
         BalanceAvailableCreditDebit=0
 
@@ -1166,13 +1168,30 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
         insertProperty(rawtx, Protocol)
 
       elif txtype == 55:
+        #issue new tokens for a grant
         AddressRole = "issuer"
         BalanceAvailableCreditDebit=value
-
+        try:
+          #check if we have a reciever for the grant
+          Receiver = rawtx['result']['referenceaddress']
+          ReceiveRole = 'recipient'
+        except KeyError:
+          Receiver = None
+        if Receiver != None:
+          dbExecute("insert into addressesintxs "
+                    "(Address, PropertyID, Protocol, TxDBSerialNum, AddressTxIndex, AddressRole, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit)"
+                    "values(%s, %s, %s, %s, %s, %s, %s, %s, %s)",
+                    (Receiver, PropertyID, Protocol, TxDBSerialNum, AddressTxIndex, ReceiveRole, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit))
+          if Valid:
+            updateBalance(Address, Protocol, PropertyID, Ecosystem, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit, TxDBSerialNum)
+          #if we had a receiver then the tokens issued go to them, not to the issuer
+          BalanceAvailableCreditDebit=None
+          
         #update smart property table
         insertProperty(rawtx, Protocol)
 
       elif txtype == 56:
+        #revoke tokens for grant
         AddressRole = "issuer"
         BalanceAvailableCreditDebit=value_neg
 
