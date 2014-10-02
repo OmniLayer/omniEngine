@@ -212,7 +212,7 @@ def expireAccepts(Block):
     else:
       #find the offers that are ready to expire and credit the 'accepted' amount back to the sellers sale
       expiring=dbSelect("select oa.amountaccepted, oa.saletxdbserialnum, ao.offerstate from offeraccepts as oa, activeoffers as ao "
-                        "where oa.saletxdbserialnum=ao.createtxdbserialnum and oa.expireblock < %s and oa.expiredstate=false and "
+                        "where oa.saletxdbserialnum=ao.createtxdbserialnum and oa.expireblock <= %s and oa.expiredstate=false and "
                         "(oa.dexstate='paid-partial' or oa.dexstate='unpaid')", [Block] )
 
     #make sure we process all the offers that are expiring
