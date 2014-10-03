@@ -1177,7 +1177,8 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
           ReceiveRole = 'recipient'
         except KeyError:
           Receiver = None
-        if Receiver != None:
+        #check if the reference address is defined and its not the same as the sender
+        if Receiver != None and Receiver != Address:
           dbExecute("insert into addressesintxs "
                     "(Address, PropertyID, Protocol, TxDBSerialNum, AddressTxIndex, AddressRole, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit)"
                     "values(%s, %s, %s, %s, %s, %s, %s, %s, %s)",
