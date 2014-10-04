@@ -1184,7 +1184,7 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
                     "values(%s, %s, %s, %s, %s, %s, %s, %s, %s)",
                     (Receiver, PropertyID, Protocol, TxDBSerialNum, AddressTxIndex, ReceiveRole, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit))
           if Valid:
-            updateBalance(Address, Protocol, PropertyID, Ecosystem, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit, TxDBSerialNum)
+            updateBalance(Receiver, Protocol, PropertyID, Ecosystem, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit, TxDBSerialNum)
           #if we had a receiver then the tokens issued go to them, not to the issuer
           BalanceAvailableCreditDebit=None
           
