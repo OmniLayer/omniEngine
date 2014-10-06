@@ -345,3 +345,18 @@ create table if not exists Protocols (
 )
 ;
 
+/*
+ * dictionary of categories & subcategories
+ * based on International Standard Industrial Classification of All Economic Activities, Rev.4 (ISIC)
+ * Categories are rows where Division is null
+ * Divisions are other rows, grouped by Section value
+ * http://unstats.un.org/unsd/cr/registry/regcst.asp?Cl=27&Lg=1
+ */
+create table if not exists Categories (
+	Section varchar(2) not null
+	, Division varchar(4) not null
+	, Name varchar(256) not null
+	
+	, primary key (Section, Division)
+)
+;
