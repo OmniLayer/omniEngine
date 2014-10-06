@@ -89,8 +89,8 @@ create table if not exists AddressesInWallets (		/* many-to-many */
 	, WalletID uuid	not null		/* WalletID must exist in the Wallets table */
 
 	, primary key (WalletID, Address, Protocol, PropertyID)
-	, foreign key (WalletID) references Wallets on delete CASCADE on update CASCADE	/* del/upd rows here if corresponding row is deleted/updated */
-	, foreign key (Address, Protocol, PropertyID) references AddressBalances
+/*	, foreign key (WalletID) references Wallets on delete CASCADE on update CASCADE */	/* del/upd rows here if corresponding row is deleted/updated */
+/*	, foreign key (Address, Protocol, PropertyID) references AddressBalances */
 )
 ;
 
@@ -135,7 +135,7 @@ create table if not exists Transactions (
 	, TxSeqInBlock integer null		/* determined by order of tx's in the block */
 
 	, primary key (TxHash, Protocol, TxBlockNumber)
-	, foreign key (Protocol, TxBlockNumber) references Blocks
+/*	, foreign key (Protocol, TxBlockNumber) references Blocks */
 )
 ;
 
@@ -158,7 +158,7 @@ create table if not exists TxJSON (
 	, TxData json not null			/* the tx message fields */
 
 	, primary key (TxDBSerialNum, Protocol)
-	, foreign key (TxDBSerialNum, Protocol) references Transactions(TxDBSerialNum, Protocol)
+/*	, foreign key (TxDBSerialNum, Protocol) references Transactions(TxDBSerialNum, Protocol) */
 )
 ;
 
@@ -176,8 +176,8 @@ create table if not exists AddressesInTxs (					/* many-to-many */
 	, BalanceAcceptedCreditDebit numeric(19) null		/* how much the balance changed */
 
 	, primary key (Address, TxDBSerialNum, PropertyID, AddressRole)
-	, foreign key (Address, Protocol, PropertyID) references AddressBalances
-	, foreign key (TxDBSerialNum, Protocol) references Transactions (TxDBSerialNum, Protocol)
+/*	, foreign key (Address, Protocol, PropertyID) references AddressBalances */
+/*	, foreign key (TxDBSerialNum, Protocol) references Transactions (TxDBSerialNum, Protocol) */
 )
 ;
 
@@ -243,7 +243,7 @@ create table if not exists PropertyHistory (
 	, TxDBSerialNum int8 not null		/* the tx that affected this SP, for faster joins */
 
 	, primary key (PropertyID, Protocol)
-	, foreign key (PropertyID, Protocol) references SmartProperties
+/*	, foreign key (PropertyID, Protocol) references SmartProperties */
 )
 ;
 
@@ -258,7 +258,7 @@ create table if not exists Following (
 	, ObjectID varchar(64)	/* works with Addresses initially */
 				/* future - Event, see EventTypes (to generate alerts/notifications) */
 	, primary key (WalletID)
-	, foreign key (WalletID) references Wallets
+/*	, foreign key (WalletID) references Wallets */
 )
 ;
 
@@ -283,8 +283,9 @@ create table if not exists ActiveOffers (
       , TotalSelling numeric(19) not null               /* Total Amount put up for sale regardless of current accepts/sales */
       , AmountDesired numeric(19) not null              /* If total amountavailable where purchased, this would be cost */
       , MinimumFee numeric(19) not null                 /* Min fee buyer has to pay */
-      , Protocol Protocol not null                      /* Protocol plus PropertyID uniquely identify a property */
+/*      , ProtocolSelling Protocol not null  */               /* Protocol plus PropertyID uniquely identify a property */
       , PropertyIdSelling bigint not null               /* Property ID for sale  */
+/*      , ProtocolDesired Protocol not null  */             /* Protocol plus PropertyID uniquely identify a property */
       , PropertyIdDesired bigint not null default 0     /* Defaults to 0 for btc for now, allows MetaDEx support ? */
       , Seller varchar(64) not null                     /* Sellers address */
       , TimeLimit smallint not null                     /* Block time buyer has to pay for any accepts */
@@ -294,8 +295,8 @@ create table if not exists ActiveOffers (
       , LastTxDBSerialNum int8 not null default -1      /* last tx that produced a cancelled, replaced or soldout state */
       
       , primary key (PropertyIdSelling, PropertyIdDesired, Seller)
-      , foreign key (PropertyIdSelling, Protocol) references SmartProperties
-      , foreign key (PropertyIdDesired, Protocol) references SmartProperties
+/*      , foreign key (PropertyIdSelling, Protocol) references SmartProperties */
+/*      , foreign key (PropertyIdDesired, Protocol) references SmartProperties */
 )
 ;
 
@@ -315,7 +316,7 @@ create table if not exists OfferAccepts (
       
       , primary key (SaleTxDbSerialNum)
 /*      , foreign key (SaleTxDbSerialNum) references ActiveOffers (CreateTxDBSerialNum) */
-      , foreign key (LinkedTxDBSerialNum) references Transactions (TxDBSerialNum)
+/*      , foreign key (LinkedTxDBSerialNum) references Transactions (TxDBSerialNum) */
 )
 ;
 
