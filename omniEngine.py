@@ -36,13 +36,18 @@ else:
   firstMPtxBlock=249948
 
   #get last known block processed from db
-  currentBlock=dbSelect("select max(blocknumber) from blocks", None)[0][0]+1
+  currentBlock=dbSelect("select max(blocknumber) from blocks", None)[0][0]
+  printdebug(("Current block is ",currentBlock), 0)
+  if currentBlock >= 0:
+    currentBlock=currentBlock+1
+  else:
+    currentBlock=firstMPtxBlock
 
   #Find most recent block mastercore has available
   endBlock=getinfo()['result']['blocks']
 
   #reorg protection/check go back 10 blocks from where we last parsed
-  checkBlock=currentBlock-10
+  checkBlock=max(currentBlock-10,firstMPtxBlock)
   while checkBlock < currentBlock:
     hash = getblockhash(checkBlock)['result']
     dbhash=dbSelect('select blockhash from blocks where blocknumber=%s',[checkBlock])[0][0]
