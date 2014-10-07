@@ -140,8 +140,8 @@ create table if not exists Transactions (
 ;
 
 /* to find transactions by the db internal id */
-create unique index TxDBSerials on Transactions (TxDBSerialNum, Protocol)
-;
+/* create unique index TxDBSerials on Transactions (TxDBSerialNum, Protocol)
+; */
 
 /* to find transactions by type & version */
 create index TxTypes on Transactions (TxType, TxVersion, Protocol)
@@ -157,7 +157,7 @@ create table if not exists TxJSON (
 	, Protocol Protocol not null		/* initially 'Bitcoin' or 'Mastercoin' */
 	, TxData json not null			/* the tx message fields */
 
-	, primary key (TxDBSerialNum, Protocol)
+/*	, primary key (TxDBSerialNum, Protocol) */
 /*	, foreign key (TxDBSerialNum, Protocol) references Transactions(TxDBSerialNum, Protocol) */
 )
 ;
@@ -175,7 +175,7 @@ create table if not exists AddressesInTxs (					/* many-to-many */
 	, BalanceReservedCreditDebit numeric(19) null		/* how much the balance changed */
 	, BalanceAcceptedCreditDebit numeric(19) null		/* how much the balance changed */
 
-	, primary key (Address, TxDBSerialNum, PropertyID, AddressRole)
+/*	, primary key (Address, TxDBSerialNum, PropertyID, AddressRole) */
 /*	, foreign key (Address, Protocol, PropertyID) references AddressBalances */
 /*	, foreign key (TxDBSerialNum, Protocol) references Transactions (TxDBSerialNum, Protocol) */
 )
@@ -242,7 +242,7 @@ create table if not exists PropertyHistory (
 	, PropertyID bigint not null		/* signed 64-bit, to store unsigned 32 bit values */
 	, TxDBSerialNum int8 not null		/* the tx that affected this SP, for faster joins */
 
-	, primary key (PropertyID, Protocol)
+/*	, primary key (PropertyID, Protocol) */
 /*	, foreign key (PropertyID, Protocol) references SmartProperties */
 )
 ;
@@ -294,7 +294,7 @@ create table if not exists ActiveOffers (
       , OfferState OfferState not null                  /* active, cancelled, replaced, soldout  */
       , LastTxDBSerialNum int8 not null default -1      /* last tx that produced a cancelled, replaced or soldout state */
       
-      , primary key (PropertyIdSelling, PropertyIdDesired, Seller)
+/*      , primary key (PropertyIdSelling, PropertyIdDesired, Seller) */
 /*      , foreign key (PropertyIdSelling, Protocol) references SmartProperties */
 /*      , foreign key (PropertyIdDesired, Protocol) references SmartProperties */
 )
@@ -314,7 +314,7 @@ create table if not exists OfferAccepts (
       , ExpireBlock int not null                       /* Last block payment for this accept can be received in */
       , ExpiredState boolean default false             /* true/false if this accept is expired */
       
-      , primary key (SaleTxDbSerialNum)
+/*      , primary key (SaleTxDbSerialNum) */
 /*      , foreign key (SaleTxDbSerialNum) references ActiveOffers (CreateTxDBSerialNum) */
 /*      , foreign key (LinkedTxDBSerialNum) references Transactions (TxDBSerialNum) */
 )
