@@ -84,4 +84,418 @@ insert into smartproperties (Protocol, propertyid, issuer, createtxdbserialnum, 
      'Fiat', 20, 'South African Rand', -1, -1, 'ZAR');
 
 
+/* load the Category and Subcategory values. 'zz' values are not part of ISIC */
+insert into Categories (Section, Division, Name) values (
+	'A', '00', 'Agriculture, forestry and fishing');
 
+insert into Categories (Section, Division, Name) values (
+	'A', '01', 'Crop and animal production, hunting and related service activities');
+
+insert into Categories (Section, Division, Name) values (
+	'A', '02', 'Forestry and logging');
+
+insert into Categories (Section, Division, Name) values (
+	'A', '03', 'Fishing and aquaculture');
+
+insert into Categories (Section, Division, Name) values (
+	'A', 'zz', 'Other');
+
+
+insert into Categories (Section, Division, Name) values (
+	'B', '00', 'Mining and quarrying');
+
+insert into Categories (Section, Division, Name) values (
+	'B', '05', 'Forestry and logging');
+
+insert into Categories (Section, Division, Name) values (
+	'B', '06', 'Extraction of crude petroleum and natural gas');
+
+insert into Categories (Section, Division, Name) values (
+	'B', '07', 'Mining of metal ores');
+
+insert into Categories (Section, Division, Name) values (
+	'B', '08', 'Other mining and quarrying');
+
+insert into Categories (Section, Division, Name) values (
+	'B', '09', 'Mining support service activities');
+
+insert into Categories (Section, Division, Name) values (
+	'B', 'zz', 'Other');
+
+
+insert into Categories (Section, Division, Name) values (
+	'C', '00', 'Manufacturing');
+
+insert into Categories (Section, Division, Name) values (
+	'C', '10', 'Manufacture of food products');
+
+insert into Categories (Section, Division, Name) values (
+	 'C', '11', 'Manufacture of beverages');
+
+insert into Categories (Section, Division, Name) values (
+	'C', '12', 'Manufacture of tobacco products');
+
+insert into Categories (Section, Division, Name) values (
+	'C', '13', 'Manufacture of textiles');
+
+insert into Categories (Section, Division, Name) values (
+	'C', '14', 'Manufacture of wearing apparel');
+
+insert into Categories (Section, Division, Name) values (
+	'C', '15', 'Manufacture of leather and related products');
+
+insert into Categories (Section, Division, Name) values (
+	'C', '16', 'Manufacture of wood and of products of wood and cork, except furniture; manufacture of articles of straw and plaiting materials');
+
+insert into Categories (Section, Division, Name) values (
+	'C', '17', 'Manufacture of paper and paper products');
+
+insert into Categories (Section, Division, Name) values (
+	'C', '18', 'Printing and reproduction of recorded media');
+
+insert into Categories (Section, Division, Name) values (
+	'C', '19', 'Manufacture of coke and refined petroleum products');
+
+insert into Categories (Section, Division, Name) values (
+	'C', '20', 'Manufacture of chemicals and chemical products');
+
+insert into Categories (Section, Division, Name) values (
+	 'C', '21', 'Manufacture of basic pharmaceutical products and pharmaceutical preparations');
+
+insert into Categories (Section, Division, Name) values (
+	'C', '22', 'Manufacture of rubber and plastics products');
+
+insert into Categories (Section, Division, Name) values (
+	'C', '23', 'Manufacture of other non-metallic mineral products');
+
+insert into Categories (Section, Division, Name) values (
+	'C', '24', 'Manufacture of basic metals');
+
+insert into Categories (Section, Division, Name) values (
+	'C', '25', 'Manufacture of fabricated metal products, except machinery and equipment');
+
+insert into Categories (Section, Division, Name) values (
+	'C', '26', 'Manufacture of computer, electronic and optical products');
+
+insert into Categories (Section, Division, Name) values (
+	'C', '27', 'Manufacture of electrical equipment');
+
+insert into Categories (Section, Division, Name) values (
+	'C', '28', 'Manufacture of machinery and equipment n.e.c.');
+
+insert into Categories (Section, Division, Name) values (
+	'C', '29', 'Manufacture of motor vehicles, trailers and semi-trailers');
+
+insert into Categories (Section, Division, Name) values (
+	'C', '30', 'Manufacture of other transport equipment');
+
+insert into Categories (Section, Division, Name) values (
+	'C', '31', 'Manufacture of furniture');
+
+insert into Categories (Section, Division, Name) values (
+	'C', '32', 'Other manufacturing');
+
+insert into Categories (Section, Division, Name) values (
+	'C', '33', 'Repair and installation of machinery and equipment');
+
+insert into Categories (Section, Division, Name) values (
+	'C', 'zz', 'Other');
+
+
+insert into Categories (Section, Division, Name) values (
+	'D', '00', 'Electricity, gas, steam and air conditioning supply');
+
+insert into Categories (Section, Division, Name) values (
+	'D', '35', 'Electricity, gas, steam and air conditioning supply');
+
+insert into Categories (Section, Division, Name) values (
+	'D', 'zz', 'Other');
+
+
+insert into Categories (Section, Division, Name) values (
+	'E', '00', 'Water supply; sewerage, waste management and remediation activities');
+
+insert into Categories (Section, Division, Name) values (
+	'E', '36', 'Water collection, treatment and supply');
+
+insert into Categories (Section, Division, Name) values (
+	'E', '37', 'Sewerage');
+
+insert into Categories (Section, Division, Name) values (
+	'E', '38', 'Waste collection, treatment and disposal activities; materials recovery');
+
+insert into Categories (Section, Division, Name) values (
+	'E', '39', 'Remediation activities and other waste management services');
+
+insert into Categories (Section, Division, Name) values (
+	'E', 'ZZ', 'Other');
+
+
+insert into Categories (Section, Division, Name) values (
+	'F', '00', 'Construction');
+
+insert into Categories (Section, Division, Name) values (
+	'F', '41', 'Construction of buildings');
+
+insert into Categories (Section, Division, Name) values (
+	'F', '42', 'Civil engineering');
+
+insert into Categories (Section, Division, Name) values (
+	'F', '43', 'Specialized construction activities');
+
+insert into Categories (Section, Division, Name) values (
+	'F', 'zz', 'Other');
+
+
+insert into Categories (Section, Division, Name) values (
+	'G', '00', 'Wholesale and retail trade; repair of motor vehicles and motorcycles');
+
+insert into Categories (Section, Division, Name) values (
+	'G', '45', 'Wholesale and retail trade and repair of motor vehicles and motorcycles');
+
+insert into Categories (Section, Division, Name) values (
+	'G', '46', 'Wholesale trade, except of motor vehicles and motorcycles');
+
+insert into Categories (Section, Division, Name) values (
+	'G', '47', 'Retail trade, except of motor vehicles and motorcycles');
+
+insert into Categories (Section, Division, Name) values (
+	'G', 'zz', 'Other');
+
+
+insert into Categories (Section, Division, Name) values (
+	'H', '00', 'Transportation and storage');
+
+insert into Categories (Section, Division, Name) values (
+	'H', '49', 'Land transport and transport via pipelines');
+
+insert into Categories (Section, Division, Name) values (
+	'H', '50', 'Water transport');
+
+insert into Categories (Section, Division, Name) values (
+	'H', '51', 'Air transport');
+
+insert into Categories (Section, Division, Name) values (
+	'H', '52', 'Warehousing and support activities for transportation');
+
+insert into Categories (Section, Division, Name) values (
+	'H', '53', 'Postal and courier activities');
+
+insert into Categories (Section, Division, Name) values (
+	'H', 'ZZ', 'Other');
+
+
+insert into Categories (Section, Division, Name) values (
+	'I', '00', 'Accommodation and food service activities');
+
+insert into Categories (Section, Division, Name) values (
+	'I', '55', 'Accommodation');
+
+insert into Categories (Section, Division, Name) values (
+	'I', '56', 'Food and beverage service activities');
+
+insert into Categories (Section, Division, Name) values (
+	'I', 'zz', 'Other');
+
+
+insert into Categories (Section, Division, Name) values (
+	'J', '00', 'Information and communication');
+
+insert into Categories (Section, Division, Name) values (
+	'J', '58', 'Publishing activities');
+
+insert into Categories (Section, Division, Name) values (
+	'J', '59', 'Motion picture, video and television programme production, sound recording and music publishing activities');
+
+insert into Categories (Section, Division, Name) values (
+	'J', '60', 'Programming and broadcasting activities');
+
+insert into Categories (Section, Division, Name) values (
+	'J', '61', 'Telecommunications');
+
+insert into Categories (Section, Division, Name) values (
+	'J', '62', 'Computer programming, consultancy and related activities');
+
+insert into Categories (Section, Division, Name) values (
+	'J', '63', 'Information service activities');
+
+insert into Categories (Section, Division, Name) values (
+	'J', 'zz', 'Other');
+
+
+insert into Categories (Section, Division, Name) values (
+	'K', '00', 'Financial and insurance activities');
+
+insert into Categories (Section, Division, Name) values (
+	'K', '64', 'Financial service activities, except insurance and pension funding');
+
+insert into Categories (Section, Division, Name) values (
+	'K', '65', 'Insurance, reinsurance and pension funding, except compulsory social security');
+
+insert into Categories (Section, Division, Name) values (
+	'K', '66', 'Activities auxiliary to financial service and insurance activities');
+
+insert into Categories (Section, Division, Name) values (
+	'K', 'zz', 'Other');
+
+
+insert into Categories (Section, Division, Name) values (
+	'L', '00', 'Real estate activities');
+
+insert into Categories (Section, Division, Name) values (
+	'L', '68', 'Real estate activities');
+
+insert into Categories (Section, Division, Name) values (
+	'L', 'zz', 'Other');
+
+
+insert into Categories (Section, Division, Name) values (
+	'M', '00', 'Professional, scientific and technical activities');
+
+insert into Categories (Section, Division, Name) values (
+	'M', '69', 'Legal and accounting activities');
+
+insert into Categories (Section, Division, Name) values (
+	'M', '70', 'Activities of head offices; management consultancy activities');
+
+insert into Categories (Section, Division, Name) values (
+	'M', '71', 'Architectural and engineering activities; technical testing and analysis');
+
+insert into Categories (Section, Division, Name) values (
+	'M', '72', 'Scientific research and development');
+
+insert into Categories (Section, Division, Name) values (
+	'M', '73', 'Advertising and market research');
+
+insert into Categories (Section, Division, Name) values (
+	'M', '74', 'Other professional, scientific and technical activities');
+
+insert into Categories (Section, Division, Name) values (
+	'M', '75', 'Veterinary activities');
+
+insert into Categories (Section, Division, Name) values (
+	'M', 'zz', 'Other');
+
+
+insert into Categories (Section, Division, Name) values (
+	'N', '00', 'Administrative and support service activities');
+
+insert into Categories (Section, Division, Name) values (
+	'N', '77', 'Rental and leasing activities');
+
+insert into Categories (Section, Division, Name) values (
+	'N', '78', 'Employment activities');
+
+insert into Categories (Section, Division, Name) values (
+	'N', '79', 'Travel agency, tour operator, reservation service and related activities');
+
+insert into Categories (Section, Division, Name) values (
+	'N', '80', 'Security and investigation activities');
+
+insert into Categories (Section, Division, Name) values (
+	'N', '81', 'Services to buildings and landscape activities');
+
+insert into Categories (Section, Division, Name) values (
+	'N', '82', 'Office administrative, office support and other business support activities');
+
+insert into Categories (Section, Division, Name) values (
+	'N', 'zz', 'Other');
+
+
+insert into Categories (Section, Division, Name) values (
+	'O', '00', 'Public administration and defence; compulsory social security');
+
+insert into Categories (Section, Division, Name) values (
+	'O', '84', 'Public administration and defence; compulsory social security');
+
+insert into Categories (Section, Division, Name) values (
+	'O', 'zz', 'Other');
+
+
+insert into Categories (Section, Division, Name) values (
+	'P', '00', 'Education');
+
+insert into Categories (Section, Division, Name) values (
+	'P', '85', 'Education');
+
+insert into Categories (Section, Division, Name) values (
+	'P', 'zz', 'Other');
+
+
+insert into Categories (Section, Division, Name) values (
+	'Q', '00', 'Human health and social work activities');
+
+insert into Categories (Section, Division, Name) values (
+	'Q', '86', 'Human health activities');
+
+insert into Categories (Section, Division, Name) values (
+	'Q', '87', 'Residential care activities');
+
+insert into Categories (Section, Division, Name) values (
+	'Q', '88', 'Social work activities without accommodation');
+
+insert into Categories (Section, Division, Name) values (
+	'Q', 'zz', 'Other');
+
+
+insert into Categories (Section, Division, Name) values (
+	'R', '00', 'Arts, entertainment and recreation');
+
+insert into Categories (Section, Division, Name) values (
+	'R', '90', 'Creative, arts and entertainment activities');
+
+insert into Categories (Section, Division, Name) values (
+	'R', '91', 'Libraries, archives, museums and other cultural activities');
+
+insert into Categories (Section, Division, Name) values (
+	'R', '92', 'Gambling and betting activities');
+
+insert into Categories (Section, Division, Name) values (
+	'R', '93', 'Sports activities and amusement and recreation activities');
+
+insert into Categories (Section, Division, Name) values (
+	'R', 'zz', 'Other');
+
+
+insert into Categories (Section, Division, Name) values (
+	'S', '00', 'Other service activities');
+
+insert into Categories (Section, Division, Name) values (
+	'S', '94', 'Activities of membership organizations');
+
+insert into Categories (Section, Division, Name) values (
+	'S', '95', 'Repair of computers and personal and household goods');
+
+insert into Categories (Section, Division, Name) values (
+	'S', '96', 'Other personal service activities');
+
+insert into Categories (Section, Division, Name) values (
+	'S', 'zz', 'Other');
+
+
+insert into Categories (Section, Division, Name) values (
+	'T', '00', 'Activities of households as employers; undifferentiated goods- and services-producing activities of households for own use');
+
+insert into Categories (Section, Division, Name) values (
+	'T', '97', 'Activities of households as employers of domestic personnel');
+
+insert into Categories (Section, Division, Name) values (
+	'T', '98', 'Undifferentiated goods- and services-producing activities of private households for own use');
+
+insert into Categories (Section, Division, Name) values (
+	'T', 'zz', 'Other');
+
+
+insert into Categories (Section, Division, Name) values (
+	'U', '00', 'Activities of extraterritorial organizations and bodies');
+
+insert into Categories (Section, Division, Name) values (
+	'U', '99', 'Activities of extraterritorial organizations and bodies');
+insert into Categories (Section, Division, Name) values (
+	'U', 'zz', 'Other');
+
+
+insert into Categories (Section, Division, Name) values (
+	'zz', '99', 'Other');
+insert into Categories (Section, Division, Name) values (
+	'zz', 'zz', 'Other');
