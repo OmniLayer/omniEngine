@@ -84,18 +84,15 @@ create table if not exists AddressBalances (
 /* Addresses with private keys owned by each Wallet. See Following table for objects watched by a wallet. */
 create table if not exists AddressesInWallets (		/* many-to-many */
 	Address varchar(64) not null		/* Address must exist in the AddressBalances table */
-	, PropertyID bigint not null		/* needed here for foreign key reference */
-	, Protocol Protocol not null		/* initially 'Bitcoin' */
 	, WalletID uuid	not null		/* WalletID must exist in the Wallets table */
 
-	, primary key (WalletID, Address, Protocol, PropertyID)
+	, primary key (WalletID, Address)
 /*	, foreign key (WalletID) references Wallets on delete CASCADE on update CASCADE */	/* del/upd rows here if corresponding row is deleted/updated */
-/*	, foreign key (Address, Protocol, PropertyID) references AddressBalances */
 )
 ;
 
 /* to find the wallets that have a particular address. */
-create index AddressIndex on AddressesInWallets (Address, Protocol, PropertyID)
+create index AddressIndex on AddressesInWallets (Address)
 ;
 
 /* block header information, from https://en.bitcoin.it/wiki/Protocol_specification & getblock RPC JSON */
