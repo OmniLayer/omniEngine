@@ -33,16 +33,21 @@ else:
   printdebug(("Processing started at",now), 0)
 
   #block with first MP transaction
-  firstMPtxBlock=249948
+  firstMPtxBlock=252317
 
   #get last known block processed from db
-  currentBlock=dbSelect("select max(blocknumber) from blocks", None)[0][0]+1
+  currentBlock=dbSelect("select max(blocknumber) from blocks", None)[0][0]
+  printdebug(("Current block is ",currentBlock), 0)
+  if currentBlock is not None:
+    currentBlock=currentBlock+1
+  else:
+    currentBlock=firstMPtxBlock
 
   #Find most recent block mastercore has available
   endBlock=getinfo()['result']['blocks']
 
   #reorg protection/check go back 10 blocks from where we last parsed
-  checkBlock=currentBlock-10
+  checkBlock=max(currentBlock-10,firstMPtxBlock)
   while checkBlock < currentBlock:
     hash = getblockhash(checkBlock)['result']
     dbhash=dbSelect('select blockhash from blocks where blocknumber=%s',[checkBlock])[0][0]
@@ -70,9 +75,8 @@ else:
     printdebug("Already up to date",0)
 
   #get highest TxDBSerialNum (number of rows in the Transactions table)
-  TxDBSerialNum=dbSelect('select last_value from transactions_txdbserialnum_seq',None)[0][0]+1
-  #21479844 btc tx's before block 249948
-  #TxDBSerialNum=21479844
+  #22111443 btc tx's before block 252317
+  TxDBSerialNum=dbSelect('select coalesce(max(txdbserialnum), 22111443) from transactions')[0][0]+1
 
   #main loop, process new blocks
   while currentBlock <= endBlock:

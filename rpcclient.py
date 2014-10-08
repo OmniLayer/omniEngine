@@ -55,7 +55,7 @@ class RPCHost():
             raise Exception('RPC connection failure: ' + str(response.status_code) + ' ' + response.reason)
         responseJSON = response.json()
         if 'error' in responseJSON and responseJSON['error'] != None:
-            raise Exception('Error in RPC call: ' + str(responseJSON['error']))
+            raise Exception('Error in ' + rpcMethod + ' RPC call: ' + str(responseJSON['error']))
         #return responseJSON['result']
         return responseJSON
 
