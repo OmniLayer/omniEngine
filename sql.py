@@ -539,6 +539,11 @@ def resetbalances_MP():
       #  Ecosystem= "Production"
       bal_data=getallbalancesforid_MP(PropertyID)
 
+      #reset/zero out the existing address balanaces for current propertyid
+      #if we don't do this we could run into a balnace mismatch issue since 
+      #mastercore doesn't give us address balances for addresses with 0 balanaces so we could miss some address
+      dbExecute("update addressbalances set BalanceAvailable=0, BalanceReserved=0, BalanceAccepted=0 where protocol=%s and propertyid=%s", (Protocol,PropertyID))
+
       #Check each address and get balance info
       for addr in bal_data['result']:
         Address=addr['address']

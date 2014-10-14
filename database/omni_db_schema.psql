@@ -39,8 +39,8 @@ create table if not exists Sessions (
         SessionID text not null
         , Challenge text 
         , PChallenge text 
-        , PublicKey text
-        , "TimeStamp" timestamp without time zone DEFAULT now()
+        , PubKey text
+        , TimeStamp timestamp without time zone DEFAULT now()
         , primary key (SessionID)
 )
 ;
