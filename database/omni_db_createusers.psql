@@ -5,18 +5,18 @@
 
 /*  You shoud change / update the usernames and passwords to be private/specific to your system/setup */
 
-create user EngineRunner unencrypted password 'yourEnginePasword';
-create user wwwuser unencrypted password 'yourwwwpasword';
+create user omniengine unencrypted password 'yourEnginePasword';
+create user omniwww unencrypted password 'yourwwwpasword';
 
 /*  If you change usernames make sure to update them below */
 
-GRANT connect ON DATABASE omniwallet to EngineRunner, wwwuser;
+GRANT connect ON DATABASE omniwallet to omniengine, omniwww;
 
-GRANT USAGE ON SCHEMA public TO EngineRunner,wwwuser;
-GRANT SELECT,UPDATE ON ALL SEQUENCES IN SCHEMA public TO EngineRunner;
-GRANT SELECT ON ALL SEQUENCES IN SCHEMA public TO wwwuser;
+GRANT USAGE ON SCHEMA public TO omniengine,omniwww;
+GRANT SELECT,UPDATE ON ALL SEQUENCES IN SCHEMA public TO omniengine;
+GRANT SELECT ON ALL SEQUENCES IN SCHEMA public TO omniwww;
 
-GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO EngineRunner;
+GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO omniengine;
 
-GRANT SELECT ON ALL TABLES IN SCHEMA public TO wwwuser;
-GRANT SELECT, INSERT, UPDATE, DELETE ON table following, addressesinwallets , sessions , wallets to wwwuser;
+GRANT SELECT ON ALL TABLES IN SCHEMA public TO omniwww;
+GRANT SELECT, INSERT, UPDATE, DELETE ON table following, addressesinwallets , sessions , wallets to omniwww;
