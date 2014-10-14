@@ -1,0 +1,22 @@
+/* the following user commands should be executed while connected to your omniwallet database */
+
+/* Assuming your database is called    omniwallet */
+\c omniwallet
+
+/*  You shoud change / update the usernames and passwords to be private/specific to your system/setup */
+
+create user EngineRunner unencrypted password 'yourEnginePasword';
+create user wwwuser unencrypted password 'yourwwwpasword';
+
+/*  If you change usernames make sure to update them below */
+
+GRANT connect ON DATABASE omniwallet to EngineRunner, wwwuser;
+
+GRANT USAGE ON SCHEMA public TO EngineRunner,wwwuser;
+GRANT SELECT,UPDATE ON ALL SEQUENCES IN SCHEMA public TO EngineRunner;
+GRANT SELECT ON ALL SEQUENCES IN SCHEMA public TO wwwuser;
+
+GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO EngineRunner;
+
+GRANT SELECT ON ALL TABLES IN SCHEMA public TO wwwuser;
+GRANT SELECT, INSERT, UPDATE, DELETE ON table following, addressesinwallets , sessions , wallets to wwwuser;
