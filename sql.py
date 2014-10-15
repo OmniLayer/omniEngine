@@ -614,9 +614,9 @@ def checkbalances_MP():
             accept=0
 
         if property['divisible']:
-          BalanceAvailable=int(math.ceil(decimal.Decimal(str(addr['balance']))*decimal.Decimal(1e8)))
-          BalanceReserved=int(math.ceil(decimal.Decimal(str(addr['reserved']))*decimal.Decimal(1e8)))
-          BalanceAccepted=int(math.ceil(decimal.Decimal(str(accept))*decimal.Decimal(1e8)))
+          BalanceAvailable=int(decimal.Decimal(str(addr['balance']))*decimal.Decimal(1e8))
+          BalanceReserved=int(decimal.Decimal(str(addr['reserved']))*decimal.Decimal(1e8))
+          BalanceAccepted=int(decimal.Decimal(str(accept))*decimal.Decimal(1e8))
         else:
           BalanceAvailable=int(addr['balance'])
           BalanceReserved=int(addr['reserved'])
@@ -863,7 +863,7 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
           AddressRole="recipient"
           AddressTxIndex=output['n']
           #store values as satoshi/willits etc''. Client converts
-          BalanceAvailableCreditDebit=int(math.ceil(decimal.Decimal(output['value'])*decimal.Decimal("1e8")))
+          BalanceAvailableCreditDebit=int(decimal.Decimal(output['value'])*decimal.Decimal("1e8"))
           #multisigs have more than 1 address, make sure we find/credit all multisigs for a tx
           for addr in output['scriptPubKey']['addresses']:
             dbExecute("insert into addressesintxs "
@@ -891,7 +891,7 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
                     " and addresstxindex=%s and addressrole='recipient'",
                     (TxDBSerialNum, Protocol, LinkedTxDBSerialNum, prevtxindex) )
 
-          BalanceAvailableCreditDebit=int(math.ceil(decimal.Decimal(prevtx['result']['vout'][_input['vout']]['value'])*decimal.Decimal("1e8")*decimal.Decimal(-1)))
+          BalanceAvailableCreditDebit=int(decimal.Decimal(prevtx['result']['vout'][_input['vout']]['value'])*decimal.Decimal("1e8")*decimal.Decimal(-1))
           #BalanceAvailableCreditDebit=int(prevtx['result']['vout'][_input['vout']]['value'] * 1e8 * -1)
           #multisigs have more than 1 address, make sure we find/credit all multisigs for a tx
           for addr in prevtx['result']['vout'][_input['vout']]['scriptPubKey']['addresses']:
