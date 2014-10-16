@@ -4,6 +4,7 @@ from datetime import datetime
 
 lockFile='/tmp/omniEngine.lock'
 now=datetime.now()
+testnet=0
 
 if os.path.isfile(lockFile):
   #open the lock file to read pid and timestamp
@@ -154,7 +155,10 @@ else:
       #check any active crowdsales and update json if the endtime has passed (based on block time)
       expireCrowdsales(block_data['result']['time'], Protocol)
       #exodus address generates dev msc, sync our balance to match the generated balanace
-      syncAddress('1EXoDusjGwvnjZUyKkxZ4UHEf77z6A5S4P', Protocol)
+      if testnet:
+        syncAddress('mpexoDuSkGGqvqrkrjiFng38QPkJQVFyqv', Protocol)
+      else:
+        syncAddress('1EXoDusjGwvnjZUyKkxZ4UHEf77z6A5S4P', Protocol)
 
       #make sure we store the last serialnumber used
       dbExecute("select setval('transactions_txdbserialnum_seq', %s)", [TxDBSerialNum-1])
