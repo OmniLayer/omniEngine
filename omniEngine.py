@@ -2,7 +2,8 @@ from sql import *
 import os.path
 from datetime import datetime
 
-lockFile='/tmp/omniEngine.lock'
+USER=getpass.getuser()
+lockFile='/tmp/omniEngine.lock.'+str(USER)
 now=datetime.now()
 testnet=0
 
