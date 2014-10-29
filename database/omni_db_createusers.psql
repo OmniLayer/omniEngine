@@ -1,12 +1,16 @@
 /* the following user commands should be executed while connected to your omniwallet database */
 
-/* Assuming your database is called    omniwallet */
-\c omniwallet
+/*
+   Your command line or other tool that invokes this script should connect to
+   the correct database, typically 'omniwallet'.
 
-/*  You shoud change / update the usernames and passwords to be private/specific to your system/setup */
+   It should also set the password variables :omnienginePassword and :omniwwwPassword
+   See scripts/db-init.sh for an example.
+*/
 
-create user omniengine unencrypted password 'yourEnginePasword';
-create user omniwww unencrypted password 'yourwwwpasword';
+drop role if exists omniengine, omniwww;
+create user omniengine unencrypted password :omnienginePassword;
+create user omniwww unencrypted password :omniwwwPassword;
 
 /*  If you change usernames make sure to update them below */
 
