@@ -59,6 +59,7 @@ else:
     else:
       #reorg took place
       try:
+        print "Reorg detected, Attempting roll back to ",checkBlock-1
         reorgRollback(checkBlock-1)
         currentBlock=checkBlock
         dbCommit()
