@@ -10,9 +10,10 @@ testnet=0
 if os.path.isfile(lockFile):
   #open the lock file to read pid and timestamp
   file=open(lockFile,'r')
-  pid=file.readline().replace("\n", "")
-  timestamp=file.readline()
+  data=file.readline()
   file.close()
+  pid=data.split(',')[0]
+  timestamp=data.split(',')[1]
   #check if the pid is still running
   if os.path.exists("/proc/"+str(pid)):
     print "Exiting: OmniEngine already running with pid:", pid, "  Last parse started at ", timestamp
@@ -25,8 +26,7 @@ if os.path.isfile(lockFile):
 else:
   #start/create our lock file
   file = open(lockFile, "w")
-  file.write(str(os.getpid()))
-  file.write(str(now))
+  file.write(str(os.getpid())+','+str(now))
   file.close() 
 
   #set our debug level, all outputs will be controlled by this
