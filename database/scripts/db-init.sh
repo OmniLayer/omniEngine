@@ -13,6 +13,8 @@ echo "Add intial data..."
 psql $OPTIONS -f ../omni_db_initialize_data.psql omniwallet
 echo "Configure users and permissions..."
 psql $OPTIONS -f ../omni_db_createusers.psql \
+    --variable=omniengine=${OMNIDB_ENGINE_USER} \
     --variable=omnienginePassword=\'${OMNIDB_ENGINE_PASSWORD}\' \
+    --variable=omniwww=${OMNIDB_WWW_USER} \
     --variable=omniwwwPassword=\'${OMNIDB_WWW_PASSWORD}\' omniwallet
 
