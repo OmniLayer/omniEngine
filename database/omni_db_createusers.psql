@@ -10,8 +10,8 @@
 */
 
 drop role if exists :omniengine, :omniwww;
-create user omniengine unencrypted password :omnienginePassword;
-create user omniwww unencrypted password :omniwwwPassword;
+create user :omniengine unencrypted password :omnienginePassword;
+create user :omniwww unencrypted password :omniwwwPassword;
 
 /*  If you change usernames make sure to update them below */
 
