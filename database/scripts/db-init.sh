@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 set -x -e
 if [[ -z "$OMNIDB_ENGINE_PASSWORD" ]] || [[ -z "$OMNIDB_WWW_PASSWORD" ]] ; then
  echo "Environment variables OMNIDB_ENGINE_PASSWORD and OMNIDB_WWW_PASSWORD must be set"
