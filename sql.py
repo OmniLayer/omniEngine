@@ -7,6 +7,11 @@ from mscutils import *
 from sqltools import *
 from common import *
 
+
+def updateorderbook(block):
+    blob=gettradessince_MP()
+    dbExecute("insert into orderblob (blocknumber, orders) values (%s, %s)", (block, blob))    
+
 def reorgRollback(block):
 
     printdebug(("Reorg Detected, Rolling back to block ",block),4)
