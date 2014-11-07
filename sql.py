@@ -12,7 +12,7 @@ def updateorderbook():
     block=getinfo()['result']['blocks']
     blob=gettradessince_MP()['result']
     dbExecute("insert into orderblob (blocknumber, orders) select %s,%s where not exists (select * from orderblob where blocknumber=%s)", 
-              (block, blob, block))
+              (block, str(blob), block))
 
 def reorgRollback(block):
 
