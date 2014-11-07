@@ -8,9 +8,11 @@ from sqltools import *
 from common import *
 
 
-def updateorderbook(block):
-    blob=gettradessince_MP()
-    dbExecute("insert into orderblob (blocknumber, orders) values (%s, %s)", (block, blob))    
+def updateorderbook():
+    block=getinfo()['result']['blocks']
+    blob=gettradessince_MP()['result']
+    dbExecute("insert into orderblob (blocknumber, orders) select %s,%s where not exists (select * from orderblob where blocknumber=%s)", 
+              (block, blob, block))
 
 def reorgRollback(block):
 
