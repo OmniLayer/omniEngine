@@ -10,7 +10,7 @@ from common import *
 
 def updateorderbook():
     block=getinfo()['result']['blocks']
-    blob=gettradessince_MP()['result']
+    blob=json.dumps(gettradessince_MP()['result'])
     dbExecute("insert into orderblob (blocknumber, orders) select %s,%s where not exists (select * from orderblob where blocknumber=%s)", 
               (block, str(blob), block))
 
