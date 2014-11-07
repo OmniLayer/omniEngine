@@ -920,7 +920,7 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
       #PropertyID=rawtx['result']['propertyid']
 
       #Check if we are a DEx Purchase/payment. Format is a littler different and variables below would fail if we tried. 
-      if txtype != -22:
+      if txtype != -22 and txtype != 21:
         PropertyID= rawtx['result']['propertyid']
         Ecosystem=getEcosystem(PropertyID) 
         Valid=rawtx['result']['valid']
@@ -976,9 +976,28 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
             BalanceAvailableCreditDebit=remainder
             BalanceReservedCreditDebit=remainder*-1
 
-      #elif txtype == 21:
+      elif txtype == 21:
         #MetaDEx: Offer/Accept one Master Protocol Coins for another
-        #return
+        if rawtx['result']['propertyofferedisdivisible']:
+          value=int(decimal.Decimal(str(rawtx['result']['amountoffered']))*decimal.Decimal(1e8))
+        else:
+          value=int(rawtx['result']['amountoffered'])
+        value_neg=(value*-1)
+
+        BalanceAvailableCreditDebit=value_neg
+        BalanceReservedCreditDebit=value
+        PropertyOffered=rawtx['result']['propertyoffered']
+        Ecosystem=getEcosystem(PropertyOffered)
+
+        dbExecute("insert into addressesintxs "
+                  "(Address, PropertyID, Protocol, TxDBSerialNum, AddressTxIndex, AddressRole, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit)"
+                  "values(%s, %s, %s, %s, %s, %s, %s, %s, %s)",
+                  (Address, PropertyOffered, Protocol, TxDBSerialNum, AddressTxIndex, AddressRole, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit))
+
+        if rawtx['result']['valid']:
+            updateBalance(Address, Protocol, PropertyOffered, Ecosystem, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit, TxDBSerialNum)
+
+        return
 
       elif txtype == 22:
         #DEx Accept Offer
