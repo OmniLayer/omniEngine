@@ -83,7 +83,7 @@ def reorgRollback(block):
             #any special actions need to be undone as well
             if txtype == 20 and Role=='seller':
               rawtx=json.loads(dbSelect("select txdata from txjson where txdbserialnum=%s",[TxDbSerialNum])[0][0])
-              if 'subaction' in rawtx and rawtx['subaction'].tolower()=='cancel':
+              if 'subaction' in rawtx and rawtx['subaction'].lower()=='cancel':
                 #cancellation, undo the cancellation (not sure about the lasttxdbserialnum yet
                 dbExecute("update activeoffers set offerstate='active',lasttxdbserialnum=-1 where createtxdbserialnum=%s", [TxDbSerialNum])
               else:
