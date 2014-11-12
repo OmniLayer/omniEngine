@@ -1016,7 +1016,8 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
         if rawtx['result']['valid']:
           retval=updatedex(rawtx, TxDBSerialNum, Protocol)
           remainder=retval[0]
-          linkedtxdbserialnum=retval[1]
+          if retval[1] is not None:
+            linkedtxdbserialnum=retval[1]
           #if we got anything back from the updatedex function it means it was a cancel, update our values to use the cancel numbers
           if remainder != None:
             BalanceAvailableCreditDebit=remainder
