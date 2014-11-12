@@ -84,9 +84,11 @@ def reorgRollback(block):
             if txtype == 20 and Role=='seller':
               rawtx=json.loads(dbSelect("select txdata from txjson where txdbserialnum=%s",[TxDbSerialNum])[0][0])
               if 'subaction' in rawtx and rawtx['subaction'].lower()=='cancel':
+                printdebug(("Uncancelling DEx.1 sale",TxDbSerialNum,Address),7)
                 #cancellation, undo the cancellation (not sure about the lasttxdbserialnum yet
                 dbExecute("update activeoffers set offerstate='active',lasttxdbserialnum=-1 where createtxdbserialnum=%s", [TxDbSerialNum])
               else:
+                printdebug(("Deleting new DEx.1 sale",TxDbSerialNum,Address),7)
                 #was a new sale, delete it
                 dbExecute("delete from activeoffers where createtxdbserialnum=%s", [TxDbSerialNum])
 
