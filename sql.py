@@ -84,9 +84,9 @@ def reorgRollback(block):
             if txtype == 20 and Role=='seller':
               rawtx=json.loads(dbSelect("select txdata from txjson where txdbserialnum=%s",[TxDbSerialNum])[0][0])
               if 'subaction' in rawtx and rawtx['subaction'].lower()=='cancel':
-                printdebug(("Uncancelling DEx.1 sale",TxDbSerialNum,Address),7)
+                printdebug(("Uncancelling DEx.1 sale",linkedtxdbserialnum,"from transaction",TxDbSerialNum,Address),7)
                 #cancellation, undo the cancellation (not sure about the lasttxdbserialnum yet
-                dbExecute("update activeoffers set offerstate='active',lasttxdbserialnum=-1 where createtxdbserialnum=%s", [TxDbSerialNum])
+                dbExecute("update activeoffers set offerstate='active',lasttxdbserialnum=-1 where createtxdbserialnum=%s", [linkedtxdbserialnum])
               else:
                 printdebug(("Deleting new DEx.1 sale",TxDbSerialNum,Address),7)
                 #was a new sale, delete it
@@ -418,7 +418,7 @@ def updatedex(rawtx, TxDBSerialNum, Protocol):
         printdebug(("found old sale",createtxdbserialnum,"with amount remaining",amount),4)
 
       #we'll let the insertaddressintx function handle updating the balanace for cancels
-      return amount
+      return amount,createtxdbserialnum
     else:
       #state new/update
       State='replaced'
@@ -458,6 +458,7 @@ def updatedex(rawtx, TxDBSerialNum, Protocol):
                 "(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",
                 (amountaccepted, amountavailable, totalselling, amountdesired, minimumfee, propertyidselling, 
                 propertyiddesired, Address, timelimit, TxDBSerialNum, unitprice, State) )
+      return None,createtxdbserialnum
 
 
 def resetdextable_MP():
@@ -958,6 +959,7 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
       BalanceAvailableCreditDebit=None
       BalanceReservedCreditDebit=None
       BalanceAcceptedCreditDebit=None
+      linkedtxdbserialnum=-1
       Address = rawtx['result']['sendingaddress']
       #PropertyID=rawtx['result']['propertyid']
 
@@ -1012,11 +1014,14 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
 
         #Update our DEx tables if its a valid dex sale
         if rawtx['result']['valid']:
-          remainder=updatedex(rawtx, TxDBSerialNum, Protocol)
+          retval=updatedex(rawtx, TxDBSerialNum, Protocol)
+          remainder=retval[0]
+          linkedtxdbserialnum=retval[1]
           #if we got anything back from the updatedex function it means it was a cancel, update our values to use the cancel numbers
           if remainder != None:
             BalanceAvailableCreditDebit=remainder
             BalanceReservedCreditDebit=remainder*-1
+
 
       elif txtype == 21:
         #DEx Phase II: Offer/Accept one Master Protocol Coins for another
@@ -1275,9 +1280,9 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
 
       #write output of the address details
       dbExecute("insert into addressesintxs "
-                "(Address, PropertyID, Protocol, TxDBSerialNum, AddressTxIndex, AddressRole, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit)"
-                "values(%s, %s, %s, %s, %s, %s, %s, %s, %s)",
-                (Address, PropertyID, Protocol, TxDBSerialNum, AddressTxIndex, AddressRole, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit))
+                "(Address, PropertyID, Protocol, TxDBSerialNum, AddressTxIndex, AddressRole, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit, linkedtxdbserialnum)"
+                "values(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
+                (Address, PropertyID, Protocol, TxDBSerialNum, AddressTxIndex, AddressRole, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit, linkedtxdbserialnum))
 
       if Valid:
         updateBalance(Address, Protocol, PropertyID, Ecosystem, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit, TxDBSerialNum)
