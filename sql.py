@@ -91,7 +91,7 @@ def reorgRollback(block):
 
             elif txtype == 22 and Role=='seller':
               #unaccept a dex sale and update the sale balance info (don't know about lasttxdbserialnum yet)
-              saletxdbserialnum=dbExecute("select saletxdbserialnum from offeraccepts where linkedtxdbserialnum=%s", [TxDbSerialNum])[0][0]
+              saletxdbserialnum=dbSelect("select saletxdbserialnum from offeraccepts where linkedtxdbserialnum=%s", [TxDbSerialNum])[0][0]
               dbExecute("update activeoffers set amountaccepted=amountaccepted-%s::numeric, amountavailable=amountavailable+%s::numeric, "
                         "lasttxdbserialnum=-1, where createtxdbserialnum=%s",(dbBalanceAccepted,dbBalanceAccepted,saletxdbserialnum))
               #remove the entry from the offeraccepts table
