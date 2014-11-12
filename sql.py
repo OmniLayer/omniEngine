@@ -18,6 +18,8 @@ def reorgRollback(block):
 
     printdebug(("Reorg Detected, Rolling back to block ",block),4)
 
+    BlockTime=dbSelect("select extract(epoch from blocktime) from blocks where blocknumber=%s",[block])[0][0]
+
     #list of tx's we have processed since the reorg 
     txs=dbSelect("select txdbserialnum,txtype,txstate,txblocknumber from transactions where txblocknumber >%s order by txdbserialnum desc",[block])
 
@@ -125,6 +127,7 @@ def reorgRollback(block):
 
     #Make sure we process any remaining expires that need to be undone if we didn't have an msc tx in the block
     expireAccepts(-(block+1))
+    expireCrowdsales(-BlockTime, "Mastercoin")
       
     #delete from blocks once we rollback all other data
     dbExecute("delete from blocks where blocknumber>%s",[block])
