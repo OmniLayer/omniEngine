@@ -104,7 +104,7 @@ def reorgRollback(block):
                           (dbBalanceReserved,linkedtxdbserialnum))
               elif Role=='buyer':
                 dbExecute("update offeraccepts set dexstate='unpaid', amountaccepted=amountaccepted-%s::numeric, amountpurchased=amountpurchased+%s::numeric "
-                          "where createtxdbserialnum=%s",(dbBalanceAvailable,dbBalanceAvailable,linkedtxdbserialnum))
+                          "where linkedtxdbserialnum=%s",(dbBalanceAvailable,dbBalanceAvailable,linkedtxdbserialnum))
 
             elif txtype == 50 or txtype == 51 or txtype == 54:
               #remove the property and the property history information
