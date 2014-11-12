@@ -777,7 +777,6 @@ def expireCrowdsales(BlockTime, Protocol):
       #Process all the crowdsales that should have expired by now
       for property in expired:
         updateProperty(-property[0], Protocol)
-        dbExecute("UPDATE smartproperties set propertydata::json->>'active'='true' where propertyid=%s and protocol=%s", (property[0], Protocol))
 
     else:
       #find the offers that are ready to expire and credit the 'accepted' amount back to the sellers sale
@@ -816,8 +815,7 @@ def updateProperty(PropertyID, Protocol, LastTxDBSerialNum=None):
       if addedissuertokens > 0:
         if reorg:
           updateBalance(issuer, Protocol, PropertyID, Ecosystem, -addedissuertokens, 0, 0, -1)
-          #once we update balance no need to update sp json object.
-          return
+          rawprop['active']='true'
         else:
           updateBalance(issuer, Protocol, PropertyID, Ecosystem, addedissuertokens, 0, 0, LastTxDBSerialNum)
     elif TxType > 53 and TxType < 57:
