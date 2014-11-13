@@ -1026,16 +1026,21 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
 
       elif txtype == 21:
         #DEx Phase II: Offer/Accept one Master Protocol Coins for another
-        if rawtx['result']['propertyofferedisdivisible']:
-          value=int(decimal.Decimal(str(rawtx['result']['amountoffered']))*decimal.Decimal(1e8))
-        else:
-          value=int(rawtx['result']['amountoffered'])
-        value_neg=(value*-1)
+        if rawtx['result']['valid']:
+          if rawtx['result']['propertyofferedisdivisible']:
+            value=int(decimal.Decimal(str(rawtx['result']['amountoffered']))*decimal.Decimal(1e8))
+          else:
+            value=int(rawtx['result']['amountoffered'])
+          value_neg=(value*-1)
 
-        BalanceAvailableCreditDebit=value_neg
-        BalanceReservedCreditDebit=value
-        PropertyOffered=rawtx['result']['propertyoffered']
-        Ecosystem=getEcosystem(PropertyOffered)
+          BalanceAvailableCreditDebit=value_neg
+          BalanceReservedCreditDebit=value
+          PropertyOffered=rawtx['result']['propertyoffered']
+          Ecosystem=getEcosystem(PropertyOffered)
+        else:
+          PropertyOffered=0
+          Ecosystem=None
+
 
         dbExecute("insert into addressesintxs "
                   "(Address, PropertyID, Protocol, TxDBSerialNum, AddressTxIndex, AddressRole, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit)"
@@ -1315,7 +1320,10 @@ def insertTx(rawtx, Protocol, blockheight, seq, TxDBSerialNum):
         Ecosystem=getEcosystem(rawtx['result']['purchases'][0]['propertyid'])
       elif TxType == 21:
         TxState= getTxState(rawtx['result']['valid'])
-        Ecosystem=getEcosystem(rawtx['result']['propertyoffered'])
+        if TxState:
+          Ecosystem=getEcosystem(rawtx['result']['propertyoffered'])
+        else:
+          Ecosystem=None
       else:
         TxState= getTxState(rawtx['result']['valid'])
         Ecosystem=getEcosystem(rawtx['result']['propertyid'])
