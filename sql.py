@@ -1140,17 +1140,17 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
           AddressRole = 'seller'
           BalanceReservedCreditDebit=AmountBoughtNeg
           Ecosystem=getEcosystem(PropertyIDBought)
+          #deduct the amount bought from both reserved and accepted fields, since we track it twice to match core (it only tracks reserved)
+          BalanceAcceptedCreditDebit=AmountBoughtNeg
           dbExecute("insert into addressesintxs "
                     "(Address, PropertyID, Protocol, TxDBSerialNum, AddressTxIndex, AddressRole, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit, linkedtxdbserialnum)"
                     "values(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
                     (Seller, PropertyIDBought, Protocol, TxDBSerialNum, AddressTxIndex, AddressRole, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit, saletxdbserialnum))
+          #reset it to null to not screw up next insert
+          BalanceAcceptedCreditDebit=None
 
           if Valid:
-            #deduct the amount bought from both reserved and accepted fields, since we track it twice to match core (it only tracks reserved)
-            BalanceAcceptedCreditDebit=AmountBoughtNeg
             updateBalance(Seller, Protocol, PropertyIDBought, Ecosystem, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit, TxDBSerialNum)
-            #reset it to null to not screw up next insert
-            BalanceAcceptedCreditDebit=None
 
           #Credit tokens tco buyer and reduce their accepted amount by amount bought
           AddressRole = 'buyer'
