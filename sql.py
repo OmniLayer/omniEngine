@@ -1144,8 +1144,6 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
                     "(Address, PropertyID, Protocol, TxDBSerialNum, AddressTxIndex, AddressRole, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit, linkedtxdbserialnum)"
                     "values(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
                     (Seller, PropertyIDBought, Protocol, TxDBSerialNum, AddressTxIndex, AddressRole, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit, saletxdbserialnum))
-          #reset it to null to not screw up next insert
-          BalanceAcceptedCreditDebit=None
 
           if Valid:
             updateBalance(Seller, Protocol, PropertyIDBought, Ecosystem, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit, TxDBSerialNum)
@@ -1154,6 +1152,7 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
           AddressRole = 'buyer'
           BalanceAvailableCreditDebit=AmountBought
           BalanceReservedCreditDebit=None
+          BalanceAcceptedCreditDebit=None
           dbExecute("insert into addressesintxs "
                     "(Address, PropertyID, Protocol, TxDBSerialNum, AddressTxIndex, AddressRole, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit, linkedtxdbserialnum)"
                     "values(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
