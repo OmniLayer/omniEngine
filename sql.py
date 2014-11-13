@@ -244,23 +244,21 @@ def expireAccepts(Block):
       dbExecute("update activeoffers set amountaccepted=amountaccepted-%s::numeric, amountavailable=amountavailable+%s::numeric "
                 "where createtxdbserialnum=%s", (amountaccepted, amountaccepted, saletxserialnum) )
 
-      #we already update addressbalances in reorg code, don't need to do it again
-      if Block > 0:
-        if salestate=='replaced' or salestate=='cancelled':
-          printdebug(("Found replaced/expired sale",saletxserialnum,"for expiring accept with amount",amountaccepted),4)
-          #sale ended credit the expired accepts' amount back to the users available balance and deduct it from the reserved/accepted balances
-          dbExecute("update addressbalances as ab set balanceavailable=ab.balanceavailable+%s::numeric, "
-                    "balancereserved=ab.balancereserved-%s::numeric, balanceaccepted=ab.balanceaccepted-%s::numeric "
-                    "from activeoffers as ao where ab.address=ao.seller and "
-                    "ab.propertyid = ao.propertyidselling and ao.createtxdbserialnum=%s",
-                    (amountaccepted, amountaccepted, amountaccepted, saletxserialnum) )
-        else:
-          printdebug(("sale",saletxserialnum,"still active, crediting expired offer amount back"),4)
-          #Sale still active, use the offers that are ready to expire to update the sellers accepted balance (reserved reflects total unsold amount left)
-          dbExecute("update addressbalances as ab set balanceaccepted=ab.balanceaccepted-%s::numeric "
-                    "from activeoffers as ao where ab.address=ao.seller and "
-                    "ab.propertyid = ao.propertyidselling and ao.createtxdbserialnum=%s", 
-                    (amountaccepted, saletxserialnum) )
+      if salestate=='replaced' or salestate=='cancelled':
+        printdebug(("Found replaced/expired sale",saletxserialnum,"for expiring accept with amount",amountaccepted),4)
+        #sale ended credit the expired accepts' amount back to the users available balance and deduct it from the reserved/accepted balances
+        dbExecute("update addressbalances as ab set balanceavailable=ab.balanceavailable+%s::numeric, "
+                  "balancereserved=ab.balancereserved-%s::numeric, balanceaccepted=ab.balanceaccepted-%s::numeric "
+                  "from activeoffers as ao where ab.address=ao.seller and "
+                  "ab.propertyid = ao.propertyidselling and ao.createtxdbserialnum=%s",
+                  (amountaccepted, amountaccepted, amountaccepted, saletxserialnum) )
+      else:
+        printdebug(("sale",saletxserialnum,"still active, crediting expired offer amount back"),4)
+        #Sale still active, use the offers that are ready to expire to update the sellers accepted balance (reserved reflects total unsold amount left)
+        dbExecute("update addressbalances as ab set balanceaccepted=ab.balanceaccepted-%s::numeric "
+                  "from activeoffers as ao where ab.address=ao.seller and "
+                  "ab.propertyid = ao.propertyidselling and ao.createtxdbserialnum=%s", 
+                  (amountaccepted, saletxserialnum) )
 
     if Block < 0:
       dbExecute("update offeraccepts set expiredstate=false where expireblock >= %s and expiredstate=true", [-Block] )
