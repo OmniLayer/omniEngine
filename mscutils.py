@@ -21,6 +21,7 @@ def get_TxType(text_type):
              "Automatic Dispensary":-1,
              "DEx Sell Offer": 20,
              "MetaDEx: Offer/Accept one Master Protocol Coins for another": 21,
+             "MetaDEx: Offer/Accept one Master Protocol Tokens for another": 21,
              "DEx Accept Offer": 22,
              "DEx Purchase": -22,
              "Create Property - Fixed": 50,
