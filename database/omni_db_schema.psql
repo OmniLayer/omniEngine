@@ -33,7 +33,7 @@ create type TxState as enum ('pending', 'valid', 'not valid');
 create type WalletState as enum ('Active', 'Inactive', 'Suspended');
 create type DExState as enum ('invalid', 'unpaid', 'paid-partial', 'paid-complete');
 create type OfferState as enum ('active', 'cancelled', 'replaced', 'sold');
-
+create type OrderState as enum ('invalid', 'cancelled', 'cancelled-part-filled', 'filled', 'open', 'open-part-filled');
 
 create table if not exists Sessions (
         SessionID text not null
@@ -323,7 +323,7 @@ create index Buyers on OfferAccepts (Buyer)
 create table if not exists OrderBook (
         Seller varchar(64) not null                    /* Sellers address */
       , TxDbSerialNum int8 not null                    /* tx that created this sale */
-      , OrderState DExState not null                     /* invalid, unpaid, paid-partial, paid-complete */
+      , OrderState OrderState not null                 /* invalid, cancelled, cancelled-part-filled, filled, open, open-part-filled */
       , PropertyForSale bigint not null                /* Property for sale  */
       , AmountForSale numeric(19) not null             /* Amount for sale by seller */
       , RemainingForSale numeric(19) not null          /* Amount left for sale by seller */
