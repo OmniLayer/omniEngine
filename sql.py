@@ -8,11 +8,114 @@ from sqltools import *
 from common import *
 
 
-def updateorderbook():
+def updateorderblob():
     block=getinfo()['result']['blocks']
     blob=json.dumps(gettradessince_MP()['result'])
     dbExecute("insert into orderblob (blocknumber, orders) select %s,%s where not exists (select * from orderblob where blocknumber=%s)", 
               (block, str(blob), block))
+
+def updateorderbook(rawtx, TxDBSerialNum, Block):
+
+    Seller=rawtx['result']['sendingaddress']
+    PropertyForSale=rawtx['result']['propertyoffered']
+    PropertyDesired=rawtx['result']['propertydesired']
+    retval=[]
+    rawtrade = gettrade_MP(rawtx['result']['txid'])
+    #get any matched tx's
+    if 'matches' in rawtrade:
+      matches = rawtrade['result']['matches']
+    else:
+      matches = []
+    #get any cancelled tx's
+    if 'cancelledtransactions' in rawtrade:
+      cancels = rawtrade['result']['cancelledtransactions']
+    else:
+      cancels = []
+
+    if rawtx['result']['propertyofferedisdivisible']:
+      AmountForSale=int(decimal.Decimal(str(rawtx['result']['amountoffered']))*decimal.Decimal(1e8))
+    else:
+      AmountForSale=int(rawtx['result']['amountoffered'])
+    if rawtx['result']['propertydesiredisdivisible']:
+      AmountDesired=int(decimal.Decimal(str(rawtx['result']['amountdesired']))*decimal.Decimal(1e8))
+    else:
+      AmountDesired=int(rawtx['result']['amountdesired'])
+
+    if Action==1 or Action.lower()=='new sell':
+      #set orderstate and initial remaining amounts
+      OrderState='open'
+      RemainingForSale = AmountForSale
+      RemainingDesired = AmountDesired
+      #process any matches
+      for sale in matches:
+        #only process new matches for this block. Ignore old/unprocessed tx's
+        if sale['block'] ==  Block:
+          #get amounts to update
+          if rawtx['result']['propertyofferedisdivisible']:
+            AmountBought = int(decimal.Decimal(str(sale['amountbought']))*decimal.Decimal(1e8))
+          else:
+            AmountBought = int(sale['amountbought'])
+          if rawtx['result']['propertydesiredisdivisible']:
+            AmountDesired = int(decimal.Decimal(str(rawtx['result']['amountdesired']))*decimal.Decimal(1e8))
+          else:
+            AmountDesired = int(rawtx['result']['amountdesired'])
+
+          RemainingForSale -= AmountBought
+          RemainingDesired -= AmountDesired
+          if RemainingForSale > 0:
+            OrderState='open-part-filled'
+          else:
+            OrderState='filled'
+
+          retval.append({'address':sale['address'], 'bought': AmountBought, 'sold': AmountSold, 'txid': sale['txid']})
+
+      #insert our order into orderbook
+      dbExecute("insert into orderbook(Seller,TxDbSerialNum,OrderState,PropertyForSale,AmountForSale, "
+                "RemainingForSale, PropertyDesired, AmountDesired, RemainingDesired) values (%s,%s,%s,%s,%s,%s,%s,%s,%s)",
+                (Seller,TxDbSerialNum,OrderState,PropertyForSale,AmountForSale,RemainingForSale,PropertyDesired, 
+                 AmountDesired,RemainingDesired))
+
+      #update remaining amounts in any matched sales
+      for prevsale in retval:
+        ps=dbSelect("select ob.RemainingForSale, ob.txdbserialnum from orderbook ob, transactions tx "
+                    "where tx.txdbserialnum=ob.txdbserialnum and ob.seller=%s and tx.txhash=%s",
+                    (prevsale['address'], prevsale['txid']))
+        #check if the previous order is completed or still open
+        if ps[0] > 0:
+          state='open-part-filled'
+        else:
+          state='filled'
+        #send back txdbserialnum so we don't have to look it up later
+        prevsale['txid']=ps[1]
+        #update previous order
+        dbExecute("update orderbook set RemainingForSale=RemainingForSale-%s::numeric, "
+                  "RemainingDesired=RemainingDesired-%s::numeric, OrderState=%s where txdbserialnum=%s",
+                  (prevsale['sold'],prevsale['bought'],state,ps[1]))
+
+    elif (Action in [2,3,4]) or (Action.lower() in ['cancel price','cancel pair','cancel all']):
+      for tx in cancels:
+        txhash=tx['txid']
+        propertyid=tx['property']        
+        if prevtx['propertyofferedisdivisible']:
+          Amount = int(decimal.Decimal(str(tx['amountunreserved']))*decimal.Decimal(1e8))
+        else:
+          Amount = int(tx['amountunreserved'])
+        #find previous tx in db
+        prevtx = dbSelect("select ob.orderstate, ob.txdbserialnum from orderbook ob, transactions tx "
+                          "where tx.txdbserialnum=ob.txdbserialnum and tx.txhash=%s", [txhash])
+        #get original sale amount and the creation txdbserialnum
+        origstate = prevtx[0][0]
+        linkedtxdbserialnum = prevtx[0][1]
+        #check if the original sale == the amount left after cancel (determine if order was partially filled or not
+        if origstate == 'open':
+          OrderState='cancelled'
+        else:
+          OrderState='cancelled-part-filled'
+        dbExecute("update orderbook set orderstate=%s where txdbserialnum=$s", (OrderState, linkedtxdbserialnum))
+
+        retval.append({'unreserved': Amount, 'propertyid':propertyid, 'txid': linkedtxdbserialnum})
+    return retval
+
 
 def reorgRollback(block):
 
@@ -1025,28 +1128,105 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
       elif txtype == 21:
         #DEx Phase II: Offer/Accept one Master Protocol Coins for another
         if rawtx['result']['valid']:
-          if rawtx['result']['propertyofferedisdivisible']:
-            value=int(decimal.Decimal(str(rawtx['result']['amountoffered']))*decimal.Decimal(1e8))
-          else:
-            value=int(rawtx['result']['amountoffered'])
-          value_neg=(value*-1)
+          Action=rawtx['result']['action']
+          AddressRole='seller'
 
-          BalanceAvailableCreditDebit=value_neg
-          BalanceReservedCreditDebit=value
-          PropertyOffered=rawtx['result']['propertyoffered']
-          Ecosystem=getEcosystem(PropertyOffered)
+          if rawtx['result']['propertyofferedisdivisible']:
+            AmountForSale=int(decimal.Decimal(str(rawtx['result']['amountoffered']))*decimal.Decimal(1e8))
+          else:
+            AmountForSale=int(rawtx['result']['amountoffered'])
+          if rawtx['result']['propertydesiredisdivisible']:
+            AmountDesired=int(decimal.Decimal(str(rawtx['result']['amountdesired']))*decimal.Decimal(1e8))
+          else:
+            AmountDesired=int(rawtx['result']['amountdesired'])
+
+          PropertyForSale=rawtx['result']['propertyoffered']
+          PropertyDesired=rawtx['result']['propertydesired']
+          Ecosystem=getEcosystem(PropertyForSale)
+          #process orderbook updates and get any matches to process
+          orders=updateorderbook(rawtx, TxDBSerialNum, Block)
+
+          if Action==1 or Action.lower()=='new sell':
+            BalanceAvailableCreditDebit=AmountForSale*-1
+            BalanceReservedCreditDebit=AmountForSale
+
+          elif (Action in [2,3,4]) or (Action.lower() in ['cancel price','cancel pair','cancel all']):
+            #do we need a generic insert?
+            #{'unreserved': Amount, 'propertyid':propertyid, 'txid': linkedtxdbserialnum}
+            for order in orders:
+              linkedtxdbserialnum=order['txid']
+              Unsold=order['amount']      #PropertyDesired
+              Unsold_Neg=Sold*-1
+              PropertyID=order['propertyid']
+              #lookup all orders and get the collective sum (or do we want to do it individually? 
+              dbExecute("insert into addressesintxs "
+                        "(Address, PropertyID, Protocol, TxDBSerialNum, AddressTxIndex, AddressRole, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit, linkedtxdbserialnum)"
+                        "values(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
+                        (Address, PropertyID, Protocol, TxDBSerialNum, AddressTxIndex, AddressRole, Unsold, Unsold_Neg, None, linkedtxdbserialnum))
+              if rawtx['result']['valid']:
+                #Address, Protocol, PropertyForSale, Ecosystem, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit, TxDBSerialNum
+                updateBalance(Address, Protocol, PropertyID, Ecosystem, Unsold, Unsold_Neg, None, TxDBSerialNum)
+            #finished inserting all records necessary for cancel. Return
+            return 
         else:
           PropertyOffered=0
           Ecosystem=None
+          orders=[]
 
 
         dbExecute("insert into addressesintxs "
                   "(Address, PropertyID, Protocol, TxDBSerialNum, AddressTxIndex, AddressRole, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit)"
                   "values(%s, %s, %s, %s, %s, %s, %s, %s, %s)",
-                  (Address, PropertyOffered, Protocol, TxDBSerialNum, AddressTxIndex, AddressRole, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit))
+                  (Address, PropertyForSale, Protocol, TxDBSerialNum, AddressTxIndex, AddressRole, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit))
 
         if rawtx['result']['valid']:
-            updateBalance(Address, Protocol, PropertyOffered, Ecosystem, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit, TxDBSerialNum)
+            updateBalance(Address, Protocol, PropertyForSale, Ecosystem, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit, TxDBSerialNum)
+
+        #process any matched orders (array of dicts{ 'address': xx, 'bought': xx, 'sold': xx, 'txid':xx } )
+        for order in orders:
+
+          linkedtxdbserialnum=order['txid']
+          MatchedAddress=order['address']
+          #bought and sold amounts relate to the matched address as the executor
+          Bought=order['bought']  #PropertyForSale
+          Bought_Neg=Bought*-1
+          Sold=order['sold']      #PropertyDesired
+          Sold_Neg=Sold*-1
+          #propertyforsale
+          #This tx's seller 
+          dbExecute("insert into addressesintxs "
+                    "(Address, PropertyID, Protocol, TxDBSerialNum, AddressTxIndex, AddressRole, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit, linkedtxdbserialnum)"
+                    "values(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
+                    (Address, PropertyForSale, Protocol, TxDBSerialNum, AddressTxIndex, AddressRole, None, Bought_Neg, None, linkedtxdbserialnum))
+
+          #address in matched tx (aka buyer) 
+          dbExecute("insert into addressesintxs "
+                    "(Address, PropertyID, Protocol, TxDBSerialNum, AddressTxIndex, AddressRole, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit, linkedtxdbserialnum)"
+                    "values(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
+                    (MatchedAddress, PropertyForSale, Protocol, TxDBSerialNum, AddressTxIndex, 'buyer', Bought, None, None, linkedtxdbserialnum))
+
+          #propertydesired
+          #This tx's (now he's the buyer)
+          dbExecute("insert into addressesintxs "
+                    "(Address, PropertyID, Protocol, TxDBSerialNum, AddressTxIndex, AddressRole, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit, linkedtxdbserialnum)"
+                    "values(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
+                    (Address, PropertyDesired, Protocol, TxDBSerialNum, AddressTxIndex, 'buyer', Sold, None, None, linkedtxdbserialnum))
+
+          #address in matched tx (now the seller)
+          dbExecute("insert into addressesintxs "
+                    "(Address, PropertyID, Protocol, TxDBSerialNum, AddressTxIndex, AddressRole, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit, linkedtxdbserialnum)"
+                    "values(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
+                    (MatchedAddress, PropertyDesired, Protocol, TxDBSerialNum, AddressTxIndex, AddressRole, None, Sold_Neg, None, linkedtxdbserialnum))
+
+
+          if rawtx['result']['valid']:
+            #Address, Protocol, PropertyForSale, Ecosystem, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit, TxDBSerialNum
+            #propertyforsale
+            updateBalance(Address, Protocol, PropertyForSale, Ecosystem, None, Bought_Neg, None, TxDBSerialNum)
+            updateBalance(MatchedAddress, Protocol, PropertyForSale, Ecosystem, Bought, None, None, TxDBSerialNum)
+            #propertydesired
+            updateBalance(Address, Protocol, PropertyDesired, Ecosystem, Sold, None, None, TxDBSerialNum)
+            updateBalance(MatchedAddress, Protocol, PropertyDesired, Ecosystem, None, Sold_Neg, None, TxDBSerialNum)
 
         return
 
