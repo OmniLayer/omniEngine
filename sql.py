@@ -194,6 +194,29 @@ def reorgRollback(block):
                 printdebug(("Deleting new DEx.1 sale",TxDbSerialNum,Address),7)
                 #was a new sale, delete it
                 dbExecute("delete from activeoffers where createtxdbserialnum=%s", [TxDbSerialNum])
+            elif txtype == 21:
+              if Role=='seller':
+                #get rawtx to check if it was a cancel tx
+                rawtx=json.loads(dbSelect("select txdata from txjson where txdbserialnum=%s",[TxDbSerialNum])[0][0])
+                if ('cancelledtransactions' in rawtx) and (rawtx['action'].lower() in ['cancel price','cancel pair','cancel all']):
+                  dbExecute("update orderbook set orderstate = CASE WHEN orderstate = 'cancelled-part-filled' THEN 'open-part-filled' when orderstate = 'cancelled' THEN 'open' "
+                            "ELSE orderstate END where txdbserialnum=%s", [linkedtxdbserialnum] )
+                else:
+                  #not a cancel, new trade. check for matches and update
+                  if linkedtxdbserialnum == -1:
+                    #new trade with no matches, delete it from orderbook
+                    dbExecute("delete from orderbook where txdbserialnum=%s", [TxDbSerialNum])
+                  else:
+                    #New trade with matches, so credit back any matched amounts to the relevant remote trades and delete this new one
+                    dbExecute("delete from orderbook where txdbserialnum=%s", [TxDbSerialNum])
+                    if PropertyID==rawtx['propertydesired']:
+                      #what this tx desires, the remote tx is selling
+                      dbExecute("update orderbook set RemainingForSale=RemainingForSale-%s::numeric where txdbserialnum=%s", (dbBalanceReserved,linkedtxdbserialnum))
+                      #dbExecute("update orderbook set RemainingDesired=RemainingDesired-%s::numeric where txdbserialnum=%s", (dbBalanceReserved,TxDbSerialNum))
+                    elif PropertyID==rawtx['propertyoffered']:
+                      #what this tx is selling, the remote tx desires
+                      #dbExecute("update orderbook set RemainingForSale=RemainingForSale-%s::numeric where txdbserialnum=%s", (dbBalanceReserved,TxDbSerialNum))
+                      dbExecute("update orderbook set RemainingDesired=RemainingDesired-%s::numeric where txdbserialnum=%s", (dbBalanceReserved,linkedtxdbserialnum))
 
             elif txtype == 22 and Role=='seller':
               #unaccept a dex sale and update the sale balance info (don't know about lasttxdbserialnum yet)
