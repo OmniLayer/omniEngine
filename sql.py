@@ -79,7 +79,7 @@ def updateorderbook(rawtx, TxDbSerialNum, Block):
             OrderState='filled'
 
           #temp workaround for rpc testing
-          sale['address']=gettransaction_MP(sale['txid'])['result']['sendingaddress']
+          #sale['address']=gettransaction_MP(sale['txid'])['result']['sendingaddress']
 
           retval.append({'address':sale['address'], 'bought': AmountBought, 'sold': AmountSold, 'txid': sale['txid']})
 
