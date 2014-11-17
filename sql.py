@@ -28,12 +28,12 @@ def updateorderbook(rawtx, TxDbSerialNum, Block):
     retval=[]
     rawtrade = gettrade_MP(rawtx['result']['txid'])
     #get any matched tx's
-    if 'matches' in rawtrade:
+    if 'matches' in rawtrade['result']:
       matches = rawtrade['result']['matches']
     else:
       matches = []
     #get any cancelled tx's
-    if 'cancelledtransactions' in rawtrade:
+    if 'cancelledtransactions' in rawtrade['result']:
       cancels = rawtrade['result']['cancelledtransactions']
     else:
       cancels = []
