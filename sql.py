@@ -24,6 +24,7 @@ def updateorderbook(rawtx, TxDBSerialNum, Block):
     Seller=rawtx['result']['sendingaddress']
     PropertyForSale=rawtx['result']['propertyoffered']
     PropertyDesired=rawtx['result']['propertydesired']
+    Action=rawtx['result']['action']
     retval=[]
     rawtrade = gettrade_MP(rawtx['result']['txid'])
     #get any matched tx's
