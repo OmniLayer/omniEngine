@@ -1231,7 +1231,7 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
             #{'unreserved': Amount, 'propertyid':propertyid, 'txid': linkedtxdbserialnum}
             for order in orders:
               linkedtxdbserialnum=order['txid']
-              Unsold=order['amount']      #PropertyDesired
+              Unsold=order['unreserved']      #PropertyDesired
               Unsold_Neg=Sold*-1
               PropertyID=order['propertyid']
               #lookup all orders and get the collective sum (or do we want to do it individually? 
