@@ -61,13 +61,14 @@ def updateorderbook(rawtx, TxDbSerialNum, Block):
             AmountBought = int(decimal.Decimal(str(sale['amountbought']))*decimal.Decimal(1e8))
           else:
             AmountBought = int(sale['amountbought'])
+
           if rawtx['result']['propertydesiredisdivisible']:
-            AmountDesired = int(decimal.Decimal(str(rawtx['result']['amountdesired']))*decimal.Decimal(1e8))
+            AmountSold = int(decimal.Decimal(str(sale['amountsold']))*decimal.Decimal(1e8))
           else:
-            AmountDesired = int(rawtx['result']['amountdesired'])
+            AmountSold = int(sale['amountsold'])
 
           RemainingForSale -= AmountBought
-          RemainingDesired -= AmountDesired
+          RemainingDesired -= AmountSold
           if RemainingForSale > 0:
             OrderState='open-part-filled'
           else:
