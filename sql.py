@@ -54,14 +54,14 @@ def updateorderbook(rawtx, TxDbSerialNum, Block):
       RemainingDesired = AmountDesired
       #process any matches
       for sale in matches:
-        #only process new matches for this block. Ignore old/unprocessed tx's
-        if sale['block'] ==  Block:
+        #only process new matches for this block if the have been processed already. Ignore old/unprocessed tx's
+        if (sale['block'] ==  Block) and (len(dbSelect("select txdbserialnum from transactions where txhash=%s",[sale['txid']])) > 0):
           #get amounts to update
           if rawtx['result']['propertyofferedisdivisible']:
             AmountBought = int(decimal.Decimal(str(sale['amountbought']))*decimal.Decimal(1e8))
           else:
             AmountBought = int(decimal.Decimal(str(sale['amountbought'])))
-
+            #if a float type is returned from rpc, int(amount) fails with type error, need to cast to convert
           if rawtx['result']['propertydesiredisdivisible']:
             AmountSold = int(decimal.Decimal(str(sale['amountsold']))*decimal.Decimal(1e8))
           else:
