@@ -122,8 +122,7 @@ def updateorderbook(rawtx, TxDbSerialNum, Block):
           OrderState='cancelled'
         else:
           OrderState='cancelled-part-filled'
-        dbExecute("update orderbook set orderstate=%s where txdbserialnum=$s", (OrderState, linkedtxdbserialnum))
-
+        dbExecute("update orderbook set orderstate=%s where txdbserialnum=%s", (OrderState,linkedtxdbserialnum))
         retval.append({'unreserved': Amount, 'propertyid':propertyid, 'txid': linkedtxdbserialnum})
     return retval
 
