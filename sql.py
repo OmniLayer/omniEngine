@@ -42,6 +42,7 @@ def updateorderbook(rawtx, TxDbSerialNum, Block):
       AmountForSale=int(decimal.Decimal(str(rawtx['result']['amountoffered']))*decimal.Decimal(1e8))
     else:
       AmountForSale=int(rawtx['result']['amountoffered'])
+
     if rawtx['result']['propertydesiredisdivisible']:
       AmountDesired=int(decimal.Decimal(str(rawtx['result']['amountdesired']))*decimal.Decimal(1e8))
     else:
@@ -111,7 +112,7 @@ def updateorderbook(rawtx, TxDbSerialNum, Block):
       for tx in cancels:
         txhash=tx['txid']
         propertyid=tx['propertyid']
-        if rawtx['result']['propertyofferedisdivisible']:
+        if getdivisible_MP(propertyid):
           Amount = int(decimal.Decimal(str(tx['amountunreserved']))*decimal.Decimal(1e8))
         else:
           Amount = int(tx['amountunreserved'])
