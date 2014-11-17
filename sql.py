@@ -66,13 +66,16 @@ def updateorderbook(rawtx, TxDbSerialNum, Block):
             AmountSold = int(decimal.Decimal(str(sale['amountsold']))*decimal.Decimal(1e8))
           else:
             AmountSold = int(sale['amountsold'])
-
           RemainingForSale -= AmountBought
           RemainingDesired -= AmountSold
+
           if RemainingForSale > 0:
             OrderState='open-part-filled'
           else:
             OrderState='filled'
+
+          #temp workaround for rpc testing
+          sale['address']=gettransaction_MP(sale['txid'])['result']['sendingaddress']
 
           retval.append({'address':sale['address'], 'bought': AmountBought, 'sold': AmountSold, 'txid': sale['txid']})
 
@@ -88,22 +91,23 @@ def updateorderbook(rawtx, TxDbSerialNum, Block):
                     "where tx.txdbserialnum=ob.txdbserialnum and ob.seller=%s and tx.txhash=%s",
                     (prevsale['address'], prevsale['txid']))
         #check if the previous order is completed or still open
-        if ps[0] > 0:
+        if ps[0][0] > 0:
           state='open-part-filled'
         else:
           state='filled'
+        txdbserial=ps[0][1]
         #send back txdbserialnum so we don't have to look it up later
-        prevsale['txid']=ps[1]
+        prevsale['txid']=txdbserial
         #update previous order
         dbExecute("update orderbook set RemainingForSale=RemainingForSale-%s::numeric, "
                   "RemainingDesired=RemainingDesired-%s::numeric, OrderState=%s where txdbserialnum=%s",
-                  (prevsale['sold'],prevsale['bought'],state,ps[1]))
+                  (prevsale['sold'],prevsale['bought'],state,txdbserial))
 
     elif (Action in [2,3,4]) or (Action.lower() in ['cancel price','cancel pair','cancel all']):
       for tx in cancels:
         txhash=tx['txid']
         propertyid=tx['property']        
-        if prevtx['propertyofferedisdivisible']:
+        if tx['propertyofferedisdivisible']:
           Amount = int(decimal.Decimal(str(tx['amountunreserved']))*decimal.Decimal(1e8))
         else:
           Amount = int(tx['amountunreserved'])
