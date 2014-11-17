@@ -185,7 +185,10 @@ def reorgRollback(block):
           if Protocol=="Mastercoin":
             #any special actions need to be undone as well
             if txtype == 20 and Role=='seller':
-              rawtx=json.loads(dbSelect("select txdata from txjson where txdbserialnum=%s",[TxDbSerialNum])[0][0])
+              try:
+                rawtx=json.loads(dbSelect("select txdata from txjson where txdbserialnum=%s",[TxDbSerialNum])[0][0])
+              except TypeError:
+                rawtx=dbSelect("select txdata from txjson where txdbserialnum=%s",[TxDbSerialNum])[0][0]            
               if 'subaction' in rawtx and rawtx['subaction'].lower()=='cancel':
                 printdebug(("Uncancelling DEx.1 sale",linkedtxdbserialnum,"from transaction",TxDbSerialNum,Address),7)
                 #cancellation, undo the cancellation (not sure about the lasttxdbserialnum yet
@@ -197,7 +200,10 @@ def reorgRollback(block):
             elif txtype == 21:
               if Role=='seller':
                 #get rawtx to check if it was a cancel tx
-                rawtx=json.loads(dbSelect("select txdata from txjson where txdbserialnum=%s",[TxDbSerialNum])[0][0])
+                try:
+                  rawtx=json.loads(dbSelect("select txdata from txjson where txdbserialnum=%s",[TxDbSerialNum])[0][0])
+                except TypeError:
+                  rawtx=dbSelect("select txdata from txjson where txdbserialnum=%s",[TxDbSerialNum])[0][0]
                 if ('cancelledtransactions' in rawtx) and (rawtx['action'].lower() in ['cancel price','cancel pair','cancel all']):
                   dbExecute("update orderbook set orderstate = CASE WHEN orderstate = 'cancelled-part-filled' THEN 'open-part-filled' when orderstate = 'cancelled' THEN 'open' "
                             "ELSE orderstate END where txdbserialnum=%s", [linkedtxdbserialnum] )
