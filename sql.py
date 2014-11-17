@@ -16,10 +16,10 @@ def updateorderblob():
     dbExecute("insert into orderblob (blocknumber, orders) select %s,%s where not exists (select * from orderblob where blocknumber=%s)", 
               (block, str(blob), block))
 
-def updateorderbook(rawtx, TxDBSerialNum, Block):
+def updateorderbook(rawtx, TxDbSerialNum, Block):
     printdebug(("Starting updateorderbook:"),8)
-    printdebug(("rawtx, TxDBSerialNum, Block"),9)
-    printdebug((rawtx, TxDBSerialNum, Block, "\n"),9)
+    printdebug(("rawtx, TxDbSerialNum, Block"),9)
+    printdebug((rawtx, TxDbSerialNum, Block, "\n"),9)
 
     Seller=rawtx['result']['sendingaddress']
     PropertyForSale=rawtx['result']['propertyoffered']
