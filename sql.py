@@ -54,20 +54,24 @@ def updateorderbook(rawtx, TxDbSerialNum, Block):
       RemainingDesired = AmountDesired
       #process any matches
       for sale in matches:
+        #amountforsale == amountoffered == amountsold
+        #amountdesired == amountwanted == amountbought
         #only process new matches for this block if the have been processed already. Ignore old/unprocessed tx's
         if (sale['block'] ==  Block) and (len(dbSelect("select txdbserialnum from transactions where txhash=%s",[sale['txid']])) > 0):
           #get amounts to update
+          #Amountbought is how much this tx bought from the matched tx
           if rawtx['result']['propertyofferedisdivisible']:
             AmountBought = int(decimal.Decimal(str(sale['amountbought']))*decimal.Decimal(1e8))
           else:
             AmountBought = int(decimal.Decimal(str(sale['amountbought'])))
             #if a float type is returned from rpc, int(amount) fails with type error, need to cast to convert
+          #Amountsold is how much this tx sold to the matched tx
           if rawtx['result']['propertydesiredisdivisible']:
             AmountSold = int(decimal.Decimal(str(sale['amountsold']))*decimal.Decimal(1e8))
           else:
             AmountSold = int(decimal.Decimal(str(sale['amountsold'])))
-          RemainingForSale -= AmountBought
-          RemainingDesired -= AmountSold
+          RemainingForSale -= AmountSold
+          RemainingDesired -= AmountBought
 
           if RemainingForSale > 0:
             OrderState='open-part-filled'
@@ -101,7 +105,7 @@ def updateorderbook(rawtx, TxDbSerialNum, Block):
         #update previous order
         dbExecute("update orderbook set RemainingForSale=RemainingForSale-%s::numeric, "
                   "RemainingDesired=RemainingDesired-%s::numeric, OrderState=%s where txdbserialnum=%s",
-                  (prevsale['sold'],prevsale['bought'],state,txdbserial))
+                  (prevsale['bought'],prevsale['sold'],state,txdbserial))
 
     elif (Action in [2,3,4]) or (Action.lower() in ['cancel price','cancel pair','cancel all']):
       for tx in cancels:
@@ -225,6 +229,8 @@ def reorgRollback(block):
                   else:
                     #New trade with matches, so credit back any matched amounts to the relevant remote trades and delete this new one
                     dbExecute("delete from orderbook where txdbserialnum=%s", [TxDbSerialNum])
+                    #amountforsale == amountoffered == amountsold
+                    #amountdesired == amountwanted == amountbought
                     if PropertyID==rawtx['propertydesired']:
                       #what this tx desires, the remote tx is selling
                       dbExecute("update orderbook set RemainingForSale=RemainingForSale-%s::numeric where txdbserialnum=%s", (dbBalanceReserved,linkedtxdbserialnum))
@@ -1277,36 +1283,36 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
           dbExecute("insert into addressesintxs "
                     "(Address, PropertyID, Protocol, TxDBSerialNum, AddressTxIndex, AddressRole, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit, linkedtxdbserialnum)"
                     "values(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
-                    (Address, PropertyForSale, Protocol, TxDBSerialNum, AddressTxIndex, AddressRole, None, Bought_Neg, None, linkedtxdbserialnum))
+                    (Address, PropertyForSale, Protocol, TxDBSerialNum, AddressTxIndex, AddressRole, None, Sold_Neg, None, linkedtxdbserialnum))
 
           #address in matched tx (aka buyer) 
           dbExecute("insert into addressesintxs "
                     "(Address, PropertyID, Protocol, TxDBSerialNum, AddressTxIndex, AddressRole, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit, linkedtxdbserialnum)"
                     "values(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
-                    (MatchedAddress, PropertyForSale, Protocol, TxDBSerialNum, AddressTxIndex, 'buyer', Bought, None, None, linkedtxdbserialnum))
+                    (MatchedAddress, PropertyForSale, Protocol, TxDBSerialNum, AddressTxIndex, 'buyer', Sold, None, None, linkedtxdbserialnum))
 
           #propertydesired
           #This tx's (now he's the buyer)
           dbExecute("insert into addressesintxs "
                     "(Address, PropertyID, Protocol, TxDBSerialNum, AddressTxIndex, AddressRole, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit, linkedtxdbserialnum)"
                     "values(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
-                    (Address, PropertyDesired, Protocol, TxDBSerialNum, AddressTxIndex, 'buyer', Sold, None, None, linkedtxdbserialnum))
+                    (Address, PropertyDesired, Protocol, TxDBSerialNum, AddressTxIndex, 'buyer', Bought, None, None, linkedtxdbserialnum))
 
           #address in matched tx (now the seller)
           dbExecute("insert into addressesintxs "
                     "(Address, PropertyID, Protocol, TxDBSerialNum, AddressTxIndex, AddressRole, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit, linkedtxdbserialnum)"
                     "values(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
-                    (MatchedAddress, PropertyDesired, Protocol, TxDBSerialNum, AddressTxIndex, AddressRole, None, Sold_Neg, None, linkedtxdbserialnum))
+                    (MatchedAddress, PropertyDesired, Protocol, TxDBSerialNum, AddressTxIndex, AddressRole, None, Bought_Neg, None, linkedtxdbserialnum))
 
 
           if rawtx['result']['valid']:
             #Address, Protocol, PropertyForSale, Ecosystem, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit, TxDBSerialNum
             #propertyforsale
-            updateBalance(Address, Protocol, PropertyForSale, Ecosystem, None, Bought_Neg, None, TxDBSerialNum)
-            updateBalance(MatchedAddress, Protocol, PropertyForSale, Ecosystem, Bought, None, None, TxDBSerialNum)
+            updateBalance(Address, Protocol, PropertyForSale, Ecosystem, None, Sold_Neg, None, TxDBSerialNum)
+            updateBalance(MatchedAddress, Protocol, PropertyForSale, Ecosystem, Sold, None, None, TxDBSerialNum)
             #propertydesired
-            updateBalance(Address, Protocol, PropertyDesired, Ecosystem, Sold, None, None, TxDBSerialNum)
-            updateBalance(MatchedAddress, Protocol, PropertyDesired, Ecosystem, None, Sold_Neg, None, TxDBSerialNum)
+            updateBalance(Address, Protocol, PropertyDesired, Ecosystem, Bought, None, None, TxDBSerialNum)
+            updateBalance(MatchedAddress, Protocol, PropertyDesired, Ecosystem, None, Bought_Neg, None, TxDBSerialNum)
 
         return
 
