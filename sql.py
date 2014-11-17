@@ -106,8 +106,8 @@ def updateorderbook(rawtx, TxDbSerialNum, Block):
     elif (Action in [2,3,4]) or (Action.lower() in ['cancel price','cancel pair','cancel all']):
       for tx in cancels:
         txhash=tx['txid']
-        propertyid=tx['property']        
-        if tx['propertyofferedisdivisible']:
+        propertyid=tx['propertyid']
+        if rawtx['result']['propertyofferedisdivisible']:
           Amount = int(decimal.Decimal(str(tx['amountunreserved']))*decimal.Decimal(1e8))
         else:
           Amount = int(tx['amountunreserved'])
