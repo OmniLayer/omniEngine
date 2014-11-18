@@ -96,7 +96,7 @@ def updateorderbook(rawtx, TxDbSerialNum, Block):
                     "where tx.txdbserialnum=ob.txdbserialnum and ob.seller=%s and tx.txhash=%s",
                     (prevsale['address'], prevsale['txid']))
         #check if the previous order is completed or still open
-        if ps[0][0] > 0:
+        if ps[0][0]-prevsale['bought'] > 0:
           state='open-part-filled'
         else:
           state='filled'
