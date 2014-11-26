@@ -329,7 +329,7 @@ create table if not exists OrderBook (
       , RemainingForSale numeric(19) not null          /* Amount left for sale by seller */
       , PropertyDesired bigint not null                /* Property to buy  */
       , AmountDesired numeric(19) not null             /* Amount seller wants for amount they are selling */
-      , RemainingDesired numeric(19) not null          /* Amount left seller wants for amount they are selling */
+      , DesiredReceived numeric(19) not null           /* Amount seller has received so far for amount they are selling */
 )
 ;
 

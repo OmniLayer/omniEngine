@@ -52,7 +52,8 @@ def updateorderbook(rawtx, TxDbSerialNum, Block):
       #set orderstate and initial remaining amounts
       OrderState='open'
       RemainingForSale = AmountForSale
-      RemainingDesired = AmountDesired
+      #RemainingDesired = AmountDesired
+      DesiredReceived = 0
       #process any matches
       for sale in matches:
         #amountforsale == amountoffered == amountsold
@@ -72,7 +73,7 @@ def updateorderbook(rawtx, TxDbSerialNum, Block):
           else:
             AmountSold = int(decimal.Decimal(str(sale['amountsold'])))
           RemainingForSale -= AmountSold
-          RemainingDesired -= AmountBought
+          DesiredReceived += AmountBought
 
           if RemainingForSale > 0:
             OrderState='open-part-filled'
@@ -86,9 +87,9 @@ def updateorderbook(rawtx, TxDbSerialNum, Block):
 
       #insert our order into orderbook
       dbExecute("insert into orderbook(Seller,TxDbSerialNum,OrderState,PropertyForSale,AmountForSale, "
-                "RemainingForSale, PropertyDesired, AmountDesired, RemainingDesired) values (%s,%s,%s,%s,%s,%s,%s,%s,%s)",
+                "RemainingForSale, PropertyDesired, AmountDesired, DesiredReceived) values (%s,%s,%s,%s,%s,%s,%s,%s,%s)",
                 (Seller,TxDbSerialNum,OrderState,PropertyForSale,AmountForSale,RemainingForSale,PropertyDesired, 
-                 AmountDesired,RemainingDesired))
+                 AmountDesired,DesiredReceived))
 
       #update remaining amounts in any matched sales
       for prevsale in retval:
@@ -105,7 +106,7 @@ def updateorderbook(rawtx, TxDbSerialNum, Block):
         prevsale['txid']=txdbserial
         #update previous order
         dbExecute("update orderbook set RemainingForSale=RemainingForSale-%s::numeric, "
-                  "RemainingDesired=RemainingDesired-%s::numeric, OrderState=%s where txdbserialnum=%s",
+                  "DesiredReceived=DesiredReceived+%s::numeric, OrderState=%s where txdbserialnum=%s",
                   (prevsale['bought'],prevsale['sold'],state,txdbserial))
 
     elif (Action in [2,3,4]) or (Action.lower() in ['cancel price','cancel pair','cancel all']):
@@ -235,11 +236,11 @@ def reorgRollback(block):
                     if PropertyID==rawtx['propertydesired']:
                       #what this tx desires, the remote tx is selling
                       dbExecute("update orderbook set RemainingForSale=RemainingForSale-%s::numeric where txdbserialnum=%s", (dbBalanceReserved,linkedtxdbserialnum))
-                      #dbExecute("update orderbook set RemainingDesired=RemainingDesired-%s::numeric where txdbserialnum=%s", (dbBalanceReserved,TxDbSerialNum))
+                      #dbExecute("update orderbook set DesiredReceived=DesiredReceived+%s::numeric where txdbserialnum=%s", (dbBalanceReserved,TxDbSerialNum))
                     elif PropertyID==rawtx['propertyoffered']:
                       #what this tx is selling, the remote tx desires
                       #dbExecute("update orderbook set RemainingForSale=RemainingForSale-%s::numeric where txdbserialnum=%s", (dbBalanceReserved,TxDbSerialNum))
-                      dbExecute("update orderbook set RemainingDesired=RemainingDesired-%s::numeric where txdbserialnum=%s", (dbBalanceReserved,linkedtxdbserialnum))
+                      dbExecute("update orderbook set DesiredReceived=DesiredReceived+%s::numeric where txdbserialnum=%s", (dbBalanceReserved,linkedtxdbserialnum))
 
             elif txtype == 22 and Role=='seller':
               #unaccept a dex sale and update the sale balance info (don't know about lasttxdbserialnum yet)
