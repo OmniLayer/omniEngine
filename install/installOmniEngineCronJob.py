@@ -33,7 +33,7 @@ else:
   # If no existing job, set up job from scratch
   print "Adding job."
   job = cron.new(command=engineCommand,comment='load Tx into DB using RPC')
-job.minute.every(5)
+job.minute.every(1)
 print "Writing job:"
 print job
 # Update user's crontab file
