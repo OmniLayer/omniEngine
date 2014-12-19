@@ -119,3 +119,6 @@ def gettradessince_MP():
 
 def gettrade_MP(txhash):
     return host.call("gettrade_MP", txhash)
+
+def getsto_MP(txid):
+    return host.call("getsto_MP", txid , "*")

@@ -1185,10 +1185,38 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
       elif txtype == 3:
         #Send To Owners
         if Valid:
-           sendToOwners(Address, value, PropertyID, Protocol, TxDBSerialNum)
+           #sendToOwners(Address, value, PropertyID, Protocol, TxDBSerialNum)
+           rawsto=getsto_MP(rawtx['result']['txid'])
+           #sto fee is in MSC (and gets burned) so convert before entering it
+           stofee=int(decimal.Decimal(str(rawstp['result']['totalstofee']))*decimal.Decimal(1e8))
+           #enter STO fee into addressesintxs and update balance data
+           dbExecute("insert into addressesintxs "
+                     "(Address, PropertyID, Protocol, TxDBSerialNum, AddressTxIndex, AddressRole, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit)"
+                     "values(%s, %s, %s, %s, %s, %s, %s, %s, %s)",
+                     (Address, 1, Protocol, TxDBSerialNum, 1, AddressRole, stofee, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit))
+           updateBalance(Address, Protocol, 1, "Production", stofee, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit, TxDBSerialNum)
+
+           #process the list of STO recievers 
+           txindex=0
+           AddressRole='recipient'
+           for recv in rawsto['result']['recipients']:
+             if rawtx['result']['divisible']:
+               rBalance=int(decimal.Decimal(str(recv['amount']))*decimal.Decimal(1e8))
+             else:
+               rBalance=int(recv['amount'])
+             rAddress=recv['address']
+
+             dbExecute("insert into addressesintxs "
+                       "(Address, PropertyID, Protocol, TxDBSerialNum, AddressTxIndex, AddressRole, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit)"
+                       "values(%s, %s, %s, %s, %s, %s, %s, %s, %s)",
+                       (rAddress, PropertyID, Protocol, TxDBSerialNum, txindex, AddressRole, rBalance, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit))
+
+             updateBalance(rAddress, Protocol, PropertyID, Ecosystem, rBalance, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit, TxDBSerialNum)
+             txindex+=1
+
         #Debit the sender
         BalanceAvailableCreditDebit=value_neg
-
+        AddressRole='sender'
       elif txtype == 20:
         #DEx Sell Offer
         #Move the amount from Available balance to reserved for Offer
