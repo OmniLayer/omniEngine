@@ -1198,7 +1198,7 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
 
            #process the list of STO recievers 
            txindex=0
-           AddressRole='recipient'
+           AddressRole='payee'
            for recv in rawsto['result']['recipients']:
              if rawtx['result']['divisible']:
                rBalance=int(decimal.Decimal(str(recv['amount']))*decimal.Decimal(1e8))
