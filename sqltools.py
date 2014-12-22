@@ -2,7 +2,7 @@ import psycopg2, psycopg2.extras
 import sys
 import getpass
 
-def sql_connect():
+def sql_connect(OUSER=None,OPASS=None):
     global con
     USER=getpass.getuser()
     try:
@@ -11,9 +11,15 @@ def sql_connect():
         for line in fp:
           #print line
           if line.split('=')[0] == "sqluser":
-            DBUSER=line.split('=')[1].strip()
+            if OUSER==None:
+              DBUSER=line.split('=')[1].strip()
+            else:
+              DBUSER=OUSER
           elif line.split('=')[0] == "sqlpassword":
-            DBPASS=line.split('=')[1].strip()
+            if OPASS==None:
+              DBPASS=line.split('=')[1].strip()
+            else:
+              DBPASS=OPASS
           elif line.split('=')[0] == "sqlconnect":
             DBHOST=line.split('=')[1].strip()
           elif line.split('=')[0] == "sqlport":
@@ -31,14 +37,14 @@ def sql_connect():
         print 'Error %s' % e    
         sys.exit(1)
 
-def dbInit():
+def dbInit(ouser=None,opass=None ):
     #Prime the DB Connection, it can be restarted in the select/execute statement if it gets closed prematurely. 
     global dbc
     try:
       if dbc.closed:
-        dbc=sql_connect()
+        dbc=sql_connect(ouser,opass)
     except NameError:
-      dbc=sql_connect()
+      dbc=sql_connect(ouser,opass)
 
 def dbSelect(statement, values=None):
     dbInit()
@@ -58,13 +64,12 @@ def dbExecute(statement, values=None):
         print 'Error', e, 'Rollback returned: ', dbRollback()
         sys.exit(1)
 
-def dbCommitExecute(statement, values=None):
-    dbInit()
+def dbCommitExecute(ouser, opass, statement, values=None):
+    dbInit(ouser,opass)
     try:
-      old_isolation_level = dbc.isolation_level
-      dbc.set_isolation_level(0)
+      con.set_session(autocommit=True)
       dbc.execute(statement, values)
-      dbc.set_isolation_level(old_isolation_level)
+      con.set_session(autocommit=False)
     except psycopg2.DatabaseError, e:
         print 'Error', e, 'Rollback returned: ', dbRollback()
         sys.exit(1)
