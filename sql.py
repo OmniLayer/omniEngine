@@ -1188,7 +1188,7 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
            #sendToOwners(Address, value, PropertyID, Protocol, TxDBSerialNum)
            rawsto=getsto_MP(rawtx['result']['txid'])
            #sto fee is in MSC (and gets burned) so convert before entering it
-           stofee=int(decimal.Decimal(str(rawsto['result']['totalstofee']))*decimal.Decimal(1e8))
+           stofee=-int(decimal.Decimal(str(rawsto['result']['totalstofee']))*decimal.Decimal(1e8))
            if Ecosystem in ['Test','test']: 
              feeid=2
            else:
