@@ -3,6 +3,10 @@ import sys, json
 
 sys.argv.pop(0)
 
+print "Please make sure you have backed up your database before proceeding"
+username=input("Enter DB admin username")
+password=input("Enter DB admin password")
+
 try:
   if len(sys.argv) == 1:
     try:
@@ -10,7 +14,7 @@ try:
       with open(upgradeFile) as fp:
         for line in fp:
           cmd=line.strip('\n')
-          dbCommitExecute(cmd)
+          dbCommitExecute(username,password,cmd)
       dbCommit()
       print "Patches Applied Successfully"
 
