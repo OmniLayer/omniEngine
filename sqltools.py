@@ -72,7 +72,6 @@ def dbCommitExecute(ouser, opass, statement, values=None):
       con.set_session(autocommit=False)
     except psycopg2.DatabaseError, e:
         print 'Error', e, 'Rollback returned: ', dbRollback()
-        sys.exit(1)
 
 def dbCommit():
     try:
