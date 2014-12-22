@@ -1217,7 +1217,6 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
         #Debit the sender
         AddressRole='payer'
         BalanceAvailableCreditDebit=value_neg
-        AddressRole='sender'
       elif txtype == 20:
         #DEx Sell Offer
         #Move the amount from Available balance to reserved for Offer
