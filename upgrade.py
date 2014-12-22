@@ -14,13 +14,13 @@ try:
       dbCommit()
       print "Patches Applied Successfully"
 
-    except e:
+    except Exception,e:
       dbRollback()
       print str(e)+" error upgrading, rollingback database changes"
 
   else:
     print "Usage Guidelines: python upgrade.py <patchfile>"
-except e:
+except Exception,e:
   dbRollback()
   print "Something failed trying to upgrade "+str(e)
 
