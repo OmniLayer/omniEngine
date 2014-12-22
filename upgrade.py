@@ -4,8 +4,8 @@ import sys, json
 sys.argv.pop(0)
 
 print "Please make sure you have backed up your database before proceeding"
-username=input("Enter DB admin username")
-password=input("Enter DB admin password")
+username=raw_input('Enter DB admin username: ')
+password=raw_input('Enter DB admin password: ')
 
 try:
   if len(sys.argv) == 1:
