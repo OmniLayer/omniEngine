@@ -1215,6 +1215,7 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
              txindex+=1
 
         #Debit the sender
+        AddressRole='payer'
         BalanceAvailableCreditDebit=value_neg
         AddressRole='sender'
       elif txtype == 20:
