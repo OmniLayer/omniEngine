@@ -10,7 +10,7 @@ try:
       with open(upgradeFile) as fp:
         for line in fp:
           cmd=line.strip('\n')
-          dbExecute(cmd)
+          dbCommitExecute(cmd)
       dbCommit()
       print "Patches Applied Successfully"
 
@@ -20,7 +20,7 @@ try:
 
   else:
     print "Usage Guidelines: python upgrade.py <patchfile>"
-except Exception,e:
+except e:
   dbRollback()
   print "Something failed trying to upgrade "+str(e)
 

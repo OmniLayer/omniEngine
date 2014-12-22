@@ -58,6 +58,17 @@ def dbExecute(statement, values=None):
         print 'Error', e, 'Rollback returned: ', dbRollback()
         sys.exit(1)
 
+def dbCommitExecute(statement, values=None):
+    dbInit()
+    try:
+      old_isolation_level = dbc.isolation_level
+      dbc.set_isolation_level(0)
+      dbc.execute(statement, values)
+      dbc.set_isolation_level(old_isolation_level)
+    except psycopg2.DatabaseError, e:
+        print 'Error', e, 'Rollback returned: ', dbRollback()
+        sys.exit(1)
+
 def dbCommit():
     try:
         con.commit()
