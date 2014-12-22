@@ -64,7 +64,7 @@ def dbExecute(statement, values=None):
         print 'Error', e, 'Rollback returned: ', dbRollback()
         sys.exit(1)
 
-def dbCommitExecute(ouser, opass, statement, values=None):
+def dbUpgradeExecute(ouser, opass, statement, values=None):
     dbInit(ouser,opass)
     try:
       con.set_session(autocommit=True)

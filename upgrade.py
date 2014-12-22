@@ -14,7 +14,7 @@ try:
       with open(upgradeFile) as fp:
         for line in fp:
           cmd=line.strip('\n')
-          dbCommitExecute(username,password,cmd)
+          dbUpgradeExecute(username,password,cmd)
       dbCommit()
       print "Patches Applied Successfully"
 
