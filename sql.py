@@ -1193,6 +1193,7 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
              feeid=2
            else:
              feeid=1
+           AddressRole='feepayer'
            #enter STO fee into addressesintxs and update balance data
            dbExecute("insert into addressesintxs "
                      "(Address, PropertyID, Protocol, TxDBSerialNum, AddressTxIndex, AddressRole, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit)"

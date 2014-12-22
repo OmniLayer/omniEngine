@@ -25,7 +25,7 @@
  *	seller created a DEx sell offer
  *	sender sent a Simple Send
  */
-create type AddressRole as enum ('buyer', 'issuer', 'participant', 'payee', 'payer', 'recipient', 'seller', 'sender');
+create type AddressRole as enum ('buyer', 'issuer', 'participant', 'payee', 'recipient', 'seller', 'sender', 'payer', 'feepayer');
 create type Protocol as enum ('Fiat', 'Bitcoin', 'Mastercoin');
 create type Ecosystem as enum ('Production', 'Test');
 create type ObjectType as enum ('address', 'property', 'tx_version_type');
