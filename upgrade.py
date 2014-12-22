@@ -16,10 +16,11 @@ try:
 
     except e:
       dbRollback()
-      print e+" error upgrading, rollingback database changes"
+      print str(e)+" error upgrading, rollingback database changes"
 
   else:
     print "Usage Guidelines: python upgrade.py <patchfile>"
 except Exception,e:
-  print "Something failed trying to upgrade "+ee
+  dbRollback()
+  print "Something failed trying to upgrade "+str(e)
 
