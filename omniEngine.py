@@ -160,7 +160,7 @@ else:
       if testnet:
         syncAddress('mpexoDuSkGGqvqrkrjiFng38QPkJQVFyqv', Protocol)
         #upadate temp orderbook
-        updateorderblob()
+        #updateorderblob()
       else:
         syncAddress('1EXoDusjGwvnjZUyKkxZ4UHEf77z6A5S4P', Protocol)
 
