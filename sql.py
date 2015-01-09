@@ -154,7 +154,7 @@ def checkPending(blocktxs):
                     (amount,address,propertyid,protocol))
 
         #delete addressintx and transaction db entries
-        dbExecute("delete from addressintxs where txdbserialnum=%s and protocol=%s", (txdbserialnum,protocol))
+        dbExecute("delete from addressesintxs where txdbserialnum=%s and protocol=%s", (txdbserialnum,protocol))
         dbExecute("delete from transactions where txdbserialnum=%s and protocol=%s", (txdbserialnum,protocol))
         
 
