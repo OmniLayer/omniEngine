@@ -127,7 +127,7 @@ def reorgRollback(block):
 def checkPending(blocktxs):
     #Check any pending tx to see if 1. They are in the current block of tx's we are processing or 2. 7 days have passed since broadcast.
     #Remove them if either of these has happened
-    pendingtxs=dbSelect("select txhash,txdbserialnum,protocol,extract(epoch from txsubmittime) from transactions where txstate='pending' and txdbserialnum < -1")
+    pendingtxs=dbSelect("select txhash,txdbserialnum,protocol,extract(epoch from txrecvtime) from transactions where txstate='pending' and txdbserialnum < -1")
     for tx in pendingtxs:
       txhash=tx[0]
       txdbserialnum=tx[1]
@@ -144,7 +144,7 @@ def checkPending(blocktxs):
           address=x[0]
           propertyid=x[1]
           amount=x[2]
-          dbExecute("update addressbalances set balancepending=balancepending-%s where address=%s and propertyid=%s and protocol=%s",
+          dbExecute("update addressbalances set balancepending=balancepending-%s::numeric where address=%s and propertyid=%s and protocol=%s",
                     (amount,address,propertyid,protocol))
 
         #delete addressintx and transaction db entries

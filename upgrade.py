@@ -1,11 +1,18 @@
 from sqltools import *
 import sys, json
+try:
+  from getpass import getpass
+except ImportError:
+  print "Missing Python module 'getpass'. You can continue but password will echo on console\n"
 
 sys.argv.pop(0)
 
 print "Please make sure you have backed up your database before proceeding"
 username=raw_input('Enter DB admin username: ')
-password=raw_input('Enter DB admin password: ')
+try:
+  password=getpass('Enter DB admin password: ')
+except NameError:
+  password=raw_input('Enter DB admin password: ')
 
 try:
   if len(sys.argv) == 1:
@@ -20,7 +27,7 @@ try:
 
     except Exception,e:
       dbRollback()
-      print str(e)+" error upgrading, rollingback database changes"
+      print str(e)+" problem applying command: "+str(cmd)+" \nPossibly already applied?"
 
   else:
     print "Usage Guidelines: python upgrade.py <patchfile>"

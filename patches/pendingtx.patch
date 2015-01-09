@@ -1,0 +1,11 @@
+alter table addressbalances add column balancepending numeric(19) not null default 0;
+alter table addressbalances alter balancereserved set default 0;
+alter table addressbalances alter balanceaccepted set default 0;
+alter table addressbalances alter balancereserved set NOT NULL;
+alter table addressbalances alter balanceaccepted set NOT NULL;
+alter table transactions rename txsubmittime txrecvtime;
+alter table transactions alter txrecvtime set default TO 'NOW';
+alter table transactions alter txstate set default TO 'pending';
+grant update(balancepending) on addressbalances to api;
+grant insert(txhash,protocol,txdbserialnum,txtype,txversion) on transactions to api;
+grant insert(address,propertyid,protocol,txdbserialnum,addresstxindex,addressrole,balanceavailablecreditdebit) on addressesintxs to api;
