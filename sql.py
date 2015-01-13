@@ -143,15 +143,15 @@ def checkPending(blocktxs):
         else:
           printdebug(("Found Pending TX:",txhash,"Removing from pending list"),4)
 
-        atxs = dbSelect("select address,propertyid,balanceavailablecreditdebit from addressesintxs where txdbserialnum=%s and protocol=%s",
-                        (txdbserialnum,protocol))
-        for x in atxs:
+        #atxs = dbSelect("select address,propertyid,balanceavailablecreditdebit from addressesintxs where txdbserialnum=%s and protocol=%s",
+        #                (txdbserialnum,protocol))
+        #for x in atxs:
           #undo all pending balance changes
-          address=x[0]
-          propertyid=x[1]
-          amount=x[2]
-          dbExecute("update addressbalances set balancepending=balancepending-%s::numeric where address=%s and propertyid=%s and protocol=%s",
-                    (amount,address,propertyid,protocol))
+        #  address=x[0]
+        #  propertyid=x[1]
+        #  amount=x[2]
+        #  dbExecute("update addressbalances set balancepending=balancepending-%s::numeric where address=%s and propertyid=%s and protocol=%s",
+        #            (amount,address,propertyid,protocol))
 
         #delete addressintx and transaction db entries
         dbExecute("delete from addressesintxs where txdbserialnum=%s and protocol=%s", (txdbserialnum,protocol))
