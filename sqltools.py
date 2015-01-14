@@ -58,6 +58,15 @@ def dbExecute(statement, values=None):
         print 'Error', e, 'Rollback returned: ', dbRollback()
         sys.exit(1)
 
+def dbUpgradeExecute(ouser, opass, statement, values=None):
+    dbInit(ouser,opass)
+    try:
+      con.set_session(autocommit=True)
+      dbc.execute(statement, values)
+      con.set_session(autocommit=False)
+    except psycopg2.DatabaseError, e:
+        print 'Error', e, 'Rollback returned: ', dbRollback()
+
 def dbCommit():
     try:
         con.commit()
