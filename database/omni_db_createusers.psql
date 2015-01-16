@@ -25,3 +25,6 @@ GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO :omniengi
 
 GRANT SELECT ON ALL TABLES IN SCHEMA public TO :omniwww;
 GRANT SELECT, INSERT, UPDATE, DELETE ON table following, addressesinwallets , sessions , wallets to :omniwww;
+GRANT INSERT(txhash,protocol,txdbserialnum,txtype,txversion) ON transactions to :omniwww;
+GRANT INSERT(address,propertyid,protocol,txdbserialnum,addresstxindex,addressrole,balanceavailablecreditdebit) ON addressesintxs to :omniwww;
+

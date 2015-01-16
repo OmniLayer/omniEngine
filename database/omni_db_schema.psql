@@ -119,17 +119,17 @@ create index BlockNumTime on Blocks (BlockNumber, Protocol, BlockTime)
 	
 /* all the transactions we know about; keeping them (forever?) even after an address or wallet is de-activated */
 create table if not exists Transactions (
-	TxHash varchar(64) not null		/* varchar so we can use LIKE & other string matching  */
-	, Protocol Protocol not null		/* initially 'Bitcoin' or 'Mastercoin' */
-	, TxDBSerialNum serial8 unique		/* db internal identifier for each tx, for faster joins */
-	, TxType smallint not null		/* from the RPC result for a 'Mastercoin' tx, 0 for 'Bitcoin' tx's */
-	, TxVersion smallint not null		/* from the RPC result */
-	, Ecosystem Ecosystem null		/* Null for 'Bitcoin' tx's */
-	, TxSubmitTime timestamp(0) null	/* when it was sent, if known */
-	, TxState TxState not null		/* pending, valid, not valid */
-	, TxErrorCode smallint null		/* successful? if not, why not? (see ErrorCodes) */		
-	, TxBlockNumber integer null	
-	, TxSeqInBlock integer null		/* determined by order of tx's in the block */
+	TxHash varchar(64) not null					/* varchar so we can use LIKE & other string matching  */
+	, Protocol Protocol not null					/* initially 'Bitcoin' or 'Mastercoin' */
+	, TxDBSerialNum serial8 unique					/* db internal identifier for each tx, for faster joins */
+	, TxType smallint not null					/* from the RPC result for a 'Mastercoin' tx, 0 for 'Bitcoin' tx's */
+	, TxVersion smallint not null					/* from the RPC result */
+	, Ecosystem Ecosystem null					/* Null for 'Bitcoin' tx's */
+	, TxRecvTime timestamp(0) without time zone null DEFAULT now()	/* when it was sent, if known */
+	, TxState TxState not null default 'pending'			/* pending, valid, not valid */
+	, TxErrorCode smallint null					/* successful? if not, why not? (see ErrorCodes) */		
+	, TxBlockNumber integer null		
+	, TxSeqInBlock integer null					/* determined by order of tx's in the block */
 
 	, primary key (TxHash, Protocol, TxBlockNumber)
 /*	, foreign key (Protocol, TxBlockNumber) references Blocks */

@@ -137,6 +137,40 @@ def reorgRollback(block):
     #reset txdbserialnum field to what it was before these blocks/tx went in
     dbExecute("select setval('transactions_txdbserialnum_seq', %s)",[newTxDBSerialNum])
 
+def checkPending(blocktxs):
+    #Check any pending tx to see if 1. They are in the current block of tx's we are processing or 2. 7 days have passed since broadcast.
+    #Remove them if either of these has happened
+    pendingtxs=dbSelect("select txhash,txdbserialnum,protocol,extract(epoch from txrecvtime) from transactions where txstate='pending' and txdbserialnum < -1")
+    for tx in pendingtxs:
+      txhash=tx[0]
+      txdbserialnum=tx[1]
+      protocol=tx[2]
+      #get an expiration time 7 days from now
+      expire=int(time.time()) - 604466
+      submitted=int(tx[3])
+
+      if txhash in blocktxs or submitted < expire:
+        #remove the pending item
+        if submitted < expire:
+          printdebug(("Expiring Pending TX:",txhash),4)
+        else:
+          printdebug(("Found Pending TX:",txhash,"Removing from pending list"),4)
+
+        #atxs = dbSelect("select address,propertyid,balanceavailablecreditdebit from addressesintxs where txdbserialnum=%s and protocol=%s",
+        #                (txdbserialnum,protocol))
+        #for x in atxs:
+          #undo all pending balance changes
+        #  address=x[0]
+        #  propertyid=x[1]
+        #  amount=x[2]
+        #  dbExecute("update addressbalances set balancepending=balancepending-%s::numeric where address=%s and propertyid=%s and protocol=%s",
+        #            (amount,address,propertyid,protocol))
+
+        #delete addressintx and transaction db entries
+        dbExecute("delete from addressesintxs where txdbserialnum=%s and protocol=%s", (txdbserialnum,protocol))
+        dbExecute("delete from transactions where txdbserialnum=%s and protocol=%s", (txdbserialnum,protocol))
+        
+
 def keyByAddress(item):
     return item[0]
 
@@ -1339,14 +1373,14 @@ def insertTx(rawtx, Protocol, blockheight, seq, TxDBSerialNum):
 
     if TxDBSerialNum == -1:
         dbExecute("INSERT into transactions "
-                  "(TxHash, Protocol, TxType, TxVersion, Ecosystem, TxSubmitTime, TxState, TxErrorCode, TxBlockNumber, TxSeqInBlock ) "
-                  "VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)", 
-                  (TxHash, Protocol, TxType, TxVersion, Ecosystem, TxSubmitTime, TxState, TxErrorCode, TxBlockNumber, TxSeqInBlock))
+                  "(TxHash, Protocol, TxType, TxVersion, Ecosystem, TxState, TxErrorCode, TxBlockNumber, TxSeqInBlock ) "
+                  "VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)", 
+                  (TxHash, Protocol, TxType, TxVersion, Ecosystem, TxState, TxErrorCode, TxBlockNumber, TxSeqInBlock))
     else:
         dbExecute("INSERT into transactions "
-                  "(TxHash, Protocol, TxType, TxVersion, Ecosystem, TxSubmitTime, TxState, TxErrorCode, TxBlockNumber, TxSeqInBlock, TxDBSerialNum ) "
-                  "VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",
-                  (TxHash, Protocol, TxType, TxVersion, Ecosystem, TxSubmitTime, TxState, TxErrorCode, TxBlockNumber, TxSeqInBlock, TxDBSerialNum))
+                  "(TxHash, Protocol, TxType, TxVersion, Ecosystem, TxState, TxErrorCode, TxBlockNumber, TxSeqInBlock, TxDBSerialNum ) "
+                  "VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",
+                  (TxHash, Protocol, TxType, TxVersion, Ecosystem, TxState, TxErrorCode, TxBlockNumber, TxSeqInBlock, TxDBSerialNum))
 
     serial=dbSelect("Select TxDBSerialNum from transactions where txhash=%s and protocol=%s", (TxHash, Protocol))
     dbExecute("insert into txjson (txdbserialnum, protocol, txdata) values (%s,%s,%s)", (serial[0]['txdbserialnum'], Protocol, json.dumps(rawtx['result'])) )

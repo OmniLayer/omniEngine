@@ -1,0 +1,10 @@
+alter table addressbalances alter balancereserved set default 0;
+alter table addressbalances alter balanceaccepted set default 0;
+alter table addressbalances alter balancereserved set NOT NULL;
+alter table addressbalances alter balanceaccepted set NOT NULL;
+alter table transactions rename txsubmittime to txrecvtime;
+alter table transactions alter txrecvtime set default now();
+alter table transactions alter txstate set default 'pending';
+grant insert(txhash,protocol,txdbserialnum,txtype,txversion) on transactions to api;
+grant insert(address,propertyid,protocol,txdbserialnum,addresstxindex,addressrole,balanceavailablecreditdebit) on addressesintxs to api;
+update smartproperties set  propertytype =2 where propertyid=0 and protocol='Bitcoin'

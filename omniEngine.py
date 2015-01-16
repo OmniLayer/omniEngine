@@ -108,6 +108,9 @@ else:
       #Write the blocks table row
       insertBlock(block_data, Protocol, height, txcount)
 
+      #check for pendingtx's to cleanup
+      checkPending(block_data['result']['tx'])
+
       #count position in block
       x=1
       for tx in block_data['result']['tx']:
