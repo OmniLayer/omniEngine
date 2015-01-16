@@ -22,11 +22,20 @@ def fiat2propertyid(abv):
 def getSource(sp):
   try:
     convert={1:"https://masterxchange.com/api/trades.php",
-             3:"https://masterxchange.com/api/v2/trades.php?currency=maid"
+             3:"https://masterxchange.com/api/v2/trades.php?currency=maid",
+             34:"https://masterxchange.com/api/v2/trades.php?currency=MSCHGC"
             }
     return convert[sp]
   except KeyError:
     return None
+
+def getfixedprice(desiredvalue):
+        ROWS=dbSelect("select rate1for2 from exchangerates where protocol1='Fiat' and propertyid1=0 and protocol2='Bitcoin' and propertyid2=0 "
+                      "order by asof desc limit 1")
+        if len(ROWS)>0:
+          return desiredvalue / ROWS[0][0]
+        else:
+          return 0
 
 def upsertRate(protocol1, propertyid1, protocol2, propertyid2, rate, source, timestamp=None):
 
@@ -93,13 +102,8 @@ def updateMSCSP():
         value=(sum / volume)
       elif sp == 34:
         #Temp set sp value to ~$10
-        ROWS=dbSelect("select rate1for2 from exchangerates where protocol1='Fiat' and propertyid1=0 and protocol2='Bitcoin' and propertyid2=0 "
-                      "order by asof desc limit 1")
         source='Fixed'
-        if len(ROWS)>0:
-          value=10 / ROWS[0][0]
-        else:
-          value=0
+        value=getfixedprice(10)
       else:
         #no Known source for a valuation, set to 0
         value=0
