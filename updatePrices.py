@@ -22,7 +22,7 @@ def fiat2propertyid(abv):
 def getSource(sp):
   try:
     convert={1:"https://masterxchange.com/api/trades.php",
-             3:"https://masterxchange.com/api/v2/trades.php?currency=maid",
+             3:"https://masterxchange.com/api/v2/trades.php?currency=maid"
             }
     return convert[sp]
   except KeyError:
