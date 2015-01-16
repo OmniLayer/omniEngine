@@ -92,6 +92,15 @@ def updateMSCSP():
   
         #value="{:.8f}".format( sum / volume)
         value=(sum / volume)
+      elif sp == 34:
+        #Temp set sp value to ~$10
+        ROWS=dbSelect("select rate1for2 from exchangerates where protocol1='Fiat' and propertyid1=0 and protocol2='Bitcoin' and propertyid2=0 "
+                      "order by asof desc limit 1")
+        source='Fixed'
+        if len(ROWS)>0:
+          value=10 / ROWS[0][0]
+        else:
+          value=0
       else:
         #no Known source for a valuation, set to 0
         value=0
