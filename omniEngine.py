@@ -162,6 +162,8 @@ else:
       #exodus address generates dev msc, sync our balance to match the generated balanace
       if testnet:
         syncAddress('mpexoDuSkGGqvqrkrjiFng38QPkJQVFyqv', Protocol)
+        #upadate temp orderbook
+        updateorderbook()
       else:
         syncAddress('1EXoDusjGwvnjZUyKkxZ4UHEf77z6A5S4P', Protocol)
 

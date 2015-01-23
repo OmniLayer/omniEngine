@@ -7,9 +7,18 @@ from mscutils import *
 from sqltools import *
 from common import *
 
+
+def updateorderbook():
+    block=getinfo()['result']['blocks']
+    blob=json.dumps(gettradessince_MP()['result'])
+    dbExecute("insert into orderblob (blocknumber, orders) select %s,%s where not exists (select * from orderblob where blocknumber=%s)", 
+              (block, str(blob), block))
+
 def reorgRollback(block):
 
     printdebug(("Reorg Detected, Rolling back to block ",block),4)
+
+    BlockTime=dbSelect("select extract(epoch from blocktime) from blocks where blocknumber=%s",[block])[0][0]
 
     #list of tx's we have processed since the reorg 
     txs=dbSelect("select txdbserialnum,txtype,txstate,txblocknumber from transactions where txblocknumber >%s order by txdbserialnum desc",[block])
@@ -73,18 +82,21 @@ def reorgRollback(block):
           if Protocol=="Mastercoin":
             #any special actions need to be undone as well
             if txtype == 20 and Role=='seller':
-              if dbBalanceAvailable == 0:
+              rawtx=json.loads(dbSelect("select txdata from txjson where txdbserialnum=%s",[TxDbSerialNum])[0][0])
+              if 'subaction' in rawtx and rawtx['subaction'].lower()=='cancel':
+                printdebug(("Uncancelling DEx.1 sale",linkedtxdbserialnum,"from transaction",TxDbSerialNum,Address),7)
                 #cancellation, undo the cancellation (not sure about the lasttxdbserialnum yet
-                dbExecute("update activeoffers set offerstate='active',lasttxdbserialnum=-1 where createtxdbserialnum=%s", [TxDbSerialNum])
+                dbExecute("update activeoffers set offerstate='active',lasttxdbserialnum=-1 where createtxdbserialnum=%s", [linkedtxdbserialnum])
               else:
+                printdebug(("Deleting new DEx.1 sale",TxDbSerialNum,Address),7)
                 #was a new sale, delete it
                 dbExecute("delete from activeoffers where createtxdbserialnum=%s", [TxDbSerialNum])
 
             elif txtype == 22 and Role=='seller':
               #unaccept a dex sale and update the sale balance info (don't know about lasttxdbserialnum yet)
-              saletxdbserialnum=dbExecute("select saletxdbserialnum from offeraccepts where linkedtxdbserialnum=%s", [TxDbSerialNum])[0][0]
-              dbExecute("update activeoffers set amountaccepted=amountaccepted-%s::numeric, amountavailable=amountavailable+%s::numeric, "
-                        "lasttxdbserialnum=-1, where createtxdbserialnum=%s",(dbBalanceAccepted,dbBalanceAccepted,saletxdbserialnum))
+              saletxdbserialnum=dbSelect("select saletxdbserialnum from offeraccepts where linkedtxdbserialnum=%s", [TxDbSerialNum])[0][0]
+              dbExecute("update activeoffers set amountaccepted=amountaccepted+%s::numeric, amountavailable=amountavailable-%s::numeric, "
+                        "lasttxdbserialnum=-1 where createtxdbserialnum=%s",(dbBalanceAccepted,dbBalanceAccepted,saletxdbserialnum))
               #remove the entry from the offeraccepts table
               dbExecute("delete from offeraccepts where linkedtxdbserialnum=%s", [TxDbSerialNum])
 
@@ -95,7 +107,7 @@ def reorgRollback(block):
                           (dbBalanceReserved,linkedtxdbserialnum))
               elif Role=='buyer':
                 dbExecute("update offeraccepts set dexstate='unpaid', amountaccepted=amountaccepted-%s::numeric, amountpurchased=amountpurchased+%s::numeric "
-                          "where createtxdbserialnum=%s",(dbBalanceAvailable,dbBalanceAvailable,linkedtxdbserialnum))
+                          "where linkedtxdbserialnum=%s",(dbBalanceAvailable,dbBalanceAvailable,linkedtxdbserialnum))
 
             elif txtype == 50 or txtype == 51 or txtype == 54:
               #remove the property and the property history information
@@ -118,6 +130,7 @@ def reorgRollback(block):
 
     #Make sure we process any remaining expires that need to be undone if we didn't have an msc tx in the block
     expireAccepts(-(block+1))
+    expireCrowdsales(-BlockTime, "Mastercoin")
       
     #delete from blocks once we rollback all other data
     dbExecute("delete from blocks where blocknumber>%s",[block])
@@ -440,7 +453,7 @@ def updatedex(rawtx, TxDBSerialNum, Protocol):
         printdebug(("found old sale",createtxdbserialnum,"with amount remaining",amount),4)
 
       #we'll let the insertaddressintx function handle updating the balanace for cancels
-      return amount
+      return amount,createtxdbserialnum
     else:
       #state new/update
       State='replaced'
@@ -480,6 +493,7 @@ def updatedex(rawtx, TxDBSerialNum, Protocol):
                 "(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",
                 (amountaccepted, amountavailable, totalselling, amountdesired, minimumfee, propertyidselling, 
                 propertyiddesired, Address, timelimit, TxDBSerialNum, unitprice, State) )
+      return None,createtxdbserialnum
 
 
 def resetdextable_MP():
@@ -720,12 +734,12 @@ def updateBalance(Address, Protocol, PropertyID, Ecosystem, BalanceAvailable, Ba
       printdebug("Address, Protocol, PropertyID, Ecosystem, BalanceAvailable, BalanceReserved, BalanceAccepted, TxDBSerialNum", 4)
       printdebug((Address, Protocol, PropertyID, Ecosystem, BalanceAvailable, BalanceReserved, BalanceAccepted, LastTxDBSerialNum, "\n"), 4)
 
-      rows=dbSelect("select BalanceAvailable, BalanceReserved, BalanceAccepted "
+      rows=dbSelect("select BalanceAvailable, BalanceReserved, BalanceAccepted, LastTxDBSerialNum "
                     "from AddressBalances where address=%s and Protocol=%s and propertyid=%s",
                     (Address, Protocol, PropertyID) )
 
       #check if we have unknown txdbserialnum or if its from a reorg and try to find the last known txdbserialnum
-      if LastTxDBSerialNum < 0:
+      if LastTxDBSerialNum is not None and LastTxDBSerialNum < 0:
         txrow=dbSelect("select max(atx.txdbserialnum) from addressesintxs atx, transactions tx where atx.txdbserialnum=tx.txdbserialnum and "
                        "tx.txstate='valid' and atx.txdbserialnum!=%s and atx.address=%s and atx.propertyid=%s and atx.protocol=%s and "
                        "(atx.balanceavailablecreditdebit is not null or atx.balancereservedcreditdebit is not null or atx.balanceacceptedcreditdebit is not null)",
@@ -762,6 +776,8 @@ def updateBalance(Address, Protocol, PropertyID, Ecosystem, BalanceAvailable, Ba
         dbAvail=rows[0][0]
         dbResvd=rows[0][1]
         dbAccpt=rows[0][2]
+        if LastTxDBSerialNum == None:
+          LastTxDBSerialNum=rows[0][3]
 
         try:
           BalanceAvailable=int(BalanceAvailable)+dbAvail
@@ -792,29 +808,61 @@ def updateBalance(Address, Protocol, PropertyID, Ecosystem, BalanceAvailable, Ba
 
 
 def expireCrowdsales(BlockTime, Protocol):
-    #find the offers that are ready to expire and credit the 'accepted' amount back to the sellers sale
-    expiring=dbSelect("select propertyid from smartproperties as sp inner join transactions as tx on "
+
+    if BlockTime < 0:
+      #Reorg 
+      expired=dbSelect("select propertyid from smartproperties as sp inner join transactions as tx on "
+                      "(sp.createtxdbserialnum=tx.txdbserialnum) where tx.txtype=51 and sp.protocol=%s and "
+                      "cast(propertydata::json->>'endedtime' as numeric) >= %s and propertydata::json->>'active'='false'", (Protocol, BlockTime))
+
+      #Process all the crowdsales that should have expired by now
+      for property in expired:
+        updateProperty(-property[0], Protocol)
+
+    else:
+      #find the offers that are ready to expire and credit the 'accepted' amount back to the sellers sale
+      expiring=dbSelect("select propertyid from smartproperties as sp inner join transactions as tx on "
                       "(sp.createtxdbserialnum=tx.txdbserialnum) where tx.txtype=51 and sp.protocol=%s and "
                       "cast(propertydata::json->>'endedtime' as numeric) < %s and propertydata::json->>'active'='true'", (Protocol, BlockTime))
 
-    #Process all the crowdsales that should have expired by now
-    for property in expiring:
-      updateProperty(property[0], Protocol)
+      #Process all the crowdsales that should have expired by now
+      for property in expiring:
+        updateProperty(property[0], Protocol)
 
 
 def updateProperty(PropertyID, Protocol, LastTxDBSerialNum=None):
+    if PropertyID < 0:
+      #reorg
+      reorg = True
+      PropertyID = -PropertyID
+    else:
+      reorg = False
+
     PropertyDataJson=getproperty_MP(PropertyID)
     rawtx=gettransaction_MP(PropertyDataJson['result']['creationtxid'])
     TxType = get_TxType(rawtx['result']['type'])
     rawprop = PropertyDataJson['result']
+    Ecosystem = getEcosystem(PropertyID)
 
     if TxType == 51 or TxType == 53:
       #get additional json info for crowdsales
-       rawprop = dict(rawprop.items() + getcrowdsale_MP(PropertyID)['result'].items())
+      rawprop = dict(rawprop.items() + getcrowdsale_MP(PropertyID)['result'].items())
+      #closed/ended crowdsales can generate extra tokens for issuer. handle that here
+      if rawprop['divisible']:
+        addedissuertokens = int(decimal.Decimal(str(rawprop['addedissuertokens']))*decimal.Decimal(1e8))
+      else:
+        addedissuertokens = int(rawprop['addedissuertokens'])
+      issuer=rawprop['issuer']
+      if addedissuertokens > 0:
+        if reorg:
+          updateBalance(issuer, Protocol, PropertyID, Ecosystem, -addedissuertokens, 0, 0, -1)
+          rawprop['active']='true'
+        else:
+          updateBalance(issuer, Protocol, PropertyID, Ecosystem, addedissuertokens, 0, 0, LastTxDBSerialNum)
     elif TxType > 53 and TxType < 57:
-       rawprop = dict(rawprop.items() + getgrants_MP(PropertyID)['result'].items())
+      rawprop = dict(rawprop.items() + getgrants_MP(PropertyID)['result'].items())
 
-    #if we where called with a tx update that otherwise jsut update json (expired by time update)
+    #if we where called with a tx update that otherwise just update json (expired by time update)
     if LastTxDBSerialNum == None:
       dbExecute("update smartproperties set PropertyData=%s "
                 "where Protocol=%s and PropertyID=%s",
@@ -946,11 +994,12 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
       BalanceAvailableCreditDebit=None
       BalanceReservedCreditDebit=None
       BalanceAcceptedCreditDebit=None
+      linkedtxdbserialnum=-1
       Address = rawtx['result']['sendingaddress']
       #PropertyID=rawtx['result']['propertyid']
 
       #Check if we are a DEx Purchase/payment. Format is a littler different and variables below would fail if we tried. 
-      if txtype != -22:
+      if txtype != -22 and txtype != 21:
         PropertyID= rawtx['result']['propertyid']
         Ecosystem=getEcosystem(PropertyID) 
         Valid=rawtx['result']['valid']
@@ -1000,15 +1049,43 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
 
         #Update our DEx tables if its a valid dex sale
         if rawtx['result']['valid']:
-          remainder=updatedex(rawtx, TxDBSerialNum, Protocol)
+          retval=updatedex(rawtx, TxDBSerialNum, Protocol)
+          remainder=retval[0]
+          if retval[1] is not None:
+            linkedtxdbserialnum=retval[1]
           #if we got anything back from the updatedex function it means it was a cancel, update our values to use the cancel numbers
           if remainder != None:
             BalanceAvailableCreditDebit=remainder
             BalanceReservedCreditDebit=remainder*-1
 
-      #elif txtype == 21:
-        #MetaDEx: Offer/Accept one Master Protocol Coins for another
-        #return
+
+      elif txtype == 21:
+        #DEx Phase II: Offer/Accept one Master Protocol Coins for another
+        if rawtx['result']['valid']:
+          if rawtx['result']['propertyofferedisdivisible']:
+            value=int(decimal.Decimal(str(rawtx['result']['amountoffered']))*decimal.Decimal(1e8))
+          else:
+            value=int(rawtx['result']['amountoffered'])
+          value_neg=(value*-1)
+
+          BalanceAvailableCreditDebit=value_neg
+          BalanceReservedCreditDebit=value
+          PropertyOffered=rawtx['result']['propertyoffered']
+          Ecosystem=getEcosystem(PropertyOffered)
+        else:
+          PropertyOffered=0
+          Ecosystem=None
+
+
+        dbExecute("insert into addressesintxs "
+                  "(Address, PropertyID, Protocol, TxDBSerialNum, AddressTxIndex, AddressRole, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit)"
+                  "values(%s, %s, %s, %s, %s, %s, %s, %s, %s)",
+                  (Address, PropertyOffered, Protocol, TxDBSerialNum, AddressTxIndex, AddressRole, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit))
+
+        if rawtx['result']['valid']:
+            updateBalance(Address, Protocol, PropertyOffered, Ecosystem, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit, TxDBSerialNum)
+
+        return
 
       elif txtype == 22:
         #DEx Accept Offer
@@ -1098,22 +1175,21 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
           AddressRole = 'seller'
           BalanceReservedCreditDebit=AmountBoughtNeg
           Ecosystem=getEcosystem(PropertyIDBought)
+          #deduct the amount bought from both reserved and accepted fields, since we track it twice to match core (it only tracks reserved)
+          BalanceAcceptedCreditDebit=AmountBoughtNeg
           dbExecute("insert into addressesintxs "
                     "(Address, PropertyID, Protocol, TxDBSerialNum, AddressTxIndex, AddressRole, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit, linkedtxdbserialnum)"
                     "values(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
                     (Seller, PropertyIDBought, Protocol, TxDBSerialNum, AddressTxIndex, AddressRole, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit, saletxdbserialnum))
 
           if Valid:
-            #deduct the amount bought from both reserved and accepted fields, since we track it twice to match core (it only tracks reserved)
-            BalanceAcceptedCreditDebit=AmountBoughtNeg
             updateBalance(Seller, Protocol, PropertyIDBought, Ecosystem, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit, TxDBSerialNum)
-            #reset it to null to not screw up next insert
-            BalanceAcceptedCreditDebit=None
 
           #Credit tokens tco buyer and reduce their accepted amount by amount bought
           AddressRole = 'buyer'
           BalanceAvailableCreditDebit=AmountBought
           BalanceReservedCreditDebit=None
+          BalanceAcceptedCreditDebit=None
           dbExecute("insert into addressesintxs "
                     "(Address, PropertyID, Protocol, TxDBSerialNum, AddressTxIndex, AddressRole, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit, linkedtxdbserialnum)"
                     "values(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
@@ -1199,7 +1275,8 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
         BalanceAvailableCreditDebit=None
 
         #update smart property table
-        insertProperty(rawtx, Protocol)
+        #insertProperty(rawtx, Protocol)
+        updateProperty(PropertyID, Protocol, TxDBSerialNum)        
 
       elif txtype == 54:
         #create a new grant property
@@ -1243,9 +1320,9 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
 
       #write output of the address details
       dbExecute("insert into addressesintxs "
-                "(Address, PropertyID, Protocol, TxDBSerialNum, AddressTxIndex, AddressRole, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit)"
-                "values(%s, %s, %s, %s, %s, %s, %s, %s, %s)",
-                (Address, PropertyID, Protocol, TxDBSerialNum, AddressTxIndex, AddressRole, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit))
+                "(Address, PropertyID, Protocol, TxDBSerialNum, AddressTxIndex, AddressRole, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit, linkedtxdbserialnum)"
+                "values(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
+                (Address, PropertyID, Protocol, TxDBSerialNum, AddressTxIndex, AddressRole, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit, linkedtxdbserialnum))
 
       if Valid:
         updateBalance(Address, Protocol, PropertyID, Ecosystem, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit, TxDBSerialNum)
@@ -1275,6 +1352,12 @@ def insertTx(rawtx, Protocol, blockheight, seq, TxDBSerialNum):
       if TxType == -22:
         TxState=getTxState(rawtx['result']['purchases'][0]['valid'])
         Ecosystem=getEcosystem(rawtx['result']['purchases'][0]['propertyid'])
+      elif TxType == 21:
+        TxState= getTxState(rawtx['result']['valid'])
+        if rawtx['result']['valid']:
+          Ecosystem=getEcosystem(rawtx['result']['propertyoffered'])
+        else:
+          Ecosystem=None
       else:
         TxState= getTxState(rawtx['result']['valid'])
         Ecosystem=getEcosystem(rawtx['result']['propertyid'])
