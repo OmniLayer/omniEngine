@@ -60,8 +60,11 @@ class RPCHost():
         return responseJSON
 
 
+
+#Define / Create RPC connection
 host=RPCHost()
 
+#Bitcoin Generic RPC calls
 def getinfo():
     return host.call("getinfo")
 
@@ -74,6 +77,7 @@ def getblockhash(block):
 def getblock(hash):
     return host.call("getblock", hash)
 
+## Mastercoin Specific RPC calls
 def getbalance_MP(addr, propertyid):
     return host.call("getbalance_MP", addr, propertyid)
 
@@ -109,3 +113,12 @@ def getdivisible_MP(propertyid):
 
 def getgrants_MP(propertyid):
     return host.call("getgrants_MP", propertyid)
+
+def gettradessince_MP():
+    return host.call("gettradessince_MP")
+
+def gettrade_MP(txhash):
+    return host.call("gettrade_MP", txhash)
+
+def getsto_MP(txid):
+    return host.call("getsto_MP", txid , "*")

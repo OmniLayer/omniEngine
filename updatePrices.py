@@ -1,6 +1,7 @@
 import requests
 import json
 import os.path
+import getpass
 from datetime import datetime
 from sqltools import *
 from common import *
@@ -117,7 +118,8 @@ def updateMSCSP():
 
 
 def main():
-  lockFile='/tmp/updatePrices.lock'
+  USER=getpass.getuser()
+  lockFile='/tmp/updatePrices.lock'+str(USER)
   now=datetime.now()
 
   if os.path.isfile(lockFile):

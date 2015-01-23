@@ -1,0 +1,2 @@
+Patches are offered for instances that are upgrading their existing database / omniengine code. 
+You only need to apply the patch if you are upgrading. If you built the database from the tagged release the patch is not necessary
