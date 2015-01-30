@@ -1061,7 +1061,7 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
         if 'referenceaddress' in rawtx['result']:
 	  #credit the receiver
           Address = rawtx['result']['referenceaddress']
-	  AddressRole="recipient"
+          AddressRole="recipient"
           BalanceAvailableCreditDebit=value
         else:
           #no reference address, most likely from invalid tx. Pass/return and ignore trying to record the rest of the tx
