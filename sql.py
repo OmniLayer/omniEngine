@@ -1057,11 +1057,15 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
   
         if Valid:
           updateBalance(Address, Protocol, PropertyID, Ecosystem, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit, TxDBSerialNum)
-
-	#credit the receiver
-        Address = rawtx['result']['referenceaddress']
-	AddressRole="recipient"
-        BalanceAvailableCreditDebit=value
+ 
+        if 'referenceaddress' in rawtx['result']:
+	  #credit the receiver
+          Address = rawtx['result']['referenceaddress']
+	  AddressRole="recipient"
+          BalanceAvailableCreditDebit=value
+        else:
+          #no reference address, most likely from invalid tx. Pass/return and ignore trying to record the rest of the tx
+          return
 
       #elif txtype == 2:
 	#Restricted Send does nothing yet?
