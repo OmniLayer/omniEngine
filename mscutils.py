@@ -18,10 +18,14 @@ def get_TxType(text_type):
     convert={"Simple Send": 0 ,
              "Restricted Send": 2,
              "Send To Owners": 3,
+             "Savings": -1,
+             "Savings COMPROMISED": -1,
+             "Rate-Limiting": -1,
              "Automatic Dispensary":-1,
              "DEx Sell Offer": 20,
              "MetaDEx: Offer/Accept one Master Protocol Coins for another": 21,
              "MetaDEx: Offer/Accept one Master Protocol Tokens for another": 21,
+             "MetaDEx token trade": 21,
              "DEx Accept Offer": 22,
              "DEx Purchase": -22,
              "Create Property - Fixed": 50,
@@ -31,7 +35,9 @@ def get_TxType(text_type):
              "Close Crowdsale": 53,
              "Create Property - Manual": 54,
              "Grant Property Tokens": 55,
-             "Revoke Property Tokens": 56
+             "Revoke Property Tokens": 56,
+             "Change Issuer Address": -1,
+             "Notification": -1
            }
     return convert[text_type]
   except KeyError:

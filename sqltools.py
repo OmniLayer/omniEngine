@@ -38,7 +38,7 @@ def sql_connect(OUSER=None,OPASS=None):
         sys.exit(1)
 
 def dbInit(ouser=None,opass=None ):
-    #Prime the DB Connection, it can be restarted in the select/execute statement if it gets closed prematurely.
+    #Prime the DB Connection, it can be restarted in the select/execute statement if it gets closed prematurely. 
     global dbc
     try:
       if dbc.closed:

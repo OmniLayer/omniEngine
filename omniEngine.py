@@ -1,11 +1,13 @@
 from sql import *
 import os.path
+import sys
 from datetime import datetime
 
 USER=getpass.getuser()
 lockFile='/tmp/omniEngine.lock.'+str(USER)
 now=datetime.now()
 testnet=0
+sys.argv.pop(0)
 
 if os.path.isfile(lockFile):
   #open the lock file to read pid and timestamp
@@ -30,7 +32,18 @@ else:
   file.close() 
 
   #set our debug level, all outputs will be controlled by this
-  setdebug(9)
+  try:
+    if len(sys.argv) == 1:
+      #use debug level from cmd line
+      debuglevel = int(sys.argv[0])
+    else:
+      #invlid cmdline options use default value
+      debuglevel = 5
+  except:
+    #invlid cmdline options use default value
+    debuglevel = 5
+
+  setdebug(debuglevel)
 
   printdebug(("Processing started at",now), 0)
 
@@ -163,7 +176,7 @@ else:
       if testnet:
         syncAddress('mpexoDuSkGGqvqrkrjiFng38QPkJQVFyqv', Protocol)
         #upadate temp orderbook
-        updateorderbook()
+        #updateorderblob()
       else:
         syncAddress('1EXoDusjGwvnjZUyKkxZ4UHEf77z6A5S4P', Protocol)
 

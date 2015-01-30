@@ -8,12 +8,6 @@ from sqltools import *
 from common import *
 
 
-def updateorderbook():
-    block=getinfo()['result']['blocks']
-    blob=json.dumps(gettradessince_MP()['result'])
-    dbExecute("insert into orderblob (blocknumber, orders) select %s,%s where not exists (select * from orderblob where blocknumber=%s)", 
-              (block, str(blob), block))
-
 def reorgRollback(block):
 
     printdebug(("Reorg Detected, Rolling back to block ",block),4)
@@ -82,7 +76,10 @@ def reorgRollback(block):
           if Protocol=="Mastercoin":
             #any special actions need to be undone as well
             if txtype == 20 and Role=='seller':
-              rawtx=json.loads(dbSelect("select txdata from txjson where txdbserialnum=%s",[TxDbSerialNum])[0][0])
+              try:
+                rawtx=json.loads(dbSelect("select txdata from txjson where txdbserialnum=%s",[TxDbSerialNum])[0][0])
+              except TypeError:
+                rawtx=dbSelect("select txdata from txjson where txdbserialnum=%s",[TxDbSerialNum])[0][0]            
               if 'subaction' in rawtx and rawtx['subaction'].lower()=='cancel':
                 printdebug(("Uncancelling DEx.1 sale",linkedtxdbserialnum,"from transaction",TxDbSerialNum,Address),7)
                 #cancellation, undo the cancellation (not sure about the lasttxdbserialnum yet
@@ -188,6 +185,9 @@ def sortSTO(list):
     return list
 
 def sendToOwners(Sender, Amount, PropertyID, Protocol, TxDBSerialNum, owners=None):
+    printdebug(("Starting sendToOwners:"),8)
+    printdebug(("Sender, Amount, PropertyID, Protocol, TxDBSerialNum, owners"),9)
+    printdebug((Sender, Amount, PropertyID, Protocol, TxDBSerialNum, owners, "\n"),9)
 
     if owners == None:
       #get list of owners sorted by most held to least held and by address alphabetically
@@ -252,6 +252,7 @@ def sendToOwners(Sender, Amount, PropertyID, Protocol, TxDBSerialNum, owners=Non
 
 
 def expireAccepts(Block):
+    printdebug(("Starting expireAccepts: ", Block),8)
 
     if Block < 0 :
       #reorg undo expire
@@ -304,6 +305,10 @@ def expireAccepts(Block):
       dbExecute("update offeraccepts set expiredstate=true where expireblock <= %s and expiredstate=false", [Block] )
 
 def updateAccept(Buyer, Seller, AmountBought, PropertyIDBought, TxDBSerialNum):
+    printdebug(("Starting updateAccepts:"),8)
+    printdebug(("Buyer, Seller, AmountBought, PropertyIDBought, TxDBSerialNum"),9)
+    printdebug((Buyer, Seller, AmountBought, PropertyIDBought, TxDBSerialNum, "\n"),9)
+
     #user has paid for their accept (either partially or in full) update accordingly. 
 
     #find the accept data for updating
@@ -355,6 +360,10 @@ def updateAccept(Buyer, Seller, AmountBought, PropertyIDBought, TxDBSerialNum):
     return saletxdbserialnum,offertxdbserialnum
 
 def offerAccept (rawtx, TxDBSerialNum, Block):
+    printdebug(("Starting offerAccept"),8)
+    printdebug(("rawtx, TxDBSerialNum, Block"),9)
+    printdebug((rawtx, TxDBSerialNum, Block, "\n"),9)
+
     BuyerAddress=rawtx['result']['sendingaddress']
     SellerAddress=rawtx['result']['referenceaddress']
     
@@ -409,6 +418,9 @@ def offerAccept (rawtx, TxDBSerialNum, Block):
               (BuyerAddress, amountaccepted, TxDBSerialNum, saletxdbserialnum, Block, dexstate, expireblock,expiredstate) )
 
 def updatedex(rawtx, TxDBSerialNum, Protocol):
+    printdebug(("Starting updatedex"),8)
+    printdebug(("rawtx, TxDBSerialNum, Protocol"),9)
+    printdebug((rawtx, TxDBSerialNum, Protocol, "\n"),9)
 
     Address=rawtx['result']['sendingaddress']
     propertyiddesired=0
@@ -497,6 +509,8 @@ def updatedex(rawtx, TxDBSerialNum, Protocol):
 
 
 def resetdextable_MP():
+      printdebug("Starting resetdextable_MP:", 8)
+
       #add code to handle accepts in the dex results
       activesales= getactivedexsells_MP()['result']
       for sale in activesales:
@@ -532,6 +546,9 @@ def resetdextable_MP():
 def syncAddress(Address, Protocol):
     #sync address balance in db to match core's balance
     #mainly used for exodus dev msc distribution sync but is abstracted for any address
+    printdebug(("Starting syncAddress"),8)
+    printdebug(("Address, Protocol"),9)
+    printdebug((Address, Protocol),9)
 
     baldata=getallbalancesforaddress_MP(Address)['result']
     DExSales=getactivedexsells_MP()['result']
@@ -574,6 +591,7 @@ def syncAddress(Address, Protocol):
       
 
 def resetbalances_MP():
+    printdebug(("Starting resetbalances_MP"),8)
     #for now sync / reset balance data from mastercore balance list
     Protocol="Mastercoin"
 
@@ -631,6 +649,8 @@ def resetbalances_MP():
                     (BalanceAvailable, BalanceReserved, BalanceAccepted, Address, PropertyID) )
 
 def checkbalances_MP():
+    printdebug(("Starting checkbalances_MP"),8)
+
     #for now sync / reset balance data from mastercore balance list
     Protocol="Mastercoin"
 
@@ -729,8 +749,7 @@ def checkbalances_MP():
 
 
 def updateBalance(Address, Protocol, PropertyID, Ecosystem, BalanceAvailable, BalanceReserved, BalanceAccepted, LastTxDBSerialNum):
-    
-      printdebug("Updating balance state:", 4)
+      printdebug("Starting updateBalance:", 4)
       printdebug("Address, Protocol, PropertyID, Ecosystem, BalanceAvailable, BalanceReserved, BalanceAccepted, TxDBSerialNum", 4)
       printdebug((Address, Protocol, PropertyID, Ecosystem, BalanceAvailable, BalanceReserved, BalanceAccepted, LastTxDBSerialNum, "\n"), 4)
 
@@ -808,6 +827,9 @@ def updateBalance(Address, Protocol, PropertyID, Ecosystem, BalanceAvailable, Ba
 
 
 def expireCrowdsales(BlockTime, Protocol):
+    printdebug("Starting expireCrowdsales:", 8)
+    printdebug("BlockTime, Protocol", 9)
+    printdebug((BlockTime, Protocol, "\n"), 9)
 
     if BlockTime < 0:
       #Reorg 
@@ -831,6 +853,10 @@ def expireCrowdsales(BlockTime, Protocol):
 
 
 def updateProperty(PropertyID, Protocol, LastTxDBSerialNum=None):
+    printdebug("Starting updateProperty:", 8)
+    printdebug("PropertyID, Protocol, LastTxDBSerialNum", 9)
+    printdebug((PropertyID, Protocol, LastTxDBSerialNum,"\n"), 9)
+
     if PropertyID < 0:
       #reorg
       reorg = True
@@ -874,6 +900,10 @@ def updateProperty(PropertyID, Protocol, LastTxDBSerialNum=None):
 
 
 def insertProperty(rawtx, Protocol, PropertyID=None):
+    printdebug("Starting insertProperty:", 8)
+    printdebug("rawtx, Protocol, PropertyID", 9)
+    printdebug((rawtx, Protocol, PropertyID,"\n"), 9)
+
     #only insert valid updates. ignore invalid data?
     if rawtx['result']['valid']:
 
@@ -936,6 +966,10 @@ def insertProperty(rawtx, Protocol, PropertyID=None):
         dbExecute("insert into PropertyHistory (Protocol, PropertyID, TxDBSerialNum) Values(%s, %s, %s)", (Protocol, PropertyID, LastTxDBSerialNum))
 
 def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
+    printdebug("Starting insertTxAddr:", 8)
+    printdebug("rawtx, Protocol, TxDBSerialNum, Block", 9)
+    printdebug((rawtx, Protocol, TxDBSerialNum, Block,"\n"), 9)
+
     TxHash = rawtx['result']['txid']
 
     if Protocol == "Bitcoin":
@@ -1035,10 +1069,43 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
       elif txtype == 3:
         #Send To Owners
         if Valid:
-           sendToOwners(Address, value, PropertyID, Protocol, TxDBSerialNum)
-        #Debit the sender
-        BalanceAvailableCreditDebit=value_neg
+           #sendToOwners(Address, value, PropertyID, Protocol, TxDBSerialNum)
+           rawsto=getsto_MP(rawtx['result']['txid'])
+           #sto fee is in MSC (and gets burned) so convert before entering it
+           stofee=-int(decimal.Decimal(str(rawsto['result']['totalstofee']))*decimal.Decimal(1e8))
+           if Ecosystem in ['Test','test']: 
+             feeid=2
+           else:
+             feeid=1
+           AddressRole='feepayer'
+           #enter STO fee into addressesintxs and update balance data
+           dbExecute("insert into addressesintxs "
+                     "(Address, PropertyID, Protocol, TxDBSerialNum, AddressTxIndex, AddressRole, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit)"
+                     "values(%s, %s, %s, %s, %s, %s, %s, %s, %s)",
+                     (Address, 1, Protocol, TxDBSerialNum, feeid, AddressRole, stofee, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit))
+           updateBalance(Address, Protocol, feeid, "Production", stofee, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit, TxDBSerialNum)
 
+           #process the list of STO recievers 
+           txindex=0
+           AddressRole='payee'
+           for recv in rawsto['result']['recipients']:
+             if rawtx['result']['divisible']:
+               rBalance=int(decimal.Decimal(str(recv['amount']))*decimal.Decimal(1e8))
+             else:
+               rBalance=int(recv['amount'])
+             rAddress=recv['address']
+
+             dbExecute("insert into addressesintxs "
+                       "(Address, PropertyID, Protocol, TxDBSerialNum, AddressTxIndex, AddressRole, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit)"
+                       "values(%s, %s, %s, %s, %s, %s, %s, %s, %s)",
+                       (rAddress, PropertyID, Protocol, TxDBSerialNum, txindex, AddressRole, rBalance, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit))
+
+             updateBalance(rAddress, Protocol, PropertyID, Ecosystem, rBalance, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit, TxDBSerialNum)
+             txindex+=1
+
+        #Debit the sender
+        AddressRole='payer'
+        BalanceAvailableCreditDebit=value_neg
       elif txtype == 20:
         #DEx Sell Offer
         #Move the amount from Available balance to reserved for Offer
@@ -1061,30 +1128,6 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
 
       elif txtype == 21:
         #DEx Phase II: Offer/Accept one Master Protocol Coins for another
-        if rawtx['result']['valid']:
-          if rawtx['result']['propertyofferedisdivisible']:
-            value=int(decimal.Decimal(str(rawtx['result']['amountoffered']))*decimal.Decimal(1e8))
-          else:
-            value=int(rawtx['result']['amountoffered'])
-          value_neg=(value*-1)
-
-          BalanceAvailableCreditDebit=value_neg
-          BalanceReservedCreditDebit=value
-          PropertyOffered=rawtx['result']['propertyoffered']
-          Ecosystem=getEcosystem(PropertyOffered)
-        else:
-          PropertyOffered=0
-          Ecosystem=None
-
-
-        dbExecute("insert into addressesintxs "
-                  "(Address, PropertyID, Protocol, TxDBSerialNum, AddressTxIndex, AddressRole, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit)"
-                  "values(%s, %s, %s, %s, %s, %s, %s, %s, %s)",
-                  (Address, PropertyOffered, Protocol, TxDBSerialNum, AddressTxIndex, AddressRole, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit))
-
-        if rawtx['result']['valid']:
-            updateBalance(Address, Protocol, PropertyOffered, Ecosystem, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit, TxDBSerialNum)
-
         return
 
       elif txtype == 22:
@@ -1329,6 +1372,10 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
 
 
 def insertTx(rawtx, Protocol, blockheight, seq, TxDBSerialNum):
+    printdebug("Starting insertTx:", 8)
+    printdebug("rawtx, Protocol, blockheight, seq, TxDBSerialNum", 9)
+    printdebug((rawtx, Protocol, blockheight, seq, TxDBSerialNum,"\n"), 9)
+
     TxHash = rawtx['result']['txid']
     TxBlockTime = datetime.datetime.utcfromtimestamp(rawtx['result']['blocktime'])
     TxErrorCode = rawtx['error']
@@ -1391,6 +1438,10 @@ def insertTx(rawtx, Protocol, blockheight, seq, TxDBSerialNum):
 
 
 def insertBlock(block_data, Protocol, block_height, txcount):
+    printdebug("Starting insertBlock:", 8)
+    printdebug("block_data, Protocol, block_height, txcount", 9)
+    printdebug((block_data, Protocol, block_height, txcount,"\n"), 9)
+
     BlockTime = datetime.datetime.utcfromtimestamp(block_data['result']['time'])
     version = block_data['result']['version'];
     if block_height > 0:

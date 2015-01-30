@@ -22,17 +22,12 @@ try:
         for line in fp:
           cmd=line.strip('\n')
           dbUpgradeExecute(username,password,cmd)
-      dbCommit()
       print "Patches Applied Successfully"
 
     except Exception,e:
-      dbRollback()
       print str(e)+" problem applying command: "+str(cmd)+" \nPossibly already applied?"
 
   else:
     print "Usage Guidelines: python upgrade.py <patchfile>"
 except Exception,e:
-  dbRollback()
   print "Something failed trying to upgrade "+str(e)
-
-
