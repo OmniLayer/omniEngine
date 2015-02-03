@@ -895,8 +895,8 @@ def updateProperty(PropertyID, Protocol, LastTxDBSerialNum=None):
     #elif TxType > 53 and TxType < 57:
     try:
       rawprop = dict(rawprop.items() + getgrants_MP(PropertyID)['result'].items())
-     except Exception:
-         printdebug("Updating Property. Property not created with crowdsale", 8)
+    except Exception:
+      printdebug("Updating Property. Property not created with crowdsale", 8)
 
     #if we where called with a tx update that otherwise just update json (expired by time update)
     if LastTxDBSerialNum == None:
