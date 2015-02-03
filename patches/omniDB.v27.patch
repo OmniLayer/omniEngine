@@ -1,2 +1,6 @@
 alter type addressrole add value 'payer';
 alter type addressrole add value 'feepayer';
+update addressesintxs atx SET addressrole='sender' from transactions tx where tx.txdbserialnum=atx.txdbserialnum and tx.txtype=-51 and atx.propertyid=1 and atx.addressrole='participant';
+update addressesintxs atx SET addressrole='recipient' from transactions tx where tx.txdbserialnum=atx.txdbserialnum and tx.txtype=-51 and atx.propertyid=1 and atx.addressrole='issuer';
+update addressesintxs atx SET addressrole='sender' from transactions tx where tx.txdbserialnum=atx.txdbserialnum and tx.txtype=-51 and atx.propertyid=2 and atx.addressrole='participant';
+update addressesintxs atx SET addressrole='recipient' from transactions tx where tx.txdbserialnum=atx.txdbserialnum and tx.txtype=-51 and atx.propertyid=2 and atx.addressrole='issuer';
