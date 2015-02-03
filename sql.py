@@ -116,7 +116,9 @@ def reorgRollback(block):
               #remove entries from the property history table only
               dbExecute("delete from propertyhistory where txdbserialnum=%s and propertyid=%s and protocol=%s",
                         (TxDbSerialNum,PropertyID,Protocol))
-            elif txtype 
+            elif txtype == 70 and Role == "issuer":
+              updateProperty(PropertyID, Protocol, linkedtxdbserialnum)
+            
         #/end for entry in addressesintxs
       #/end if txstate='valid'
 
