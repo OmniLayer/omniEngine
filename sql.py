@@ -891,13 +891,13 @@ def updateProperty(PropertyID, Protocol, LastTxDBSerialNum=None):
         else:
           updateBalance(issuer, Protocol, PropertyID, Ecosystem, addedissuertokens, 0, 0, LastTxDBSerialNum)
     except Exception:
-         printdebug("Updating Property. Property not created with crowdsale", 8)
+      printdebug("Updating Property. Property not created with crowdsale", 8)
 
     #elif TxType > 53 and TxType < 57:
     try:
       rawprop = dict(rawprop.items() + getgrants_MP(PropertyID)['result'].items())
     except Exception:
-      printdebug("Updating Property. Property not created with crowdsale", 8)
+      printdebug("Updating Property. Not a Managed Property", 8)
 
     #if we where called with a tx update that otherwise just update json (expired by time update)
     if LastTxDBSerialNum == None:
@@ -1400,7 +1400,7 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
 
           dbExecute("insert into addressesintxs "
                     "(Address, PropertyID, Protocol, TxDBSerialNum, AddressTxIndex, AddressRole, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit, linkedtxdbserialnum)"
-                    "values(%s, %s, %s, %s, %s, %s, %s, %s, %s)",
+                    "values(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
                     (Address, PropertyID, Protocol, TxDBSerialNum, AddressTxIndex, AddressRole, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit, linkedtxdbserialnum))
           Address = rawtx['result']['referenceaddress']
           ReceiveRole = 'recipient'
@@ -1410,7 +1410,7 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
       #write output of the address details
       dbExecute("insert into addressesintxs "
                 "(Address, PropertyID, Protocol, TxDBSerialNum, AddressTxIndex, AddressRole, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit, linkedtxdbserialnum)"
-                "values(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
+                "values(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
                 (Address, PropertyID, Protocol, TxDBSerialNum, AddressTxIndex, AddressRole, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit, linkedtxdbserialnum))
 
       if Valid:
