@@ -1410,7 +1410,7 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
       #write output of the address details
       dbExecute("insert into addressesintxs "
                 "(Address, PropertyID, Protocol, TxDBSerialNum, AddressTxIndex, AddressRole, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit, linkedtxdbserialnum)"
-                "values(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
+                "values(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
                 (Address, PropertyID, Protocol, TxDBSerialNum, AddressTxIndex, AddressRole, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit, linkedtxdbserialnum))
 
       if Valid:
