@@ -873,6 +873,7 @@ def updateProperty(PropertyID, Protocol, LastTxDBSerialNum=None):
     TxType = get_TxType(rawtx['result']['type'])
     rawprop = PropertyDataJson['result']
     Ecosystem = getEcosystem(PropertyID)
+    Issuer = rawprop['issuer']
 
     #if TxType == 51 or TxType == 53:
     try:
@@ -901,13 +902,13 @@ def updateProperty(PropertyID, Protocol, LastTxDBSerialNum=None):
 
     #if we where called with a tx update that otherwise just update json (expired by time update)
     if LastTxDBSerialNum == None:
-      dbExecute("update smartproperties set PropertyData=%s "
+      dbExecute("update smartproperties set PropertyData=%s, Ussuer=%s "
                 "where Protocol=%s and PropertyID=%s",
-                (json.dumps(rawprop), Protocol, PropertyID))
+                (json.dumps(rawprop), Issuer, Protocol, PropertyID))
     else:
-      dbExecute("update smartproperties set LastTxDBSerialNum=%s, PropertyData=%s "
+      dbExecute("update smartproperties set LastTxDBSerialNum=%s, PropertyData=%s, Issuer=%s "
                 "where Protocol=%s and PropertyID=%s",
-                (LastTxDBSerialNum, json.dumps(rawprop), Protocol, PropertyID))
+                (LastTxDBSerialNum, json.dumps(rawprop), Issuer, Protocol, PropertyID))
 
 
 def insertProperty(rawtx, Protocol, PropertyID=None):
