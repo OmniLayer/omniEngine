@@ -1403,7 +1403,7 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
                     "values(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
                     (Address, PropertyID, Protocol, TxDBSerialNum, AddressTxIndex, AddressRole, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit, linkedtxdbserialnum))
           Address = rawtx['result']['referenceaddress']
-          ReceiveRole = 'recipient'
+          AddressRole = 'recipient'
 
       #end if/elif txtype switch
 
