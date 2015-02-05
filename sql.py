@@ -116,6 +116,9 @@ def reorgRollback(block):
               #remove entries from the property history table only
               dbExecute("delete from propertyhistory where txdbserialnum=%s and propertyid=%s and protocol=%s",
                         (TxDbSerialNum,PropertyID,Protocol))
+            elif txtype == 70 and Role == "issuer":
+              updateProperty(PropertyID, Protocol, linkedtxdbserialnum)
+            
         #/end for entry in addressesintxs
       #/end if txstate='valid'
 
@@ -843,9 +846,10 @@ def expireCrowdsales(BlockTime, Protocol):
 
     else:
       #find the offers that are ready to expire and credit the 'accepted' amount back to the sellers sale
-      expiring=dbSelect("select propertyid from smartproperties as sp inner join transactions as tx on "
-                      "(sp.createtxdbserialnum=tx.txdbserialnum) where tx.txtype=51 and sp.protocol=%s and "
-                      "cast(propertydata::json->>'endedtime' as numeric) < %s and propertydata::json->>'active'='true'", (Protocol, BlockTime))
+      expiring=dbSelect("select propertyid from smartproperties as sp inner join transactions as tx on (sp.createtxdbserialnum=tx.txdbserialnum) " 
+                        "where tx.txtype=51 and sp.protocol=%s and propertydata::json->>'active'='true' and "
+                        "( cast(propertydata::json->>'deadline' as numeric) < %s or cast(propertydata::json->>'endedtime' as numeric) < %s)", 
+                        (Protocol, BlockTime, BlockTime))
 
       #Process all the crowdsales that should have expired by now
       for property in expiring:
@@ -869,8 +873,10 @@ def updateProperty(PropertyID, Protocol, LastTxDBSerialNum=None):
     TxType = get_TxType(rawtx['result']['type'])
     rawprop = PropertyDataJson['result']
     Ecosystem = getEcosystem(PropertyID)
+    Issuer = rawprop['issuer']
 
-    if TxType == 51 or TxType == 53:
+    #if TxType == 51 or TxType == 53:
+    try:
       #get additional json info for crowdsales
       rawprop = dict(rawprop.items() + getcrowdsale_MP(PropertyID)['result'].items())
       #closed/ended crowdsales can generate extra tokens for issuer. handle that here
@@ -885,18 +891,24 @@ def updateProperty(PropertyID, Protocol, LastTxDBSerialNum=None):
           rawprop['active']='true'
         else:
           updateBalance(issuer, Protocol, PropertyID, Ecosystem, addedissuertokens, 0, 0, LastTxDBSerialNum)
-    elif TxType > 53 and TxType < 57:
+    except Exception:
+      printdebug("Updating Property. Property not created with crowdsale", 8)
+
+    #elif TxType > 53 and TxType < 57:
+    try:
       rawprop = dict(rawprop.items() + getgrants_MP(PropertyID)['result'].items())
+    except Exception:
+      printdebug("Updating Property. Not a Managed Property", 8)
 
     #if we where called with a tx update that otherwise just update json (expired by time update)
     if LastTxDBSerialNum == None:
-      dbExecute("update smartproperties set PropertyData=%s "
+      dbExecute("update smartproperties set PropertyData=%s, Issuer=%s "
                 "where Protocol=%s and PropertyID=%s",
-                (json.dumps(rawprop), Protocol, PropertyID))
+                (json.dumps(rawprop), Issuer, Protocol, PropertyID))
     else:
-      dbExecute("update smartproperties set LastTxDBSerialNum=%s, PropertyData=%s "
+      dbExecute("update smartproperties set LastTxDBSerialNum=%s, PropertyData=%s, Issuer=%s "
                 "where Protocol=%s and PropertyID=%s",
-                (LastTxDBSerialNum, json.dumps(rawprop), Protocol, PropertyID))
+                (LastTxDBSerialNum, json.dumps(rawprop), Issuer, Protocol, PropertyID))
 
 
 def insertProperty(rawtx, Protocol, PropertyID=None):
@@ -916,12 +928,23 @@ def insertProperty(rawtx, Protocol, PropertyID=None):
       PropertyDataJson = getproperty_MP(PropertyID)
       rawprop = PropertyDataJson['result'] 
 
-      if TxType == 51 or TxType == 53:
+      #if TxType == 51 or TxType == 53:
         #get additional json info for crowdsales
-        rawprop = dict(rawprop.items() + getcrowdsale_MP(PropertyID)['result'].items())        
-      elif TxType > 53 and TxType < 57:
-        rawprop = dict(rawprop.items() + getgrants_MP(PropertyID)['result'].items())
+      #  rawprop = dict(rawprop.items() + getcrowdsale_MP(PropertyID)['result'].items())        
+      #elif TxType > 53 and TxType < 57:
+      #  rawprop = dict(rawprop.items() + getgrants_MP(PropertyID)['result'].items())
 
+      try:
+        #get additional json info for crowdsales if exists
+        rawprop = dict(rawprop.items() + getcrowdsale_MP(PropertyID)['result'].items())
+      except Exception:
+         printdebug("Inserting Property. Property not created with crowdsale", 8)
+
+      try:
+        #get additional json info for grants if exists
+        rawprop = dict(rawprop.items() + getgrants_MP(PropertyID)['result'].items())
+      except Exception:
+        printdebug("Inserting Property. Property not created with grant", 8)
 
       Issuer = rawprop['issuer']
       Ecosystem = getEcosystem(PropertyID)
@@ -1264,7 +1287,7 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
 
       elif txtype == -51:
         #First deduct the amount the participant sent to 'buyin'  (BTC Amount might need to be excluded?)
-        AddressRole = 'participant'
+        AddressRole = 'sender'
         BalanceAvailableCreditDebit = value_neg
 
         dbExecute("insert into addressesintxs "
@@ -1275,7 +1298,7 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
           updateBalance(Address, Protocol, PropertyID, Ecosystem, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit, TxDBSerialNum)
 
         #Credit the buy in to the issuer
-        AddressRole = 'issuer'
+        AddressRole = 'recipient'
         BalanceAvailableCreditDebit = value
         Address= rawtx['result']['referenceaddress']
         dbExecute("insert into addressesintxs "
@@ -1364,6 +1387,26 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
 
         #update smart property table
         insertProperty(rawtx, Protocol)
+
+      elif txtype == 70:
+        #change ownership of grant
+        if Valid:
+          #grab the original issuer of property
+          AddressRole = "issuer"
+          BalanceAvailableCreditDebit=None
+
+          #update smart property table
+          #insertProperty(rawtx, Protocol)
+          updateProperty(PropertyID, Protocol, TxDBSerialNum)
+
+          dbExecute("insert into addressesintxs "
+                    "(Address, PropertyID, Protocol, TxDBSerialNum, AddressTxIndex, AddressRole, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit, linkedtxdbserialnum)"
+                    "values(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
+                    (Address, PropertyID, Protocol, TxDBSerialNum, AddressTxIndex, AddressRole, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit, linkedtxdbserialnum))
+          Address = rawtx['result']['referenceaddress']
+          AddressRole = 'recipient'
+
+      #end if/elif txtype switch
 
       #write output of the address details
       dbExecute("insert into addressesintxs "

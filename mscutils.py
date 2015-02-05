@@ -36,7 +36,7 @@ def get_TxType(text_type):
              "Create Property - Manual": 54,
              "Grant Property Tokens": 55,
              "Revoke Property Tokens": 56,
-             "Change Issuer Address": -1,
+             "Change Issuer Address": 70,
              "Notification": -1
            }
     return convert[text_type]
