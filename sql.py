@@ -902,7 +902,7 @@ def updateProperty(PropertyID, Protocol, LastTxDBSerialNum=None):
 
     #if we where called with a tx update that otherwise just update json (expired by time update)
     if LastTxDBSerialNum == None:
-      dbExecute("update smartproperties set PropertyData=%s, Ussuer=%s "
+      dbExecute("update smartproperties set PropertyData=%s, Issuer=%s "
                 "where Protocol=%s and PropertyID=%s",
                 (json.dumps(rawprop), Issuer, Protocol, PropertyID))
     else:
