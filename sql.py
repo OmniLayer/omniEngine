@@ -8,6 +8,75 @@ from sqltools import *
 from common import *
 
 
+def reparsetx_MP(txhash):
+    printdebug(("Reparsing TX",txhash),4)
+
+    Protocol="Mastercoin"
+
+    try:
+      rawtx=gettransaction_MP(txhash)
+    except Exception:
+      printdebug(("Not a MP tx",txhash),4)
+      exit(1)
+
+    tx=dbSelect("select txblocknumber, txseqinblock, txdbserialnum, txstate, txtype from transactions where txhash=%s",[txhash])
+    if len(tx)==1:
+      tx=tx[0]
+    else:
+      printdebug(("Error, duplicate tx's found for",txhash),4)
+      exit(1)
+
+    blockheight = tx[0]
+    seq = tx[1]
+    TxDBSerialNum = tx[2]
+    txstate = tx[3]
+    txtype = tx[4]
+
+    if txtype not in [0,3]:
+      printdebug(("Can't Reparse txtype",txtype,"in middle of data, try running reorg rollback code"),4)
+      exit(1)
+
+    if txstate=='valid':
+        addressesintxs=dbSelect("select address, addressrole, protocol, propertyid, balanceavailablecreditdebit, balancereservedcreditdebit, balanceacceptedcreditdebit,linkedtxdbserialnum "
+                                "from addressesintxs where txdbserialnum=%s", [TxDBSerialNum])
+
+        for entry in addressesintxs:
+          Address=entry[0]
+          Role=entry[1]
+          Protocol=entry[2]
+          PropertyID=entry[3]
+          Ecosystem=getEcosystem(PropertyID)
+          linkedtxdbserialnum=entry[7]
+
+          #figure out how much 'moved' and undo it in addressbalances
+          if entry[4] == None:
+            dbBalanceAvailable = 0
+          else:
+            dbBalanceAvailable = entry[4]*-1
+          if entry[5] == None:
+            dbBalanceReserved = 0
+          else:
+            dbBalanceReserved = entry[5]*-1
+          if entry[6] == None:
+            dbBalanceAccepted = 0
+          else:
+            dbBalanceAccepted = entry[6]*-1
+
+          #use -1 for txdbserialnum as we don't know what the previous tx that last modified it's balanace was. 
+          updateBalance(Address, Protocol, PropertyID, Ecosystem, dbBalanceAvailable, dbBalanceReserved, dbBalanceAccepted, -TxDBSerialNum)
+            
+        #/end for entry in addressesintxs
+    #/end if txstate='valid'
+
+    #purge the transaction from the tables
+    dbExecute("delete from txjson where txdbserialnum=%s",[TxDBSerialNum])
+    dbExecute("delete from addressesintxs where txdbserialnum=%s",[TxDBSerialNum])
+    dbExecute("delete from transactions where txdbserialnum=%s",[TxDBSerialNum])
+
+    #reparse/insert the tx/addressesintx
+    insertTx(rawtx, Protocol, blockheight, seq, TxDBSerialNum)
+    insertTxAddr(rawtx, Protocol, TxDBSerialNum, blockheight)
+
 def reorgRollback(block):
 
     printdebug(("Reorg Detected, Rolling back to block ",block),4)
