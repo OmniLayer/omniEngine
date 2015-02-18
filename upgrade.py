@@ -21,7 +21,7 @@ try:
       with open(upgradeFile) as fp:
         for line in fp:
           cmd=line.strip('\n')
-          if cmd[:2] == '2.'
+          if cmd[:2] == '2.':
             exec cmd[2:]
           else:
             dbUpgradeExecute(username,password,cmd)
