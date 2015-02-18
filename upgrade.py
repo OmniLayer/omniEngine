@@ -21,13 +21,18 @@ try:
       with open(upgradeFile) as fp:
         for line in fp:
           cmd=line.strip('\n')
-          dbUpgradeExecute(username,password,cmd)
+          if cmd[:2] == '2.'
+            exec cmd[2:]
+          else:
+            dbUpgradeExecute(username,password,cmd)
       print "Patches Applied Successfully"
 
     except Exception,e:
       print str(e)+" problem applying command: "+str(cmd)+" \nPossibly already applied?"
+      dbRollback()
 
   else:
     print "Usage Guidelines: python upgrade.py <patchfile>"
 except Exception,e:
   print "Something failed trying to upgrade "+str(e)
+  dbRollback()
