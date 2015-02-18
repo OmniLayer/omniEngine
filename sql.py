@@ -8,6 +8,75 @@ from sqltools import *
 from common import *
 
 
+def reparsetx_MP(txhash):
+    printdebug(("Reparsing TX",txhash),4)
+
+    Protocol="Mastercoin"
+
+    try:
+      rawtx=gettransaction_MP(txhash)
+    except Exception:
+      printdebug(("Not a MP tx",txhash),4)
+      exit(1)
+
+    tx=dbSelect("select txblocknumber, txseqinblock, txdbserialnum, txstate, txtype from transactions where txhash=%s",[txhash])
+    if len(tx)==1:
+      tx=tx[0]
+    else:
+      printdebug(("Error, duplicate tx's found for",txhash),4)
+      exit(1)
+
+    blockheight = tx[0]
+    seq = tx[1]
+    TxDBSerialNum = tx[2]
+    txstate = tx[3]
+    txtype = tx[4]
+
+    if txtype not in [0,3]:
+      printdebug(("Can't Reparse txtype",txtype,"in middle of data, try running reorg rollback code"),4)
+      exit(1)
+
+    if txstate=='valid':
+        addressesintxs=dbSelect("select address, addressrole, protocol, propertyid, balanceavailablecreditdebit, balancereservedcreditdebit, balanceacceptedcreditdebit,linkedtxdbserialnum "
+                                "from addressesintxs where txdbserialnum=%s", [TxDBSerialNum])
+
+        for entry in addressesintxs:
+          Address=entry[0]
+          Role=entry[1]
+          Protocol=entry[2]
+          PropertyID=entry[3]
+          Ecosystem=getEcosystem(PropertyID)
+          linkedtxdbserialnum=entry[7]
+
+          #figure out how much 'moved' and undo it in addressbalances
+          if entry[4] == None:
+            dbBalanceAvailable = 0
+          else:
+            dbBalanceAvailable = entry[4]*-1
+          if entry[5] == None:
+            dbBalanceReserved = 0
+          else:
+            dbBalanceReserved = entry[5]*-1
+          if entry[6] == None:
+            dbBalanceAccepted = 0
+          else:
+            dbBalanceAccepted = entry[6]*-1
+
+          #use -1 for txdbserialnum as we don't know what the previous tx that last modified it's balanace was. 
+          updateBalance(Address, Protocol, PropertyID, Ecosystem, dbBalanceAvailable, dbBalanceReserved, dbBalanceAccepted, -TxDBSerialNum)
+            
+        #/end for entry in addressesintxs
+    #/end if txstate='valid'
+
+    #purge the transaction from the tables
+    dbExecute("delete from txjson where txdbserialnum=%s",[TxDBSerialNum])
+    dbExecute("delete from addressesintxs where txdbserialnum=%s",[TxDBSerialNum])
+    dbExecute("delete from transactions where txdbserialnum=%s",[TxDBSerialNum])
+
+    #reparse/insert the tx/addressesintx
+    insertTx(rawtx, Protocol, blockheight, seq, TxDBSerialNum)
+    insertTxAddr(rawtx, Protocol, TxDBSerialNum, blockheight)
+
 def reorgRollback(block):
 
     printdebug(("Reorg Detected, Rolling back to block ",block),4)
@@ -720,32 +789,43 @@ def checkbalances_MP():
           #print "No DB entry, Address:", Address, "Protocol:", Protocol, "PropertyID:",PropertyID
            pass
 
-        item={}
-        if len(rows) == 0 and ( BalanceAvailable!=0 or BalanceReserved!=0 or BalanceAccepted!=0) :
+        if len(rows) == 0 and ( BalanceAvailable!=0 or BalanceReserved!=0 or BalanceAccepted!=0):
           #address not in database, insert
-          item[PropertyID] ={'Address':Address, 'bal':{'Status': 'Missing', 'PropertyID': PropertyID, 'BalanceAvailable':BalanceAvailable,'BalanceReserved': BalanceReserved,'BalanceAccepted':BalanceAccepted }}
+          item =[{'Address':Address, 'bal':{'Status': 'Missing', 'PropertyID': PropertyID, 'BalanceAvailable':BalanceAvailable,'BalanceReserved': BalanceReserved,'BalanceAccepted':BalanceAccepted }}]
           #add the missing/incorrect item to our list to return
-          retval.update(item) 
+          try:
+            retval[PropertyID]=retval[PropertyID]+item 
+          except KeyError:
+            retval[PropertyID]=item
         else:
           #address in database update
           if BalanceAvailable != dbBalanceAvailable:
-            item[PropertyID] ={'Address':Address, 'bal':{'Status': 'Mismatch', 'PropertyID': PropertyID, 'BalanceAvailable':BalanceAvailable, 'dbBalanceAvailable': dbBalanceAvailable, 
-                                'dbBalanceReserved': dbBalanceReserved, 'BalanceReserved': BalanceReserved,
-                                'dbBalanceAccepted':dbBalanceAccepted, 'BalanceAccepted':BalanceAccepted }}
+            item =[{'Address':Address, 'bal':{'Status': 'Mismatch', 'PropertyID': PropertyID, 'BalanceAvailable':BalanceAvailable, 'dbBalanceAvailable': dbBalanceAvailable, 
+                    'dbBalanceReserved': dbBalanceReserved, 'BalanceReserved': BalanceReserved,
+                    'dbBalanceAccepted':dbBalanceAccepted, 'BalanceAccepted':BalanceAccepted }}]
             #add the missing/incorrect item to our list to return
-            retval.update(item) 
+            try:
+              retval[PropertyID]=retval[PropertyID]+item 
+            except KeyError:
+              retval[PropertyID]=item
           elif BalanceReserved != dbBalanceReserved:
-            item[PropertyID] ={'Address':Address, 'bal':{'Status': 'Mismatch', 'PropertyID': PropertyID, 'BalanceAvailable':BalanceAvailable, 'dbBalanceAvailable': dbBalanceAvailable,
-                                'dbBalanceReserved': dbBalanceReserved, 'BalanceReserved': BalanceReserved,
-                                'dbBalanceAccepted':dbBalanceAccepted, 'BalanceAccepted':BalanceAccepted }}
+            item =[{'Address':Address, 'bal':{'Status': 'Mismatch', 'PropertyID': PropertyID, 'BalanceAvailable':BalanceAvailable, 'dbBalanceAvailable': dbBalanceAvailable,
+                    'dbBalanceReserved': dbBalanceReserved, 'BalanceReserved': BalanceReserved,
+                    'dbBalanceAccepted':dbBalanceAccepted, 'BalanceAccepted':BalanceAccepted }}]
             #add the missing/incorrect item to our list to return
-            retval.update(item) 
+            try:
+              retval[PropertyID]=retval[PropertyID]+item
+            except KeyError:
+              retval[PropertyID]=item
           elif BalanceAccepted != dbBalanceAccepted:
-            item[PropertyID] ={'Address':Address, 'bal':{'Status': 'Mismatch', 'PropertyID': PropertyID, 'BalanceAvailable':BalanceAvailable, 'dbBalanceAvailable': dbBalanceAvailable,
-                                'dbBalanceReserved': dbBalanceReserved, 'BalanceReserved': BalanceReserved,
-                                'dbBalanceAccepted':dbBalanceAccepted, 'BalanceAccepted':BalanceAccepted }}
+            item =[{'Address':Address, 'bal':{'Status': 'Mismatch', 'PropertyID': PropertyID, 'BalanceAvailable':BalanceAvailable, 'dbBalanceAvailable': dbBalanceAvailable,
+                    'dbBalanceReserved': dbBalanceReserved, 'BalanceReserved': BalanceReserved,
+                    'dbBalanceAccepted':dbBalanceAccepted, 'BalanceAccepted':BalanceAccepted }}]
             #add the missing/incorrect item to our list to return
-            retval.update(item) 
+            try:
+              retval[PropertyID]=retval[PropertyID]+item
+            except KeyError:
+              retval[PropertyID]=item
 
     return retval
 
@@ -845,7 +925,7 @@ def expireCrowdsales(BlockTime, Protocol):
         updateProperty(-property[0], Protocol)
 
     else:
-      #find the offers that are ready to expire and credit the 'accepted' amount back to the sellers sale
+      #find the crowdsales that are ready to expire and update/expire them accordingly
       expiring=dbSelect("select propertyid from smartproperties as sp inner join transactions as tx on (sp.createtxdbserialnum=tx.txdbserialnum) " 
                         "where tx.txtype=51 and sp.protocol=%s and propertydata::json->>'active'='true' and "
                         "( cast(propertydata::json->>'deadline' as numeric) < %s or cast(propertydata::json->>'endedtime' as numeric) < %s)", 
@@ -1102,15 +1182,17 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
            stofee=-int(decimal.Decimal(str(rawsto['result']['totalstofee']))*decimal.Decimal(1e8))
            if Ecosystem in ['Test','test']: 
              feeid=2
+             feeEco=Ecosystem
            else:
              feeid=1
+             feeEco="Production"
            AddressRole='feepayer'
            #enter STO fee into addressesintxs and update balance data
            dbExecute("insert into addressesintxs "
                      "(Address, PropertyID, Protocol, TxDBSerialNum, AddressTxIndex, AddressRole, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit)"
                      "values(%s, %s, %s, %s, %s, %s, %s, %s, %s)",
-                     (Address, 1, Protocol, TxDBSerialNum, feeid, AddressRole, stofee, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit))
-           updateBalance(Address, Protocol, feeid, "Production", stofee, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit, TxDBSerialNum)
+                     (Address, feeid, Protocol, TxDBSerialNum, 1, AddressRole, stofee, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit))
+           updateBalance(Address, Protocol, feeid, feeEco, stofee, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit, TxDBSerialNum)
 
            #process the list of STO recievers 
            txindex=0

@@ -1,4 +1,4 @@
-from sqltools import *
+from sql import *
 import sys, json
 try:
   from getpass import getpass
@@ -21,13 +21,22 @@ try:
       with open(upgradeFile) as fp:
         for line in fp:
           cmd=line.strip('\n')
-          dbUpgradeExecute(username,password,cmd)
+          if len(cmd) > 0:
+            #make sure we skip empty lines
+            if cmd[:2] == '2.':
+              print "Running patch: ",cmd[2:]
+              exec cmd[2:]
+            else:
+              print "Running patch: ",cmd
+              dbUpgradeExecute(username,password,cmd)
       print "Patches Applied Successfully"
 
     except Exception,e:
       print str(e)+" problem applying command: "+str(cmd)+" \nPossibly already applied?"
+      dbRollback()
 
   else:
     print "Usage Guidelines: python upgrade.py <patchfile>"
 except Exception,e:
   print "Something failed trying to upgrade "+str(e)
+  dbRollback()
