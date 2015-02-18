@@ -1182,15 +1182,17 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
            stofee=-int(decimal.Decimal(str(rawsto['result']['totalstofee']))*decimal.Decimal(1e8))
            if Ecosystem in ['Test','test']: 
              feeid=2
+             feeEco=EcoSystem
            else:
              feeid=1
+             feeEco="Production"
            AddressRole='feepayer'
            #enter STO fee into addressesintxs and update balance data
            dbExecute("insert into addressesintxs "
                      "(Address, PropertyID, Protocol, TxDBSerialNum, AddressTxIndex, AddressRole, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit)"
                      "values(%s, %s, %s, %s, %s, %s, %s, %s, %s)",
-                     (Address, 1, Protocol, TxDBSerialNum, feeid, AddressRole, stofee, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit))
-           updateBalance(Address, Protocol, feeid, "Production", stofee, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit, TxDBSerialNum)
+                     (Address, feeid, Protocol, TxDBSerialNum, 1, AddressRole, stofee, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit))
+           updateBalance(Address, Protocol, feeid, feeEco, stofee, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit, TxDBSerialNum)
 
            #process the list of STO recievers 
            txindex=0
