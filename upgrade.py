@@ -1,4 +1,4 @@
-from sqltools import *
+from sql import *
 import sys, json
 try:
   from getpass import getpass
