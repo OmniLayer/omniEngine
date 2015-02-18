@@ -21,10 +21,14 @@ try:
       with open(upgradeFile) as fp:
         for line in fp:
           cmd=line.strip('\n')
-          if cmd[:2] == '2.':
-            exec cmd[2:]
-          else:
-            dbUpgradeExecute(username,password,cmd)
+          if len(cmd) > 0:
+            #make sure we skip empty lines
+            if cmd[:2] == '2.':
+              print "Running patch: ",cmd[2:]
+              exec cmd[2:]
+            else:
+              print "Running patch: ",cmd
+              dbUpgradeExecute(username,password,cmd)
       print "Patches Applied Successfully"
 
     except Exception,e:
