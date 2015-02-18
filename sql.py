@@ -925,7 +925,7 @@ def expireCrowdsales(BlockTime, Protocol):
         updateProperty(-property[0], Protocol)
 
     else:
-      #find the offers that are ready to expire and credit the 'accepted' amount back to the sellers sale
+      #find the crowdsales that are ready to expire and update/expire them accordingly
       expiring=dbSelect("select propertyid from smartproperties as sp inner join transactions as tx on (sp.createtxdbserialnum=tx.txdbserialnum) " 
                         "where tx.txtype=51 and sp.protocol=%s and propertydata::json->>'active'='true' and "
                         "( cast(propertydata::json->>'deadline' as numeric) < %s or cast(propertydata::json->>'endedtime' as numeric) < %s)", 
