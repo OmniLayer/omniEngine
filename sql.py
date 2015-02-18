@@ -1182,7 +1182,7 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
            stofee=-int(decimal.Decimal(str(rawsto['result']['totalstofee']))*decimal.Decimal(1e8))
            if Ecosystem in ['Test','test']: 
              feeid=2
-             feeEco=EcoSystem
+             feeEco=Ecosystem
            else:
              feeid=1
              feeEco="Production"
