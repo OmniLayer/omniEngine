@@ -789,32 +789,43 @@ def checkbalances_MP():
           #print "No DB entry, Address:", Address, "Protocol:", Protocol, "PropertyID:",PropertyID
            pass
 
-        item={}
-        if len(rows) == 0 and ( BalanceAvailable!=0 or BalanceReserved!=0 or BalanceAccepted!=0) :
+        if len(rows) == 0 and ( BalanceAvailable!=0 or BalanceReserved!=0 or BalanceAccepted!=0):
           #address not in database, insert
-          item[PropertyID] ={'Address':Address, 'bal':{'Status': 'Missing', 'PropertyID': PropertyID, 'BalanceAvailable':BalanceAvailable,'BalanceReserved': BalanceReserved,'BalanceAccepted':BalanceAccepted }}
+          item =[{'Address':Address, 'bal':{'Status': 'Missing', 'PropertyID': PropertyID, 'BalanceAvailable':BalanceAvailable,'BalanceReserved': BalanceReserved,'BalanceAccepted':BalanceAccepted }}]
           #add the missing/incorrect item to our list to return
-          retval.update(item) 
+          try:
+            retval[PropertyID]=retval[PropertyID]+item 
+          except KeyError:
+            retval[PropertyID]=item
         else:
           #address in database update
           if BalanceAvailable != dbBalanceAvailable:
-            item[PropertyID] ={'Address':Address, 'bal':{'Status': 'Mismatch', 'PropertyID': PropertyID, 'BalanceAvailable':BalanceAvailable, 'dbBalanceAvailable': dbBalanceAvailable, 
-                                'dbBalanceReserved': dbBalanceReserved, 'BalanceReserved': BalanceReserved,
-                                'dbBalanceAccepted':dbBalanceAccepted, 'BalanceAccepted':BalanceAccepted }}
+            item =[{'Address':Address, 'bal':{'Status': 'Mismatch', 'PropertyID': PropertyID, 'BalanceAvailable':BalanceAvailable, 'dbBalanceAvailable': dbBalanceAvailable, 
+                    'dbBalanceReserved': dbBalanceReserved, 'BalanceReserved': BalanceReserved,
+                    'dbBalanceAccepted':dbBalanceAccepted, 'BalanceAccepted':BalanceAccepted }}]
             #add the missing/incorrect item to our list to return
-            retval.update(item) 
+            try:
+              retval[PropertyID]=retval[PropertyID]+item 
+            except KeyError:
+              retval[PropertyID]=item
           elif BalanceReserved != dbBalanceReserved:
-            item[PropertyID] ={'Address':Address, 'bal':{'Status': 'Mismatch', 'PropertyID': PropertyID, 'BalanceAvailable':BalanceAvailable, 'dbBalanceAvailable': dbBalanceAvailable,
-                                'dbBalanceReserved': dbBalanceReserved, 'BalanceReserved': BalanceReserved,
-                                'dbBalanceAccepted':dbBalanceAccepted, 'BalanceAccepted':BalanceAccepted }}
+            item =[{'Address':Address, 'bal':{'Status': 'Mismatch', 'PropertyID': PropertyID, 'BalanceAvailable':BalanceAvailable, 'dbBalanceAvailable': dbBalanceAvailable,
+                    'dbBalanceReserved': dbBalanceReserved, 'BalanceReserved': BalanceReserved,
+                    'dbBalanceAccepted':dbBalanceAccepted, 'BalanceAccepted':BalanceAccepted }}]
             #add the missing/incorrect item to our list to return
-            retval.update(item) 
+            try:
+              retval[PropertyID]=retval[PropertyID]+item
+            except KeyError:
+              retval[PropertyID]=item
           elif BalanceAccepted != dbBalanceAccepted:
-            item[PropertyID] ={'Address':Address, 'bal':{'Status': 'Mismatch', 'PropertyID': PropertyID, 'BalanceAvailable':BalanceAvailable, 'dbBalanceAvailable': dbBalanceAvailable,
-                                'dbBalanceReserved': dbBalanceReserved, 'BalanceReserved': BalanceReserved,
-                                'dbBalanceAccepted':dbBalanceAccepted, 'BalanceAccepted':BalanceAccepted }}
+            item =[{'Address':Address, 'bal':{'Status': 'Mismatch', 'PropertyID': PropertyID, 'BalanceAvailable':BalanceAvailable, 'dbBalanceAvailable': dbBalanceAvailable,
+                    'dbBalanceReserved': dbBalanceReserved, 'BalanceReserved': BalanceReserved,
+                    'dbBalanceAccepted':dbBalanceAccepted, 'BalanceAccepted':BalanceAccepted }}]
             #add the missing/incorrect item to our list to return
-            retval.update(item) 
+            try:
+              retval[PropertyID]=retval[PropertyID]+item
+            except KeyError:
+              retval[PropertyID]=item
 
     return retval
 
