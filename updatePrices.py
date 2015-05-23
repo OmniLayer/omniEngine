@@ -92,14 +92,23 @@ def updateMSCSP():
         volume = 0;
         sum = 0;
 
-        for trade in r.json():
+        try:
+          for trade in r.json():
             volume += float( trade['amount'] )
             sum += float( trade['amount'] ) * float(trade['price'] )
-
+        except ValueError:
+          for trade in eval(r.content):
+            volume += float( trade['amount'] )
+            sum += float( trade['amount'] ) * float(trade['price'] )
+  
         #BTC is calculated in satashis in getvalue, so adjust our value here to compensate
   
         #value="{:.8f}".format( sum / volume)
         value=(sum / volume)
+      elif sp == 31:
+        #Temp set sp value to ~$10
+        source='Fixed'
+        value=getfixedprice(1)
       elif sp == 34:
         #Temp set sp value to ~$10
         source='Fixed'
