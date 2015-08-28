@@ -1144,7 +1144,7 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
         except KeyError:
           if Valid:
             #We should never see a valid tx where this didn't exist so let it throw error if its valid and this wasn't present.
-            PropertyID= rawtx['result']['propertyid']
+            raise KeyError("InsertTxAddr: propertyid not in rawtx")
           else:
             PropertyID=0
 
@@ -1538,19 +1538,21 @@ def insertTx(rawtx, Protocol, blockheight, seq, TxDBSerialNum):
         TxState=getTxState(rawtx['result']['purchases'][0]['valid'])
         Ecosystem=getEcosystem(rawtx['result']['purchases'][0]['propertyid'])
       elif TxType == 21:
-        TxState= getTxState(rawtx['result']['valid'])
-        if rawtx['result']['valid']:
+        valid=rawtx['result']['valid']
+        TxState= getTxState(valid)
+        if valid:
           Ecosystem=getEcosystem(rawtx['result']['propertyoffered'])
         else:
           Ecosystem=None
       else:
-        TxState= getTxState(rawtx['result']['valid'])
+        valid=rawtx['result']['valid']
+        TxState= getTxState(valid)
         try:
           Ecosystem=getEcosystem(rawtx['result']['propertyid'])
         except KeyError:
-          if TxState:
+          if valid:
             #We should never see a valid tx where this didn't exist so let it throw error if its valid and this wasn't present.
-            Ecosystem=getEcosystem(rawtx['result']['propertyid'])
+            raise KeyError("InsertTx: propertyid not in rawtx")
           else:
             Ecosystem=getEcosystem(0)
 
