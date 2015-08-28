@@ -1137,9 +1137,18 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
 
       #Check if we are a DEx Purchase/payment. Format is a littler different and variables below would fail if we tried. 
       if txtype != -22 and txtype != 21:
-        PropertyID= rawtx['result']['propertyid']
-        Ecosystem=getEcosystem(PropertyID) 
         Valid=rawtx['result']['valid']
+
+        try:
+          PropertyID= rawtx['result']['propertyid']
+        except KeyError:
+          if Valid:
+            #We should never see a valid tx where this didn't exist so let it throw error if its valid and this wasn't present.
+            PropertyID= rawtx['result']['propertyid']
+          else:
+            PropertyID=0
+
+        Ecosystem=getEcosystem(PropertyID) 
 
         if rawtx['result']['divisible']:
           value=int(decimal.Decimal(str(rawtx['result']['amount']))*decimal.Decimal(1e8))
