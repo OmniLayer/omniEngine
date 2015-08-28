@@ -447,7 +447,8 @@ def offerAccept (rawtx, TxDBSerialNum, Block):
     valid = rawtx['result']['valid']
 
     #convert accepted amount to non divisible quantity to store in db
-    if rawtx['result']['divisible']:
+    #if rawtx['result']['divisible']:
+    if getDivisible(rawtx):
       amountaccepted=int(decimal.Decimal(str(rawtx['result']['amount']))*decimal.Decimal(1e8))
     else:
       amountaccepted=int(rawtx['result']['amount'])
@@ -1150,7 +1151,8 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
 
         Ecosystem=getEcosystem(PropertyID) 
 
-        if rawtx['result']['divisible']:
+        #if rawtx['result']['divisible']:
+        if getDivisible(rawtx):
           value=int(decimal.Decimal(str(rawtx['result']['amount']))*decimal.Decimal(1e8))
         else:
           value=int(rawtx['result']['amount'])
@@ -1207,7 +1209,8 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
            txindex=0
            AddressRole='payee'
            for recv in rawsto['result']['recipients']:
-             if rawtx['result']['divisible']:
+             #if rawtx['result']['divisible']:
+             if getDivisible(rawtx):
                rBalance=int(decimal.Decimal(str(recv['amount']))*decimal.Decimal(1e8))
              else:
                rBalance=int(recv['amount'])
