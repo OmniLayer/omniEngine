@@ -1545,7 +1545,14 @@ def insertTx(rawtx, Protocol, blockheight, seq, TxDBSerialNum):
           Ecosystem=None
       else:
         TxState= getTxState(rawtx['result']['valid'])
-        Ecosystem=getEcosystem(rawtx['result']['propertyid'])
+        try:
+          Ecosystem=getEcosystem(rawtx['result']['propertyid'])
+        except KeyError:
+          if TxState:
+            #We should never see a valid tx where this didn't exist so let it throw error if its valid and this wasn't present.
+            Ecosystem=getEcosystem(rawtx['result']['propertyid'])
+          else:
+            Ecosystem=getEcosystem(0)
 
       #Use block time - 10 minutes to approx
       #TxSubmitTime = TxBlockTime-datetime.timedelta(minutes=10)
