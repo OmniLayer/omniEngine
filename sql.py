@@ -1151,12 +1151,17 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
 
         Ecosystem=getEcosystem(PropertyID) 
 
-        #if rawtx['result']['divisible']:
-        if getDivisible(rawtx):
-          value=int(decimal.Decimal(str(rawtx['result']['amount']))*decimal.Decimal(1e8))
-        else:
-          value=int(rawtx['result']['amount'])
-        value_neg=(value*-1)
+        if txtype == 53:
+          value=0
+          value_neg=0
+        else: 
+          #if rawtx['result']['divisible']:
+          if getDivisible(rawtx):
+            value=int(decimal.Decimal(str(rawtx['result']['amount']))*decimal.Decimal(1e8))
+          else:
+            value=int(rawtx['result']['amount'])
+          value_neg=(value*-1)
+ 
 
 
       if txtype == 0:
