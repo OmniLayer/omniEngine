@@ -1151,7 +1151,7 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
 
         Ecosystem=getEcosystem(PropertyID) 
 
-        if txtype == 53 or txtype == 70:
+        if txtype == 53 or txtype == 70 or txtype == -1:
           value=0
           value_neg=0
         else: 
