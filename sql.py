@@ -1143,7 +1143,7 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
         try:
           PropertyID= rawtx['result']['propertyid']
         except KeyError:
-          if Valid:
+          if Valid and txtype != 25:
             #We should never see a valid tx where this didn't exist so let it throw error if its valid and this wasn't present.
             raise KeyError("InsertTxAddr: propertyid not in rawtx")
           else:
