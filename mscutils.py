@@ -38,6 +38,7 @@ def get_TxType(text_type):
              "MetaDEx token trade": 21,
              "DEx Accept Offer": 22,
              "DEx Purchase": -22,
+             "MetaDEx trade": 25,
              "Create Property - Fixed": 50,
              "Create Property - Variable": 51,
              "Crowdsale Purchase": -51,
