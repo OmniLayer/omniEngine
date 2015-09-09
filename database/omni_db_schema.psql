@@ -266,7 +266,7 @@ create table if not exists ExchangeRates (
 	, Protocol2 Protocol
 	, PropertyID2 bigint			
 	, Rate1For2 float		/* (1 for 2) */		
-	, AsOf timestamp(0)
+	, AsOf timestamp(0) DEFAULT now()
 	, Source varchar(256)		/* URL */
 
 	, primary key (PropertyID1, Protocol1, PropertyID2, Protocol2, AsOf, Source) 
