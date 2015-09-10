@@ -276,7 +276,6 @@ create table if not exists ExchangeRates (
 create table if not exists ActiveOffers (
         AmountAccepted numeric(19) not null             /* Amount available that has been accepted but not purchased */
       , AmountAvailable numeric(19) not null            /* Amount available for sale that can be accepted */
-      , TotalSelling numeric(19) not null               /* Total Amount put up for sale regardless of current accepts/sales */
       , AmountDesired numeric(19) not null              /* If total amountavailable where purchased, this would be cost */
       , MinimumFee numeric(19) not null                 /* Min fee buyer has to pay */
 /*      , ProtocolSelling Protocol not null  */               /* Protocol plus PropertyID uniquely identify a property */
@@ -289,6 +288,7 @@ create table if not exists ActiveOffers (
       , UnitPrice numeric(19) not null                  /* Amount of PropertyIdDesired per one token of PropertyIdSelling */
       , OfferState OfferState not null                  /* active, cancelled, replaced, soldout  */
       , LastTxDBSerialNum int8 not null default -1      /* last tx that produced a cancelled, replaced or soldout state */
+      , TotalSelling numeric(19) not null               /* Total Amount put up for sale regardless of current accepts/sales */
       
 /*      , primary key (PropertyIdSelling, PropertyIdDesired, Seller) */
 /*      , foreign key (PropertyIdSelling, Protocol) references SmartProperties */
@@ -302,13 +302,13 @@ create index Sellers on ActiveOffers (Seller)
 create table if not exists OfferAccepts (
         Buyer varchar(64) not null                     /* Buyers address */
       , AmountAccepted numeric(19) not null            /* amount accepted by buyer */
-      , AmountPurchased numeric(19) not null default 0 /* amount user has purchsed/paid for so far */
       , LinkedTxDBSerialNum int8 not null              /* tx with the associated accept offer */
       , SaleTxDbSerialNum int8 not null                /* tx the offer is actually accepting against */
       , Block int not null                             /* Block the accept was received in */
       , DExState DExState not null                     /* invalid, unpaid, paid-partial, paid-complete */
       , ExpireBlock int not null                       /* Last block payment for this accept can be received in */
       , ExpiredState boolean default false             /* true/false if this accept is expired */
+      , AmountPurchased numeric(19) not null default 0 /* amount user has purchsed/paid for so far */
       
 /*      , primary key (SaleTxDbSerialNum) */
 /*      , foreign key (SaleTxDbSerialNum) references ActiveOffers (CreateTxDBSerialNum) */
