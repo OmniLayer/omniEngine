@@ -153,6 +153,10 @@ def reorgRollback(block):
                 printdebug(("Uncancelling DEx.1 sale",linkedtxdbserialnum,"from transaction",TxDbSerialNum,Address),7)
                 #cancellation, undo the cancellation (not sure about the lasttxdbserialnum yet
                 dbExecute("update activeoffers set offerstate='active',lasttxdbserialnum=-1 where createtxdbserialnum=%s", [linkedtxdbserialnum])
+              elif 'action' in rawtx and rawtx['action'].lower()=='cancel':
+                printdebug(("Uncancelling DEx.1 sale",linkedtxdbserialnum,"from transaction",TxDbSerialNum,Address),7)
+                #cancellation, undo the cancellation (not sure about the lasttxdbserialnum yet
+                dbExecute("update activeoffers set offerstate='active',lasttxdbserialnum=-1 where createtxdbserialnum=%s", [linkedtxdbserialnum])
               else:
                 printdebug(("Deleting new DEx.1 sale",TxDbSerialNum,Address),7)
                 #was a new sale, delete it
@@ -507,6 +511,8 @@ def updatedex(rawtx, TxDBSerialNum, Protocol):
     #work around for some dex tx's not having a subaction
     if 'subaction' in rawtx['result']:
       subaction=rawtx['result']['subaction']
+    elif 'action' in rawtx['result']:
+      subaction=rawtx['result']['action']
     elif amountavailable == 0:
       subaction='cancel'
     else:
