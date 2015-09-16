@@ -544,7 +544,7 @@ def updatedex(rawtx, TxDBSerialNum, Protocol):
         printdebug(("found old sale",createtxdbserialnum,"with amount remaining",amount),4)
 
       #we'll let the insertaddressintx function handle updating the balanace for cancels
-      return amount,createtxdbserialnum
+      return amount,createtxdbserialnum,State
     else:
       #state new/update
       State='replaced'
@@ -584,7 +584,7 @@ def updatedex(rawtx, TxDBSerialNum, Protocol):
                 "(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",
                 (amountaccepted, amountavailable, totalselling, amountdesired, minimumfee, propertyidselling, 
                 propertyiddesired, Address, timelimit, TxDBSerialNum, unitprice, State) )
-      return None,createtxdbserialnum
+      return None,createtxdbserialnum,State
 
 
 def resetdextable_MP():
@@ -977,7 +977,9 @@ def updateProperty(PropertyID, Protocol, LastTxDBSerialNum=None):
           updateBalance(issuer, Protocol, PropertyID, Ecosystem, -addedissuertokens, 0, 0, -1)
           rawprop['active']='true'
         else:
-          updateBalance(issuer, Protocol, PropertyID, Ecosystem, addedissuertokens, 0, 0, LastTxDBSerialNum)
+          if rawprop['active']
+            #only update balance with addedissuertokens at end of crowdsale. Prevents duplicate updates
+            updateBalance(issuer, Protocol, PropertyID, Ecosystem, addedissuertokens, 0, 0, LastTxDBSerialNum)
     except Exception:
       printdebug("Updating Property. Property not created with crowdsale", 8)
 
@@ -1251,13 +1253,17 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
         if rawtx['result']['valid']:
           retval=updatedex(rawtx, TxDBSerialNum, Protocol)
           remainder=retval[0]
+          state=retval[2]
           if retval[1] is not None:
             linkedtxdbserialnum=retval[1]
           #if we got anything back from the updatedex function it means it was a cancel, update our values to use the cancel numbers
           if remainder != None:
             BalanceAvailableCreditDebit=remainder
             BalanceReservedCreditDebit=remainder*-1
-
+          elif state == 'cancelled':
+            #it's possible to have a cancelled tx which cancels nothing. make sure we don't accidentally grab wrong values and insert them
+            BalanceAvailableCreditDebit=None
+            BalanceReservedCreditDebit=None
 
       elif txtype == 21:
         #DEx Phase II: Offer/Accept one Master Protocol Coins for another
