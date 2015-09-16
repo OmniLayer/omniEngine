@@ -977,7 +977,7 @@ def updateProperty(PropertyID, Protocol, LastTxDBSerialNum=None):
           updateBalance(issuer, Protocol, PropertyID, Ecosystem, -addedissuertokens, 0, 0, -1)
           rawprop['active']='true'
         else:
-          if rawprop['active']
+          if rawprop['active']:
             #only update balance with addedissuertokens at end of crowdsale. Prevents duplicate updates
             updateBalance(issuer, Protocol, PropertyID, Ecosystem, addedissuertokens, 0, 0, LastTxDBSerialNum)
     except Exception:
