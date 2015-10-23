@@ -211,7 +211,7 @@ def reorgRollback(block):
     dbExecute("select setval('transactions_txdbserialnum_seq', %s)",[newTxDBSerialNum])
 
 def checkPending(blocktxs):
-    #Check any pending tx to see if 1. They are in the current block of tx's we are processing or 2. 7 days have passed since broadcast.
+    #Check any pending tx to see if 1. They are in the current block of tx's we are processing or 2. 1 days have passed since broadcast and they are no longer in network.
     #Remove them if either of these has happened
     pendingtxs=dbSelect("select txhash,txdbserialnum,protocol,extract(epoch from txrecvtime) from transactions where txstate='pending' and txdbserialnum < -1")
     for tx in pendingtxs:
@@ -219,7 +219,9 @@ def checkPending(blocktxs):
       txdbserialnum=tx[1]
       protocol=tx[2]
       #get an expiration time 7 days from now
-      expire=int(time.time()) - 604466
+      #expire=int(time.time()) - 604466
+      #get an expiration time 1 days from now
+      expire=int(time.time()) - 86400
       submitted=int(tx[3])
       removeOld=False
 
