@@ -220,8 +220,8 @@ def checkPending(blocktxs):
       protocol=tx[2]
       #get an expiration time 7 days from now
       #expire=int(time.time()) - 604466
-      #get an expiration time 1 days from now
-      expire=int(time.time()) - 86400
+      #get an expiration time 12 hours from now
+      expire=int(time.time()) - 43200
       submitted=int(tx[3])
       removeOld=False
 
