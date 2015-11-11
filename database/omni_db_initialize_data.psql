@@ -83,6 +83,9 @@ insert into smartproperties (Protocol, propertyid, issuer, createtxdbserialnum, 
 insert into smartproperties (Protocol, propertyid, issuer, createtxdbserialnum, lasttxdbserialnum, propertyname) values (
      'Fiat', 20, 'South African Rand', -1, -1, 'ZAR');
 
+insert into smartproperties (Protocol, propertyid, issuer, createtxdbserialnum, lasttxdbserialnum, propertyname) values (
+     'Fiat', 21, 'Japanese Yen', -1, -1, 'JPY');
+
 
 /* load the Category and Subcategory values. 'zz' values are not part of ISIC */
 insert into Categories (Section, Division, Name) values (
