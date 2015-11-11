@@ -74,7 +74,10 @@ def updateBTC():
         value=curlist[abv]['averages']['last']
         #get our fiat property id using internal conversion schema  
         fpid=fiat2propertyid(abv)
-        upsertRate('Fiat', fpid, 'Bitcoin', 0, value, source, timestamp)
+        if fpid == -1:
+           printdebug(("Currency Symbol",abv,"not in db. New currency?"),5)
+        else:
+          upsertRate('Fiat', fpid, 'Bitcoin', 0, value, source, timestamp)
 
     except requests.exceptions.RequestException, e:
       #error or timeout, skip for now
