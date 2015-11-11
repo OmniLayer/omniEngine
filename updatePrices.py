@@ -22,8 +22,11 @@ def fiat2propertyid(abv):
 
 def getSource(sp):
   try:
-    convert={1:"https://masterxchange.com/api/trades.php",
-             3:"https://masterxchange.com/api/v2/trades.php?currency=maid"
+    #convert={1:"https://masterxchange.com/api/trades.php",
+    #         3:"https://masterxchange.com/api/v2/trades.php?currency=maid"
+    #        }
+    convert={1:"https://poloniex.com/public?command=returnTradeHistory&currencyPair=BTC_OMNI",
+             3:"https://poloniex.com/public?command=returnTradeHistory&currencyPair=BTC_MAID"
             }
     return convert[sp]
   except KeyError:
@@ -95,11 +98,11 @@ def updateMSCSP():
         try:
           for trade in r.json():
             volume += float( trade['amount'] )
-            sum += float( trade['amount'] ) * float(trade['price'] )
+            sum += float( trade['amount'] ) * float(trade['rate'] )
         except ValueError:
           for trade in eval(r.content):
             volume += float( trade['amount'] )
-            sum += float( trade['amount'] ) * float(trade['price'] )
+            sum += float( trade['amount'] ) * float(trade['rate'] )
   
         #BTC is calculated in satashis in getvalue, so adjust our value here to compensate
   
