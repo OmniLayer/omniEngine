@@ -1573,7 +1573,7 @@ def insertTx(rawtx, Protocol, blockheight, seq, TxDBSerialNum):
         try:
           Ecosystem=getEcosystem(rawtx['result']['propertyid'])
         except KeyError:
-          if valid and rawtx['result']['type_int'] != 25:
+          if valid and rawtx['result']['type_int'] not in [25,65534]:
             #We should never see a valid tx where this didn't exist so let it throw error if its valid and this wasn't present.
             raise KeyError("InsertTx: propertyid not in rawtx")
           else:
