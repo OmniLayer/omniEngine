@@ -48,7 +48,8 @@ def get_TxType(text_type):
              "Grant Property Tokens": 55,
              "Revoke Property Tokens": 56,
              "Change Issuer Address": 70,
-             "Notification": -1
+             "Notification": -1,
+             "Feature Activation": 65534
            }
     return convert[text_type]
   except KeyError:

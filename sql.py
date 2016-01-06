@@ -1153,7 +1153,7 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
         try:
           PropertyID= rawtx['result']['propertyid']
         except KeyError:
-          if Valid and txtype != 25:
+          if Valid and txtype not in [25,65534] :
             #We should never see a valid tx where this didn't exist so let it throw error if its valid and this wasn't present.
             raise KeyError("InsertTxAddr: propertyid not in rawtx")
           else:
@@ -1161,7 +1161,7 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
 
         Ecosystem=getEcosystem(PropertyID) 
 
-        if txtype == 53 or txtype == 70 or txtype == -1 or txtype == 25:
+        if txtype in [53,70,-1,25,65534]:
           value=0
           value_neg=0
         else: 
