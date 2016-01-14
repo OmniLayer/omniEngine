@@ -9,9 +9,9 @@ def getDivisible(rawtx):
   return divisible  
 
 def getEcosystem(propertyid):
-    if propertyid == 2 or ( propertyid >= 2147483651 and propertyid <= 4294967295 ):
+    if propertyid == 2 or ( propertyid >= 2147483651 and propertyid <= 4294967295 ) or propertyid == "test":
        return "Test"
-    elif propertyid == 1 or ( propertyid >= 3 and propertyid <= 2147483650):
+    elif propertyid == 1 or ( propertyid >= 3 and propertyid <= 2147483650) or propertyid == "main":
        return "Production"
     else:
        return None
@@ -28,6 +28,7 @@ def get_TxType(text_type):
     convert={"Simple Send": 0 ,
              "Restricted Send": 2,
              "Send To Owners": 3,
+             "Send All": 4,
              "Savings": -1,
              "Savings COMPROMISED": -1,
              "Rate-Limiting": -1,

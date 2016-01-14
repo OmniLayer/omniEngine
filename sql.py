@@ -1147,7 +1147,7 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
       #PropertyID=rawtx['result']['propertyid']
 
       #Check if we are a DEx Purchase/payment. Format is a littler different and variables below would fail if we tried. 
-      if txtype != -22 and txtype != 21:
+      if txtype not in [-22,4,21]:
         Valid=rawtx['result']['valid']
 
         try:
@@ -1243,6 +1243,46 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
         #Debit the sender
         AddressRole='payer'
         BalanceAvailableCreditDebit=value_neg
+
+      elif txtype == 4:
+        #Send all
+        Valid=rawtx['result']['valid']
+        Ecosystem=getEcosystem(rawtx['result']['ecosystem'])
+        RecvAddress = rawtx['result']['referenceaddress']
+        RecvRole="recipient"
+ 
+
+        for send in rawtx['subsends']
+          PropertyID=send['propertyid']
+          if send['divisible']:
+            BalanceAvailableCreditDebit=int(decimal.Decimal(str(send['amount']))*decimal.Decimal(1e8))
+          else:
+            BalanceAvailableCreditDebit=int(send['amount'])
+
+
+          #debit the sender
+          dbExecute("insert into addressesintxs "
+                    "(Address, PropertyID, Protocol, TxDBSerialNum, AddressTxIndex, AddressRole, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit)"
+                    "values(%s, %s, %s, %s, %s, %s, %s, %s, %s)",
+                    (Address, PropertyID, Protocol, TxDBSerialNum, AddressTxIndex, AddressRole, -BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit))
+
+          #credit the receiver
+          dbExecute("insert into addressesintxs "
+                    "(Address, PropertyID, Protocol, TxDBSerialNum, AddressTxIndex, AddressRole, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit)"
+                    "values(%s, %s, %s, %s, %s, %s, %s, %s, %s)",
+                    (RecvAddress, PropertyID, Protocol, TxDBSerialNum, AddressTxIndex, RecvRole, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit))
+
+          if Valid:
+            #if valid debit sender
+            updateBalance(Address, Protocol, PropertyID, Ecosystem, -BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit, TxDBSerialNum)
+            #then credit receiver
+            updateBalance(RecvAddress, Protocol, PropertyID, Ecosystem, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit, TxDBSerialNum)
+
+
+        #Finished processing all sends, return as nothing more to add to db
+        return
+
+
       elif txtype == 20:
         #DEx Sell Offer
         #Move the amount from Available balance to reserved for Offer
@@ -1570,14 +1610,17 @@ def insertTx(rawtx, Protocol, blockheight, seq, TxDBSerialNum):
       else:
         valid=rawtx['result']['valid']
         TxState= getTxState(valid)
-        try:
-          Ecosystem=getEcosystem(rawtx['result']['propertyid'])
-        except KeyError:
-          if valid and TxType not in [25,65534]:
-            #We should never see a valid tx where this didn't exist so let it throw error if its valid and this wasn't present.
-            raise KeyError("InsertTx: propertyid not in rawtx")
-          else:
-            Ecosystem=getEcosystem(0)
+        if TxType == 4:
+          Ecosystem=getEcosystem(rawtx['result']['ecosystem'])
+        else:
+          try:
+            Ecosystem=getEcosystem(rawtx['result']['propertyid'])
+          except KeyError:
+            if valid and TxType not in [25,65534]:
+              #We should never see a valid tx where this didn't exist so let it throw error if its valid and this wasn't present.
+              raise KeyError("InsertTx: propertyid not in rawtx")
+            else:
+              Ecosystem=getEcosystem(0)
 
       #Use block time - 10 minutes to approx
       #TxSubmitTime = TxBlockTime-datetime.timedelta(minutes=10)
