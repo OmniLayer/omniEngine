@@ -26,7 +26,8 @@ def getSource(sp):
     #         3:"https://masterxchange.com/api/v2/trades.php?currency=maid"
     #        }
     convert={1:"https://poloniex.com/public?command=returnTradeHistory&currencyPair=BTC_OMNI",
-             3:"https://poloniex.com/public?command=returnTradeHistory&currencyPair=BTC_MAID"
+             3:"https://poloniex.com/public?command=returnTradeHistory&currencyPair=BTC_MAID",
+             56:"https://bittrex.com/api/v1.1/public/getmarkethistory?market=BTC-SEC&count=100"
             }
     return convert[sp]
   except KeyError:
@@ -84,6 +85,24 @@ def updateBTC():
       printdebug(("Error updating BTC Price",e),3)
       pass
 
+def formatData(sp, source):
+  trades=[]
+  source=getSource(sp)
+  r = requests.get( source, timeout=15 )
+
+  try:
+    trades=r.json()
+  except ValueError:
+    trades=eval(r.content)
+
+  if sp == 56:
+    trades=trades['result']
+    for trade in trades:
+      trade['rate']=trade['Price']
+      trade['amount']=trade['Quantity']  
+
+
+  return trades
 
 def updateMSCSP():
   try:
@@ -94,18 +113,22 @@ def updateMSCSP():
       sp=x[0]  
       source=getSource(sp)
       if source != None:
-        r = requests.get( source, timeout=15 )
+        #r = requests.get( source, timeout=15 )
+        trades=formatData(sp, source)
         volume = 0;
         sum = 0;
+        for trade in trades:
+          volume += float( trade['amount'] )
+          sum += float( trade['amount'] ) * float(trade['rate'] )
 
-        try:
-          for trade in r.json():
-            volume += float( trade['amount'] )
-            sum += float( trade['amount'] ) * float(trade['rate'] )
-        except ValueError:
-          for trade in eval(r.content):
-            volume += float( trade['amount'] )
-            sum += float( trade['amount'] ) * float(trade['rate'] )
+        #try:
+        #  for trade in r.json():
+        #    volume += float( trade['amount'] )
+        #    sum += float( trade['amount'] ) * float(trade['rate'] )
+        #except ValueError:
+        #  for trade in eval(r.content):
+        #    volume += float( trade['amount'] )
+        #    sum += float( trade['amount'] ) * float(trade['rate'] )
   
         #BTC is calculated in satashis in getvalue, so adjust our value here to compensate
   
