@@ -117,8 +117,11 @@ def getgrants_MP(propertyid):
 def gettradessince_MP():
     return host.call("gettradessince_MP")
 
-def gettrade_MP(txhash):
-    return host.call("gettrade_MP", txhash)
+def gettrade(txhash):
+    return host.call("omni_gettrade", txhash)
 
 def getsto_MP(txid):
     return host.call("getsto_MP", txid , "*")
+
+def estimatefee(num):
+    return host.call("estimatefee", num)
