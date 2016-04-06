@@ -11,7 +11,7 @@ from common import *
 def reparsetx_MP(txhash):
     printdebug(("Reparsing TX",txhash),4)
 
-    Protocol="Mastercoin"
+    Protocol="Omni"
 
     try:
       rawtx=gettransaction_MP(txhash)
@@ -142,7 +142,7 @@ def reorgRollback(block):
           #use -1 for txdbserialnum as we don't know what the previous tx that last modified it's balanace was. 
           updateBalance(Address, Protocol, PropertyID, Ecosystem, dbBalanceAvailable, dbBalanceReserved, dbBalanceAccepted, -TxDbSerialNum)
 
-          if Protocol=="Mastercoin":
+          if Protocol=="Omni":
             #any special actions need to be undone as well
             if txtype == 20 and Role=='seller':
               try:
@@ -203,7 +203,7 @@ def reorgRollback(block):
 
     #Make sure we process any remaining expires that need to be undone if we didn't have an msc tx in the block
     expireAccepts(-(block+1))
-    expireCrowdsales(-BlockTime, "Mastercoin")
+    expireCrowdsales(-BlockTime, "Omni")
       
     #delete from blocks once we rollback all other data
     dbExecute("delete from blocks where blocknumber>%s",[block])
@@ -781,7 +781,7 @@ def syncAddress(Address, Protocol):
 def resetbalances_MP():
     printdebug(("Starting resetbalances_MP"),8)
     #for now sync / reset balance data from mastercore balance list
-    Protocol="Mastercoin"
+    Protocol="Omni"
 
     #get DEx sales to process 'accepted' amounts  
     DExSales=getactivedexsells_MP()
@@ -840,7 +840,7 @@ def checkbalances_MP():
     printdebug(("Starting checkbalances_MP"),8)
 
     #for now sync / reset balance data from mastercore balance list
-    Protocol="Mastercoin"
+    Protocol="Omni"
 
     #get DEx sales to process 'accepted' amounts
     DExSales=getactivedexsells_MP()
@@ -1242,7 +1242,7 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
             updateBalance(addr, Protocol, PropertyID, Ecosystem, BalanceAvailableCreditDebit, 0, 0, TxDBSerialNum)
           AddressTxIndex+=1
 
-    elif Protocol == "Mastercoin":
+    elif Protocol == "Omni":
       AddressTxIndex=0
       AddressRole="sender"
       txtype=get_TxType(rawtx['result']['type'])
@@ -1803,7 +1803,7 @@ def insertTx(rawtx, Protocol, blockheight, seq, TxDBSerialNum):
       Ecosystem= None
       TxSubmitTime = datetime.datetime.utcfromtimestamp(rawtx['result']['time'])
 
-    elif Protocol == "Mastercoin":
+    elif Protocol == "Omni":
       #currently type a text output from mastercore 'Simple Send' and version is unknown
       TxType= get_TxType(rawtx['result']['type'])
       TxVersion=0

@@ -9,7 +9,7 @@ from common import *
 
 def updatePrices():
   updateBTC()
-  updateMSCSP()
+  updateOMNISP()
   dbCommit()
 
 def fiat2propertyid(abv):
@@ -104,10 +104,10 @@ def formatData(sp, source):
 
   return trades
 
-def updateMSCSP():
+def updateOMNISP():
   try:
     #get list of smart properties we know about
-    ROWS=dbSelect("select propertyid from smartproperties where propertyid >0 and Protocol='Mastercoin' order by propertyid")
+    ROWS=dbSelect("select propertyid from smartproperties where propertyid >0 and Protocol='Omni' order by propertyid")
     for x in ROWS:
 
       sp=x[0]  
@@ -147,11 +147,11 @@ def updateMSCSP():
         value=0
         source='Local'
 
-      upsertRate('Bitcoin', 0, 'Mastercoin', sp, value, source)
+      upsertRate('Bitcoin', 0, 'Omni', sp, value, source)
 
   except requests.exceptions.RequestException:
     #error or timeout, skip for now
-    printdebug(("Error updating MSCSP Prices",e),3)
+    printdebug(("Error updating OMNISP Prices",e),3)
     pass
 
 
