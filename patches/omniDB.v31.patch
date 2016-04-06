@@ -7,8 +7,6 @@ update SmartProperties set protocol = 'Omni' where protocol='Mastercoin';
 update PropertyHistory set protocol = 'Omni' where protocol='Mastercoin';
 update ExchangeRates set protocol2 = 'Omni' where protocol2='Mastercoin';
 update protocols set protocol = 'Omni', url='http://omnilayer.org' where protocol='Mastercoin';
-
-
 2.dbInit()
 2.updateProperty(1,"Omni")
 2.updateProperty(2,"Omni")
