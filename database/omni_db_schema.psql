@@ -26,7 +26,7 @@
  *	sender sent a Simple Send
  */
 create type AddressRole as enum ('buyer', 'issuer', 'participant', 'payee', 'recipient', 'seller', 'sender', 'payer', 'feepayer');
-create type Protocol as enum ('Fiat', 'Bitcoin', 'Mastercoin');
+create type Protocol as enum ('Fiat', 'Bitcoin', 'Omni');
 create type Ecosystem as enum ('Production', 'Test');
 create type ObjectType as enum ('address', 'property', 'tx_version_type');
 create type TxState as enum ('pending', 'valid', 'not valid');
@@ -68,7 +68,7 @@ create table if not exists Wallets (
  */
 create table if not exists AddressBalances (
 	Address	varchar(64)				/* Bitcoin addresses are 34 chars */
-	, Protocol Protocol not null default 'Bitcoin'	/* initially 'Bitcoin' or 'Mastercoin' */
+	, Protocol Protocol not null default 'Bitcoin'	/* initially 'Bitcoin' or 'Omni' */
 	, PropertyID bigint not null default 0		/* Bitcoin */		
 	, Ecosystem Ecosystem null
 	, BalanceAvailable numeric(19) not null default 0
@@ -119,9 +119,9 @@ create index BlockNumTime on Blocks (BlockNumber, Protocol, BlockTime)
 /* all the transactions we know about; keeping them (forever?) even after an address or wallet is de-activated */
 create table if not exists Transactions (
 	TxHash varchar(64) not null					/* varchar so we can use LIKE & other string matching  */
-	, Protocol Protocol not null					/* initially 'Bitcoin' or 'Mastercoin' */
+	, Protocol Protocol not null					/* initially 'Bitcoin' or 'Omni' */
 	, TxDBSerialNum serial8 unique					/* db internal identifier for each tx, for faster joins */
-	, TxType integer not null					/* from the RPC result for a 'Mastercoin' tx, 0 for 'Bitcoin' tx's */
+	, TxType integer not null					/* from the RPC result for an 'Omni' tx, 0 for 'Bitcoin' tx's */
 	, TxVersion smallint not null					/* from the RPC result */
 	, Ecosystem Ecosystem null					/* Null for 'Bitcoin' tx's */
 	, TxRecvTime timestamp(0) without time zone null DEFAULT now()	/* when it was sent, if known */
@@ -150,7 +150,7 @@ create index TxSeq on Transactions (TxBlockNumber, TxSeqInBlock)
 /* data that is specific to the particular transaction type, as a JSON object */
 create table if not exists TxJSON (
 	TxDBSerialNum int8 not null		/* db internal identifier for each tx, for faster joins */
-	, Protocol Protocol not null		/* initially 'Bitcoin' or 'Mastercoin' */
+	, Protocol Protocol not null		/* initially 'Bitcoin' or 'Omni' */
 	, TxData json not null			/* the tx message fields */
 
 /*	, primary key (TxDBSerialNum, Protocol) */
@@ -162,7 +162,7 @@ create table if not exists TxJSON (
 create table if not exists AddressesInTxs (					/* many-to-many */
 	Address	varchar(64) not null
 	, PropertyID bigint not null	
-	, Protocol Protocol not null			/* initially 'Bitcoin' or 'Mastercoin' */
+	, Protocol Protocol not null			/* initially 'Bitcoin' or 'Omni' */
 	, TxDBSerialNum int8 not null default -1	/* db internal identifier for each tx, for faster joins */
 	, AddressTxIndex int2 not null			/* position in the input or output list */
 	, AddressRole AddressRole not null		
@@ -185,7 +185,7 @@ create index TxDBSerial on AddressesinTxs (TxDBSerialNum, PropertyID)
 create table if not exists ToLinkAddressesInTxs (		/* many-to-many */
 	Address	varchar(64) not null
 	, PropertyID bigint not null	
-	, Protocol Protocol not null			/* initially 'Bitcoin' or 'Mastercoin' */
+	, Protocol Protocol not null			/* initially 'Bitcoin' or 'Omni' */
 	, TxDBSerialNum int8 not null default -1	/* db internal identifier for each tx, for faster joins */
 	, AddressTxIndex int2 not null			/* position in the input or output list */
 	, LinkedTxDBSerialNum int8 not null default -1	/* tx with the associated output for inputs, or with the associated input for outputs */
@@ -319,25 +319,11 @@ create table if not exists OfferAccepts (
 create index Buyers on OfferAccepts (Buyer)
 ;
 
-/* directional exchange rates between pairs of properties; can work with fiat currencies as well */
-/* rate for 1 --> 2 not necessarily the same as the reciprocal of rate for 2 --> 1 */
-create table if not exists ExchangeRates (			
-	Protocol1 Protocol		/* see Protocols */
-	, PropertyID1 bigint		/* need exchange rates for fiat currencies */
-	, Protocol2 Protocol
-	, PropertyID2 bigint			
-	, Rate1For2 float		/* (1 for 2) */		
-	, AsOf timestamp(0)
-	, Source varchar(256)		/* URL */
-
-	, primary key (PropertyID1, Protocol1, PropertyID2, Protocol2) 
-)
-;
 
 /* dictionary of known protocols */
 create table if not exists Protocols (
 	Protocol Protocol unique not null
-	, BaseProtocol Protocol not null	/* e.g. Bitcoin is the base of Mastercoin, Protocol = BaseProtocol if a base protocol */
+	, BaseProtocol Protocol not null	/* e.g. Bitcoin is the base of Omni, Protocol = BaseProtocol if a base protocol */
 	, URL varchar(256) null
 )
 ;
