@@ -1065,8 +1065,8 @@ def updateProperty(PropertyID, Protocol, LastTxDBSerialNum=None):
       reorg = False
 
     PropertyDataJson=getproperty_MP(PropertyID)
-    rawtx=gettransaction_MP(PropertyDataJson['result']['creationtxid'])
-    TxType = get_TxType(rawtx['result']['type'])
+    #rawtx=gettransaction_MP(PropertyDataJson['result']['creationtxid'])
+    #TxType = get_TxType(rawtx['result']['type'])
     rawprop = PropertyDataJson['result']
     Ecosystem = getEcosystem(PropertyID)
     Issuer = rawprop['issuer']
