@@ -677,6 +677,7 @@ def updatedex2remaining(TxHash, TxDBSerialNum):
       rawtrade['result']['amountremaining']=0
     elif txstatus.lower() in ['cancelled','cancelled part filled']:
       State='cancelled'
+      rawtrade['result']['amountremaining']=0
 
     if rawtrade['result']['propertyidforsaleisdivisible']:
       amountavailable=int(decimal.Decimal(str(rawtrade['result']['amountremaining']))*decimal.Decimal(1e8))
