@@ -1365,7 +1365,7 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
         RecvRole="recipient"
  
 
-        for send in rawtx['subsends']:
+        for send in rawtx['result']['subsends']:
           PropertyID=send['propertyid']
           if send['divisible']:
             BalanceAvailableCreditDebit=int(decimal.Decimal(str(send['amount']))*decimal.Decimal(1e8))
