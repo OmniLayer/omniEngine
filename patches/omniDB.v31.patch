@@ -1,0 +1,15 @@
+alter type protocol add value 'Omni';
+update addressbalances set protocol = 'Omni' where protocol='Mastercoin';
+update transactions set protocol = 'Omni' where protocol='Mastercoin';
+update txjson set protocol = 'Omni' where protocol='Mastercoin';
+update AddressesInTxs set protocol = 'Omni' where protocol='Mastercoin';
+update SmartProperties set protocol = 'Omni' where protocol='Mastercoin';
+update SmartProperties set propertyname = 'Omni' where propertyname='Mastercoin' and propertyid=1;
+update SmartProperties set propertyname = 'Test Omni' where propertyname='Test Mastercoin' and propertyid=2;
+update PropertyHistory set protocol = 'Omni' where protocol='Mastercoin';
+update ExchangeRates set protocol2 = 'Omni' where protocol2='Mastercoin';
+update protocols set protocol = 'Omni', url='http://omnilayer.org' where protocol='Mastercoin';
+2.dbInit()
+2.updateProperty(1,"Omni")
+2.updateProperty(2,"Omni")
+2.dbCommit()

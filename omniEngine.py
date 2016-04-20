@@ -138,12 +138,12 @@ else:
         x+=1
 
       #Process Mastercoin Transacations (if any)
-      Protocol="Mastercoin"
+      Protocol="Omni"
 
       #Find number of msc tx
       y=len(block_data_MP['result'])
       if y != 0:
-        printdebug((y,"MSC tx"), 1)
+        printdebug((y,"OMNI tx"), 1)
 
       #count position in block
       x=1
