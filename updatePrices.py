@@ -9,7 +9,7 @@ from common import *
 
 def updatePrices():
   updateBTC()
-  updateMSCSP()
+  updateOMNISP()
   dbCommit()
 
 def fiat2propertyid(abv):
@@ -28,7 +28,8 @@ def getSource(sp):
     convert={1:"https://poloniex.com/public?command=returnTradeHistory&currencyPair=BTC_OMNI",
              3:"https://poloniex.com/public?command=returnTradeHistory&currencyPair=BTC_MAID",
              39:"https://bittrex.com/api/v1.1/public/getmarkethistory?market=BTC-AMP&count=100",
-             56:"https://bittrex.com/api/v1.1/public/getmarkethistory?market=BTC-SEC&count=100"
+             56:"https://bittrex.com/api/v1.1/public/getmarkethistory?market=BTC-SEC&count=100",
+             58:"https://bittrex.com/api/v1.1/public/getmarkethistory?market=BTC-AGRS&count=100"
             }
     return convert[sp]
   except KeyError:
@@ -96,7 +97,7 @@ def formatData(sp, source):
   except ValueError:
     trades=eval(r.content)
 
-  if sp in [39,56]:
+  if sp in [39,56,58]:
     trades=trades['result']
     for trade in trades:
       trade['rate']=trade['Price']
@@ -105,10 +106,10 @@ def formatData(sp, source):
 
   return trades
 
-def updateMSCSP():
+def updateOMNISP():
   try:
     #get list of smart properties we know about
-    ROWS=dbSelect("select propertyid from smartproperties where propertyid >0 and Protocol='Mastercoin' order by propertyid")
+    ROWS=dbSelect("select propertyid from smartproperties where propertyid >0 and Protocol='Omni' order by propertyid")
     for x in ROWS:
 
       sp=x[0]  
@@ -148,11 +149,11 @@ def updateMSCSP():
         value=0
         source='Local'
 
-      upsertRate('Bitcoin', 0, 'Mastercoin', sp, value, source)
+      upsertRate('Bitcoin', 0, 'Omni', sp, value, source)
 
   except requests.exceptions.RequestException:
     #error or timeout, skip for now
-    printdebug(("Error updating MSCSP Prices",e),3)
+    printdebug(("Error updating OMNISP Prices",e),3)
     pass
 
 
