@@ -22,7 +22,7 @@ def backupWallets():
       file.write(str(blob))
       file.close()
 
-    print str(datetime.now())+"Backed up "+str(len(ROWS))+" wallets to "+str(directory)
+    print str(datetime.now())+" Backed up "+str(len(ROWS))+" wallets to "+str(directory)
  
 
 
