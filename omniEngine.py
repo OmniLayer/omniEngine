@@ -180,6 +180,8 @@ else:
       else:
         syncAddress('1EXoDusjGwvnjZUyKkxZ4UHEf77z6A5S4P', Protocol)
 
+      #Also make sure we update the json data in SmartProperties table used by exchange view
+      updateProperty(1,"Omni")
       #make sure we store the last serialnumber used
       dbExecute("select setval('transactions_txdbserialnum_seq', %s)", [TxDBSerialNum-1])
       #write db changes for entire block
