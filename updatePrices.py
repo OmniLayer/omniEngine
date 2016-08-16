@@ -29,7 +29,8 @@ def getSource(sp):
              3:"https://poloniex.com/public?command=returnTradeHistory&currencyPair=BTC_MAID",
              39:"https://bittrex.com/api/v1.1/public/getmarkethistory?market=BTC-AMP&count=100",
              56:"https://bittrex.com/api/v1.1/public/getmarkethistory?market=BTC-SEC&count=100",
-             58:"https://bittrex.com/api/v1.1/public/getmarkethistory?market=BTC-AGRS&count=100"
+             58:"https://bittrex.com/api/v1.1/public/getmarkethistory?market=BTC-AGRS&count=100",
+             59:"https://bittrex.com/api/v1.1/public/getmarkethistory?market=BTC-PDC&count=100"
             }
     return convert[sp]
   except KeyError:
@@ -97,7 +98,7 @@ def formatData(sp, source):
   except ValueError:
     trades=eval(r.content)
 
-  if sp in [39,56,58]:
+  if sp in [39,56,58,59]:
     trades=trades['result']
     for trade in trades:
       trade['rate']=trade['Price']
