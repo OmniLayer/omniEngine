@@ -1262,7 +1262,7 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
           if txtype in [25,26,27]:
             PropertyID = rawtx['result']['propertyidforsale']
           elif txtype == 28:
-            PropertyIS = rawtx['result']['ecosystem']
+            PropertyID = rawtx['result']['ecosystem']
           else:
             PropertyID = rawtx['result']['propertyid']
         except KeyError:
