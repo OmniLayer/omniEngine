@@ -613,6 +613,8 @@ def updatedex2(rawtx, rawtrade, TxDBSerialNum):
         rawtrade['result']['amounttofill'] = 0
       elif txstatus.lower() in ['cancelled','cancelled part filled']:
         State='cancelled'
+        rawtrade['result']['amountremaining'] = 0
+        rawtrade['result']['amounttofill'] = 0
 
       amountaccepted=0
 
