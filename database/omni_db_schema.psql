@@ -343,3 +343,15 @@ create table if not exists Categories (
 	, primary key (Section, Division)
 )
 ;
+
+/*
+ * Generic settings table to be used for global omniwallet settings/features
+ */
+create table if not exists Settings(
+        Key varchar(32) not null
+        , Value varchar(64) not null 
+        , Note varchar(256)
+        , updated_at timestamp(0) DEFAULT now()
+        , primary key (key)
+)
+;
