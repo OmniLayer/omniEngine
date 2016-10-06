@@ -1,0 +1,3 @@
+create table if not exists Settings(Key varchar(32) not null, Value varchar(64) not null, Note varchar(256), updated_at timestamp(0) DEFAULT now(), primary key (key));
+grant select, insert, update, delete on table settings to omniengine;
+grant select on table settings to api;

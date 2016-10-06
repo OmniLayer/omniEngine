@@ -10,7 +10,68 @@ from common import *
 def updatePrices():
   updateBTC()
   updateOMNISP()
+  updateFEES()
   dbCommit()
+
+def updateFEES():
+  #Get bitgo fees
+  faster=[]
+  fast=[]
+  normal=[]
+  #Get BitGo Fee's
+  try:
+    source='https://www.bitgo.com/api/v1/tx/fee'
+    r= requests.get( source, timeout=15 )
+    feelist=r.json()
+    faster.append(feelist['feeByBlockTarget']['2'])
+    fast.append(feelist['feeByBlockTarget']['6'])
+    normal.append(feelist['feeByBlockTarget']['8'])
+  except requests.exceptions.RequestException, e:
+    #error or timeout, skip for now
+    printdebug(("Error getting BitGo fees",e),3)
+    pass
+  #Get Blockcypher Fee's
+  try:
+    source='http://api.blockcypher.com/v1/btc/main'
+    r= requests.get( source, timeout=15 )
+    feelist=r.json()
+    faster.append(feelist['high_fee_per_kb'])
+    fast.append(feelist['medium_fee_per_kb'])
+    normal.append(feelist['low_fee_per_kb'])
+  except requests.exceptions.RequestException, e:
+    #error or timeout, skip for now
+    printdebug(("Error getting Blockcypher fees",e),3)
+    pass
+  #Get Bitcoinfees21 Fee's
+  try:
+    source='https://bitcoinfees.21.co/api/v1/fees/list'
+    r= requests.get( source, timeout=15 )
+    feelist=r.json()
+    for x in feelist['fees']:
+      if x['maxDelay']>0 and x['maxDelay']<=7:
+        fr=int(((x['minFee']+x['maxFee'])/2)*1000)
+      if x['maxDelay']>7 and x['maxDelay']<=20:
+        f=int(((x['minFee']+x['maxFee'])/2)*1000)
+      if x['maxDelay']>20 and x['maxDelay']<=40:
+        n=int(((x['minFee']+x['maxFee'])/2)*1000)
+    faster.append(fr)
+    fast.append(f)
+    normal.append(n)
+  except requests.exceptions.RequestException, e:
+    #error or timeout, skip for now
+    printdebug(("Error getting bitcoinfees21 fees",e),3)
+    pass
+  fr=int(sum(faster)/len(faster))
+  ff=int(sum(fast)/len(fast))
+  nf=int(sum(normal)/len(normal))
+  data=json.dumps({'faster':fr,'fast':ff,'normal':nf})
+  dbExecute("with upsert as "
+              "(update settings set value=%s where key='feeEstimates' returning *) "
+              "insert into settings (key, value) select 'feeEstimates',%s "
+              "where not exists (select * from upsert)",
+              (data, data))
+
+
 
 def fiat2propertyid(abv):
   ROWS=dbSelect("select propertyid from smartproperties where protocol='Fiat' and propertyname=%s",[abv.upper()])
