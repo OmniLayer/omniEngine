@@ -66,7 +66,7 @@ def updateFEES():
   nf=int(sum(normal)/len(normal))
   data=json.dumps({'faster':fr,'fast':ff,'normal':nf})
   dbExecute("with upsert as "
-              "(update settings set value=%s where key='feeEstimates' returning *) "
+              "(update settings set value=%s, updated_at=DEFAULT where key='feeEstimates' returning *) "
               "insert into settings (key, value) select 'feeEstimates',%s "
               "where not exists (select * from upsert)",
               (data, data))
