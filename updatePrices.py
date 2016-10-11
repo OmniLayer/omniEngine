@@ -23,9 +23,9 @@ def updateFEES():
     source='https://www.bitgo.com/api/v1/tx/fee'
     r= requests.get( source, timeout=15 )
     feelist=r.json()
-    faster.append(feelist['feeByBlockTarget']['2'])
-    fast.append(feelist['feeByBlockTarget']['6'])
-    normal.append(feelist['feeByBlockTarget']['8'])
+    faster.append(feelist['feeByBlockTarget']['1'])
+    fast.append(feelist['feeByBlockTarget']['3'])
+    normal.append(feelist['feeByBlockTarget']['5'])
   except requests.exceptions.RequestException, e:
     #error or timeout, skip for now
     printdebug(("Error getting BitGo fees",e),3)
