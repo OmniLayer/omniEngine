@@ -285,7 +285,7 @@ create table if not exists ActiveOffers (
       , Seller varchar(64) not null                     /* Sellers address */
       , TimeLimit smallint not null                     /* Block time buyer has to pay for any accepts */
       , CreateTxDBSerialNum int8 not null default -1	/* tx with the associated sale information */
-      , UnitPrice numeric(19) not null                  /* Amount of PropertyIdDesired per one token of PropertyIdSelling */
+      , UnitPrice numeric(27,8) not null                  /* Amount of PropertyIdDesired per one token of PropertyIdSelling */
       , OfferState OfferState not null                  /* active, cancelled, replaced, soldout  */
       , LastTxDBSerialNum int8 not null default -1      /* last tx that produced a cancelled, replaced or soldout state */
       , TotalSelling numeric(19) not null               /* Total Amount put up for sale regardless of current accepts/sales */
