@@ -662,6 +662,50 @@ def updatedex2(rawtx, rawtrade, TxDBSerialNum):
     #elif txtype == 28:
     #cancel by ecosystem
 
+def updatemarkets(propertyidselling,propertyiddesired,TxDBSerialNum, rawtx):
+    #base = propertyiddesired
+    #marketid = propertyidselling
+    lasttxdbserialnum = TxDBSerialNum
+    lastupdated=datetime.datetime.utcfromtimestamp(rawtx['result']['blocktime'])
+    ROWS = dbSelect("select sum(amountavailable), min(unitprice) from activeoffers where offerstate='active' and propertyidselling=%s "
+                         "and propertyiddesired=%s", (propertyidselling, propertyiddesired))
+    supply=None
+    unitprice=None
+    lastprice=None
+    if len(ROWS) > 0:
+      supply=ROWS[0][0]
+      unitprice=ROWS[0][1]
+    else:
+      supply=0
+      unitprice=0
+    lastprice = dbSelect("select unitprice from activeoffers where offerstate='sold' and propertyidselling=%s "
+                         "and propertyiddesired=%s order by lasttxdbserialnum desc limit 1", (propertyidselling, propertyiddesired))
+    if len(lastprice) > 0:
+      lastprice=lastprice[0][0]
+    else:
+      lastprice=0
+    if supply==None:
+      supply=0
+    if unitprice==None:
+      unitprice=0
+    if lastprice==None:
+      lastprice=0
+    dbExecute("with upsert as "
+                "(update markets set unitprice=%s, supply=%s, lastprice=%s, LastTxDBSerialNum=%s, lastupdated=%s where propertyiddesired=%s and propertyidselling=%s returning *) "
+              "insert into markets (propertyiddesired, propertyidselling, marketname, unitprice, supply, lastprice, lasttxdbserialnum, lastupdated, marketpropertytype) "
+              "select %s,%s,propertyname,%s,%s,%s,%s,%s,propertytype from smartproperties where propertyid=%s and protocol='Omni' and not exists (select * from upsert)",
+              (unitprice, supply, lastprice, lasttxdbserialnum, lastupdated, propertyiddesired, propertyidselling,
+               propertyiddesired, propertyidselling, unitprice, supply, lastprice, lasttxdbserialnum, lastupdated,
+               propertyidselling) )
+    dbExecute("with nulsert as "
+                "(select * from markets where propertyiddesired=%s and propertyidselling=%s) "
+              "insert into markets (propertyiddesired, propertyidselling, marketname, lasttxdbserialnum, lastupdated, marketpropertytype) "
+              "select %s,%s,propertyname,%s,%s,propertytype from smartproperties where propertyid=%s and protocol='Omni' and not exists (select * from nulsert)",
+              (propertyidselling, propertyiddesired,
+               propertyidselling, propertyiddesired, lasttxdbserialnum, lastupdated,
+               propertyiddesired) )
+
+
 def updatedex2remaining(TxHash, TxDBSerialNum):
     #activeoffers subtract amount from remaining amount in db table
     printdebug(("Starting updatedex2remaining"),8)
@@ -1609,6 +1653,9 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
             #make sure the active offers table is up to date for the match
             updatedex2remaining(match['txid'], TxDBSerialNum)            
 
+            #update markets table
+            updatemarkets(PropertyIdForSale,PropertyIdDesired,TxDBSerialNum, rawtx)
+
         return
 
       elif txtype in [26,27,28]:
@@ -1640,6 +1687,12 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
                       (Address, PropertyID, Protocol, TxDBSerialNum, AddressTxIndex, AddressRole, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit, matchtxdbserialnum))
             updateBalance(Address, Protocol, PropertyID, Ecosystem, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit, TxDBSerialNum)
             updatedex2remaining(match['txid'],TxDBSerialNum)
+
+            #update markets table
+            oldtx=gettransaction_MP(match['txid'])
+            PropertyIdForSale=oldtx['result']['propertyidforsale']
+            PropertyIdDesired=oldtx['result']['propertyiddesired']
+            updatemarkets(PropertyIdForSale,PropertyIdDesired,TxDBSerialNum, rawtx)
 
         return
 
