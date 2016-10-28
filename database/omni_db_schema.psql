@@ -355,3 +355,21 @@ create table if not exists Settings(
         , primary key (key)
 )
 ;
+
+/*
+ * Market data for DEx markets
+ */
+create table if not exists Markets(
+        PropertyIdDesired bigint not null
+        , PropertyIdSelling bigint not null
+        , MarketName varchar(256) null
+        , UnitPrice numeric(27,8) not null DEFAULT 0
+        , Supply numeric(27,8) not null DEFAULT 0
+        , LastPrice numeric(27,8) not null DEFAULT 0
+        , MarketPropertyType smallint null
+        , LastTxDBSerialNum int8 not null
+        , LastUpdated timestamp(0) without time zone not null
+        , primary key (PropertyIdDesired, PropertyIdSelling)
+)
+;
+
