@@ -691,17 +691,23 @@ def updatemarkets(propertyidselling,propertyiddesired,TxDBSerialNum, rawtx):
     if lastprice==None:
       lastprice=0
     dbExecute("with upsert as "
-                "(update markets set unitprice=%s, supply=%s, lastprice=%s, LastTxDBSerialNum=%s, lastupdated=%s where propertyiddesired=%s and propertyidselling=%s returning *) "
-              "insert into markets (propertyiddesired, propertyidselling, marketname, unitprice, supply, lastprice, lasttxdbserialnum, lastupdated, marketpropertytype) "
-              "select %s,%s,propertyname,%s,%s,%s,%s,%s,propertytype from smartproperties where propertyid=%s and protocol='Omni' and not exists (select * from upsert)",
+                "(update markets set unitprice=%s, supply=%s, lastprice=%s, LastTxDBSerialNum=%s, lastupdated=%s where propertyiddesired=%s and propertyidselling=%s returning *), "
+              "spd as "
+                "(select propertyname from smartproperties where propertyid=%s and protocol='Omni') "
+              "insert into markets (propertyiddesired, desiredname, propertyidselling, sellingname, unitprice, supply, lastprice, lasttxdbserialnum, lastupdated, marketpropertytype) "
+              "select %s,spd.propertyname,%s,sps.propertyname,%s,%s,%s,%s,%s,propertytype from smartproperties sps, spd where propertyid=%s and protocol='Omni' and not exists (select * from upsert)",
               (unitprice, supply, lastprice, lasttxdbserialnum, lastupdated, propertyiddesired, propertyidselling,
+               propertyiddesired,
                propertyiddesired, propertyidselling, unitprice, supply, lastprice, lasttxdbserialnum, lastupdated,
                propertyidselling) )
     dbExecute("with nulsert as "
-                "(select * from markets where propertyiddesired=%s and propertyidselling=%s) "
-              "insert into markets (propertyiddesired, propertyidselling, marketname, lasttxdbserialnum, lastupdated, marketpropertytype) "
-              "select %s,%s,propertyname,%s,%s,propertytype from smartproperties where propertyid=%s and protocol='Omni' and not exists (select * from nulsert)",
+                "(select * from markets where propertyiddesired=%s and propertyidselling=%s), "
+              "spd as "
+                "(select propertyname from smartproperties where propertyid=%s and protocol='Omni') "
+              "insert into markets (propertyiddesired, desiredname, propertyidselling, sellingname, lasttxdbserialnum, lastupdated, marketpropertytype) "
+              "select %s,spd.propertyname,%s,sps.propertyname,%s,%s,propertytype from smartproperties sps, spd where propertyid=%s and protocol='Omni' and not exists (select * from nulsert)",
               (propertyidselling, propertyiddesired,
+               propertyidselling,
                propertyidselling, propertyiddesired, lasttxdbserialnum, lastupdated,
                propertyiddesired) )
 
