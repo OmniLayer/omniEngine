@@ -361,8 +361,9 @@ create table if not exists Settings(
  */
 create table if not exists Markets(
         PropertyIdDesired bigint not null
+        , DesiredName varchar(256) null
         , PropertyIdSelling bigint not null
-        , MarketName varchar(256) null
+        , SellingName varchar(256) null
         , UnitPrice numeric(27,8) not null DEFAULT 0
         , Supply numeric(27,8) not null DEFAULT 0
         , LastPrice numeric(27,8) not null DEFAULT 0
