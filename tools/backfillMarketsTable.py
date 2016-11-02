@@ -1,6 +1,6 @@
 from sql import *
 
-x=dbSelect("select txhash,txdbserialnum from transactions where txtype>24 and txtype<30 and txstate='valid'")
+x=dbSelect("select txhash,txdbserialnum from transactions where txtype>24 and txtype<30 and txstate='valid' order by txdbserialnum")
 for y in x:
   rawtx=gettransaction_MP(y[0])
   TxDBSerialNum=y[1]
