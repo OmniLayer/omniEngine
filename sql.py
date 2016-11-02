@@ -679,7 +679,8 @@ def updatemarkets(propertyidselling,propertyiddesired,TxDBSerialNum, rawtx):
       supply=0
       unitprice=0
     lastprice = dbSelect("select unitprice from activeoffers where offerstate='sold' and propertyidselling=%s "
-                         "and propertyiddesired=%s order by lasttxdbserialnum desc limit 1", (propertyidselling, propertyiddesired))
+                         "and propertyiddesired=%s order by CASE WHEN createtxdbserialnum > lasttxdbserialnum "
+                         "THEN createtxdbserialnum ELSE lasttxdbserialnum END desc limit 1", (propertyidselling, propertyiddesired))
     if len(lastprice) > 0:
       lastprice=lastprice[0][0]
     else:
