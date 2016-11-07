@@ -662,16 +662,24 @@ def updatedex2(rawtx, rawtrade, TxDBSerialNum):
     #elif txtype == 28:
     #cancel by ecosystem
 
+def updatemarketvolume():
+    ROWS=dbSelect("select COALESCE(sum(balanceavailablecreditdebit),0) from transactions tx, addressesintxs atx where "
+                  "tx.txdbserialnum=atx.txdbserialnum and tx.txstate='valid' and tx.txtype=25 and "
+                  "tx.txrecvtime>(CURRENT_TIMESTAMP - INTERVAL '1 day') and atx.addressrole='buyer' and atx.propertyid=%s")
+
+
 def updatemarkets(propertyidselling,propertyiddesired,TxDBSerialNum, rawtx):
+    printdebug(("Starting updatemarkets"),8)
+    printdebug(("updatemarkets: propertyidselling,propertyiddesired,TxDBSerialNum"),8)
+    printdebug((propertyidselling,propertyiddesired,TxDBSerialNum),8)
+    printdebug(("updatemarkets: rawtx"),9)
+    printdebug((rawtx),9)
     #base = propertyiddesired
     #marketid = propertyidselling
     lasttxdbserialnum = TxDBSerialNum
     lastupdated=datetime.datetime.utcfromtimestamp(rawtx['result']['blocktime'])
     ROWS = dbSelect("select sum(amountavailable), min(unitprice) from activeoffers where offerstate='active' and propertyidselling=%s "
                          "and propertyiddesired=%s", (propertyidselling, propertyiddesired))
-    supply=None
-    unitprice=None
-    lastprice=None
     if len(ROWS) > 0:
       supply=ROWS[0][0]
       unitprice=ROWS[0][1]
@@ -685,12 +693,14 @@ def updatemarkets(propertyidselling,propertyiddesired,TxDBSerialNum, rawtx):
       lastprice=lastprice[0][0]
     else:
       lastprice=0
+
     if supply==None:
       supply=0
     if unitprice==None:
       unitprice=0
     if lastprice==None:
       lastprice=0
+
     dbExecute("with upsert as "
                 "(update markets set unitprice=%s, supply=%s, lastprice=%s, LastTxDBSerialNum=%s, lastupdated=%s where propertyiddesired=%s and propertyidselling=%s returning *), "
               "spd as "
@@ -1660,8 +1670,8 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
             #make sure the active offers table is up to date for the match
             updatedex2remaining(match['txid'], TxDBSerialNum)            
 
-            #update markets table
-            updatemarkets(PropertyIdForSale,PropertyIdDesired,TxDBSerialNum, rawtx)
+          #Finally, make sure to update markets table after all other matches are processed
+          updatemarkets(PropertyIdForSale,PropertyIdDesired,TxDBSerialNum, rawtx)
 
         return
 
