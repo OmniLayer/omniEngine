@@ -678,17 +678,37 @@ def updatemarkets(propertyidselling,propertyiddesired,TxDBSerialNum, rawtx):
     #marketid = propertyidselling
     lasttxdbserialnum = TxDBSerialNum
     lastupdated=datetime.datetime.utcfromtimestamp(rawtx['result']['blocktime'])
-    ROWS = dbSelect("select sum(amountavailable), min(unitprice) from activeoffers where offerstate='active' and propertyidselling=%s "
+    SUP = dbSelect("select sum(amountavailable) from activeoffers where offerstate='active' and propertyidselling=%s "
                          "and propertyiddesired=%s", (propertyidselling, propertyiddesired))
-    if len(ROWS) > 0:
-      supply=ROWS[0][0]
-      unitprice=ROWS[0][1]
+    if len(SUP) > 0:
+      supply=SUP[0][0]
     else:
       supply=0
+
+    UPA = dbSelect("select min(unitprice) from activeoffers where offerstate='active' and propertyidselling=%s "
+                         "and propertyiddesired=%s and amountavailable=totalselling", (propertyidselling, propertyiddesired))
+    if len(UPA) > 0:
+      unitprice=UPA[0][0]
+    else:
       unitprice=0
-    lastprice = dbSelect("select unitprice from activeoffers where offerstate='sold' and propertyidselling=%s "
-                         "and propertyiddesired=%s order by CASE WHEN createtxdbserialnum > lasttxdbserialnum "
-                         "THEN createtxdbserialnum ELSE lasttxdbserialnum END desc limit 1", (propertyidselling, propertyiddesired))
+
+    UP = dbSelect("select amountdesired, amountavailable, totalselling, unitprice from activeoffers where offerstate='active' and propertyidselling=%s "
+                         "and propertyiddesired=%s and amountavailable!=totalselling order by unitprice asc", (propertyidselling, propertyiddesired))
+    if len(UP) > 0:
+      for offer in UP:
+        totaldesired  = offer[0]
+        availselling  = offer[1]
+        totalselling  = offer[2]
+        origprice     = offer[3]
+        remaindesired = math.ceil(availselling*origprice)
+        if remaindesired > totaldesired:
+          remaindesired = totaldesired
+        efup    = decimal.Decimal((math.ceil((decimal.Decimal(remaindesired)/decimal.Decimal(availselling))*decimal.Decimal(1e8))))/decimal.Decimal(1e8)
+        if efup < unitprice or unitprice==0:
+          unitprice=efup
+
+
+    lastprice = dbSelect("select unitprice from markets where propertyidselling=%s and propertyiddesired=%s ",(propertyidselling, propertyiddesired))
     if len(lastprice) > 0:
       lastprice=lastprice[0][0]
     else:
