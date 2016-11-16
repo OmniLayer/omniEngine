@@ -669,11 +669,11 @@ def updatemarketvolume():
 
 
 def updatemarkets(propertyidselling,propertyiddesired,TxDBSerialNum, rawtx):
-    printdebug(("Starting updatemarkets"),8)
-    printdebug(("updatemarkets: propertyidselling,propertyiddesired,TxDBSerialNum"),8)
-    printdebug((propertyidselling,propertyiddesired,TxDBSerialNum),8)
-    printdebug(("updatemarkets: rawtx"),9)
-    printdebug((rawtx),9)
+    printdebug(("Starting updatemarkets"),4)
+    printdebug(("updatemarkets: propertyidselling,propertyiddesired,TxDBSerialNum"),4)
+    printdebug((propertyidselling,propertyiddesired,TxDBSerialNum),4)
+    printdebug(("updatemarkets: rawtx"),8)
+    printdebug((rawtx),8)
     #base = propertyiddesired
     #marketid = propertyidselling
     lasttxdbserialnum = TxDBSerialNum
@@ -704,7 +704,7 @@ def updatemarkets(propertyidselling,propertyiddesired,TxDBSerialNum, rawtx):
         if remaindesired > totaldesired:
           remaindesired = totaldesired
         efup    = decimal.Decimal((math.ceil((decimal.Decimal(remaindesired)/decimal.Decimal(availselling))*decimal.Decimal(1e8))))/decimal.Decimal(1e8)
-        if efup < unitprice or unitprice==0:
+        if efup < unitprice or unitprice in [0,None]:
           unitprice=efup
 
 
