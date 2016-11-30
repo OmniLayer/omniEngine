@@ -134,7 +134,8 @@ def updateBTC():
       r= requests.get( source, timeout=15 )
       curlist=r.json()
       #timestamp=curlist.pop('timestamp')
-      curlist.pop('ignored_exchanges')
+      if 'ignored_exchanges' in curlist:
+        curlist.pop('ignored_exchanges')
       for abv in curlist:
         value=curlist[abv]['averages']['last']
         timestamp=curlist[abv]['averages']['timestamp']
