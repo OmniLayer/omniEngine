@@ -5,7 +5,8 @@ import getpass
 from datetime import datetime
 from sqltools import *
 from common import *
-
+import urllib3.contrib.pyopenssl
+urllib3.contrib.pyopenssl.inject_into_urllib3()
 
 def updatePrices():
   updateBTC()
@@ -26,7 +27,7 @@ def updateFEES():
     faster.append(feelist['feeByBlockTarget']['1'])
     fast.append(feelist['feeByBlockTarget']['3'])
     normal.append(feelist['feeByBlockTarget']['5'])
-  except requests.exceptions.RequestException, e:
+  except requests.exceptions.RequestException as e:
     #error or timeout, skip for now
     printdebug(("Error getting BitGo fees",e),3)
     pass
@@ -38,26 +39,30 @@ def updateFEES():
     faster.append(feelist['high_fee_per_kb'])
     fast.append(feelist['medium_fee_per_kb'])
     normal.append(feelist['low_fee_per_kb'])
-  except requests.exceptions.RequestException, e:
+  except requests.exceptions.RequestException as e:
     #error or timeout, skip for now
     printdebug(("Error getting Blockcypher fees",e),3)
     pass
   #Get Bitcoinfees21 Fee's
   try:
-    source='https://bitcoinfees.21.co/api/v1/fees/list'
+    #source='https://bitcoinfees.21.co/api/v1/fees/list'
+    source='https://bitcoinfees.21.co/api/v1/fees/recommended'
     r= requests.get( source, timeout=15 )
     feelist=r.json()
-    for x in feelist['fees']:
-      if x['maxDelay']>0 and x['maxDelay']<=7:
-        fr=int(((x['minFee']+x['maxFee'])/2)*1000)
-      if x['maxDelay']>7 and x['maxDelay']<=20:
-        f=int(((x['minFee']+x['maxFee'])/2)*1000)
-      if x['maxDelay']>20 and x['maxDelay']<=40:
-        n=int(((x['minFee']+x['maxFee'])/2)*1000)
+    #for x in feelist['fees']:
+    #  if x['maxDelay']>0 and x['maxDelay']<=7:
+    #    fr=int(((x['minFee']+x['maxFee'])/2)*1000)
+    #  if x['maxDelay']>7 and x['maxDelay']<=20:
+    #    f=int(((x['minFee']+x['maxFee'])/2)*1000)
+    #  if x['maxDelay']>20 and x['maxDelay']<=40:
+    #    n=int(((x['minFee']+x['maxFee'])/2)*1000)
+    fr=int(feelist['fastestFee']*1000)
+    f=int(feelist['halfHourFee']*1000)
+    n=int(feelist['hourFee']*1000)
     faster.append(fr)
     fast.append(f)
     normal.append(n)
-  except requests.exceptions.RequestException, e:
+  except requests.exceptions.RequestException as e:
     #error or timeout, skip for now
     printdebug(("Error getting bitcoinfees21 fees",e),3)
     pass
@@ -146,7 +151,7 @@ def updateBTC():
         else:
           upsertRate('Fiat', fpid, 'Bitcoin', 0, value, source, timestamp)
 
-    except requests.exceptions.RequestException, e:
+    except requests.exceptions.RequestException as e:
       #error or timeout, skip for now
       printdebug(("Error updating BTC Price",e),3)
       pass
@@ -215,7 +220,7 @@ def updateOMNISP():
 
       upsertRate('Bitcoin', 0, 'Omni', sp, value, source)
 
-  except requests.exceptions.RequestException:
+  except requests.exceptions.RequestException as e:
     #error or timeout, skip for now
     printdebug(("Error updating OMNISP Prices",e),3)
     pass
@@ -253,7 +258,7 @@ def main():
 
     try:
       updatePrices()
-    except Exception, e:
+    except Exception as e:
       #Catch any issues and stop processing. Try to undo any incomplete changes
       print "updatePrices: Problem with ", e
       if dbRollback():
