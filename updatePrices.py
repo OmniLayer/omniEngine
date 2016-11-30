@@ -133,10 +133,11 @@ def updateBTC():
       source='https://api.bitcoinaverage.com/all'
       r= requests.get( source, timeout=15 )
       curlist=r.json()
-      timestamp=curlist.pop('timestamp')
+      #timestamp=curlist.pop('timestamp')
       curlist.pop('ignored_exchanges')
       for abv in curlist:
         value=curlist[abv]['averages']['last']
+        timestamp=curlist[abv]['averages']['timestamp']
         #get our fiat property id using internal conversion schema  
         fpid=fiat2propertyid(abv)
         if fpid == -1:
