@@ -696,12 +696,12 @@ def updatemarkets(propertyidselling,propertyiddesired,TxDBSerialNum, rawtx):
                          "and propertyiddesired=%s and amountavailable!=totalselling order by unitprice asc", (propertyidselling, propertyiddesired))
     if len(UP) > 0:
       for offer in UP:
-        if rawtx['result']['propertyiddesiredisdivisible']:
+        if getdivisible_MP(propertyiddesired):
           totaldesired  = offer[0]
         else:
           totaldesired  = int(decimal.Decimal(str(offer[0]))*decimal.Decimal(1e8))
 
-        if rawtx['result']['propertyidforsaleisdivisible']:
+        if getdivisible_MP(propertyidselling):
           availselling = int(offer[1])
           totalselling = int(offer[2])
         else:
