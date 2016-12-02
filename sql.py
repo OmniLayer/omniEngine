@@ -712,7 +712,7 @@ def updatemarkets(propertyidselling,propertyiddesired,TxDBSerialNum, rawtx):
         remaindesired = math.ceil(availselling*origprice)
         if remaindesired > totaldesired:
           remaindesired = totaldesired
-        efup    = decimal.Decimal((math.ceil((decimal.Decimal(remaindesired)/decimal.Decimal(availselling))*decimal.Decimal(1e8))))/decimal.Decimal(1e8)
+        efup    = decimal.Decimal((round((decimal.Decimal(remaindesired)/decimal.Decimal(availselling))*decimal.Decimal(1e8))))/decimal.Decimal(1e8)
         if efup < unitprice or unitprice in [0,None]:
           unitprice=efup
 
