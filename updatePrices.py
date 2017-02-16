@@ -150,6 +150,20 @@ def updateBTC():
         else:
           upsertRate('Fiat', fpid, 'Bitcoin', 0, value, source, timestamp)
 
+      #currencies removed from bitcoinaverage
+      for abv in ['CHF', 'AUD', 'NOK', 'HKD', 'RON']:
+        source2='http://download.finance.yahoo.com/d/quotes.csv?s=USD'+abv+'=X&f=snl1d1t1ab'
+        r2= requests.get( source2, timeout=15 )
+        data=r2.text.split(',')
+        value=float(data[2])*curlist['USD']['averages']['last']
+        timestamp=str(data[3])+" "+str(data[4])
+        #get our fiat property id using internal conversion schema  
+        fpid=fiat2propertyid(abv)
+        if fpid == -1:
+           printdebug(("Currency Symbol",abv,"not in db. New currency?"),5)
+        else:
+          upsertRate('Fiat', fpid, 'Bitcoin', 0, value, source2, timestamp)
+
     except requests.exceptions.RequestException as e:
       #error or timeout, skip for now
       printdebug(("Error updating BTC Price",e),3)
