@@ -62,6 +62,19 @@ create table if not exists Wallets (
 )
 ;
 
+/* Timestamped backup of wallets everytime they are modified/changed */
+create table if not exists WalletBackups (
+	WalletID uuid not null
+	, Created timestamp(0) without time zone DEFAULT now() 
+	, WalletBlob text not null
+	, UserName varchar(32) null
+	, Email varchar(64) null
+	, Settings json null
+	
+	, primary key (WalletID, Created)
+)
+;
+
 /*
  * Balances for each PropertyID (currency) owned by an Address
  * for all addresses we know about, even if they're not in a wallet

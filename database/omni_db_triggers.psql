@@ -1,0 +1,11 @@
+/* create trigger to backup walletblob everytime it's modified */
+CREATE OR REPLACE FUNCTION backupwallet() RETURNS TRIGGER AS $wallet_backups$
+    BEGIN
+        INSERT INTO WalletBackups(WalletID,WalletBlob,UserName,Email,Settings) VALUES (old.WalletID, old.WalletBlob, old.UserName, old.Email, old.Settings);
+        RETURN NEW;
+    END;
+$wallet_backups$ LANGUAGE plpgsql;
+
+CREATE TRIGGER backup_wallet BEFORE DELETE or UPDATE of WalletBlob ON Wallets
+FOR EACH ROW EXECUTE PROCEDURE backupwallet();
+
