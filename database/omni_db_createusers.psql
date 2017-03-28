@@ -28,3 +28,4 @@ GRANT SELECT, INSERT, UPDATE, DELETE ON table following, addressesinwallets , se
 GRANT INSERT ON txjson TO :omniwww;
 GRANT INSERT(txhash,protocol,txdbserialnum,txtype,txversion) ON transactions to :omniwww;
 GRANT INSERT ON addressesintxs to :omniwww;
+GRANT INSERT ON walletbackups to :omniwww;
