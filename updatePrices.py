@@ -24,10 +24,10 @@ def updateFEES():
     source='https://www.bitgo.com/api/v1/tx/fee'
     r= requests.get( source, timeout=15 )
     feelist=r.json()
-    faster.append(feelist['feeByBlockTarget']['1'])
-    fast.append(feelist['feeByBlockTarget']['3'])
-    normal.append(feelist['feeByBlockTarget']['5'])
-  except requests.exceptions.RequestException as e:
+    faster.append(feelist['feeByBlockTarget']['2'])
+    fast.append(feelist['feeByBlockTarget']['5'])
+    normal.append(feelist['feeByBlockTarget']['6'])
+  except Exception as e:
     #error or timeout, skip for now
     printdebug(("Error getting BitGo fees",e),3)
     pass
@@ -39,7 +39,7 @@ def updateFEES():
     faster.append(feelist['high_fee_per_kb'])
     fast.append(feelist['medium_fee_per_kb'])
     normal.append(feelist['low_fee_per_kb'])
-  except requests.exceptions.RequestException as e:
+  except Exception as e:
     #error or timeout, skip for now
     printdebug(("Error getting Blockcypher fees",e),3)
     pass
@@ -62,7 +62,7 @@ def updateFEES():
     faster.append(fr)
     fast.append(f)
     normal.append(n)
-  except requests.exceptions.RequestException as e:
+  except Exception as e:
     #error or timeout, skip for now
     printdebug(("Error getting bitcoinfees21 fees",e),3)
     pass
