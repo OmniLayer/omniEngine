@@ -27,7 +27,7 @@ def updateFEES():
     q=[]
     for x in feelist['feeByBlockTarget']:
       if feelist['feeByBlockTarget'][x] not in q:
-        q.append(feelist['feeByBlockTarget'][x]
+        q.append(feelist['feeByBlockTarget'][x])
 
     q.sort(reverse=True)
     faster.append(q[0])
