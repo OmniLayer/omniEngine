@@ -70,8 +70,9 @@ create table if not exists WalletBackups (
 	, UserName varchar(32) null
 	, Email varchar(64) null
 	, Settings json null
+        , id serial
 	
-	, primary key (WalletID, Created)
+	, primary key (id)
 )
 ;
 
