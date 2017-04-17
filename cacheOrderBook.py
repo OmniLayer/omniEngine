@@ -1,5 +1,5 @@
 from omnidex import getOrderbook
-import redis, json, time
+import redis, json, time, datetime
 
 r = redis.StrictRedis(host='localhost', port=6379, db=0)
 
