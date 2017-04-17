@@ -3,10 +3,14 @@ import redis, json, time
 
 r = redis.StrictRedis(host='localhost', port=6379, db=0)
 
+def printmsg(msg):
+    print str(datetime.datetime.now())+str(" ")+str(msg)
+    sys.stdout.flush()
+
 def updateOrderbookCache():
   while True:
     time.sleep(20)
-    print "Checking for orderbook updates"
+    printmsg("Checking for orderbook updates")
     try:
       lasttrade = r.get("omniwallet:omnidex:lasttrade")
       if lasttrade == None:
@@ -18,12 +22,12 @@ def updateOrderbookCache():
 
       ret = getOrderbook(lasttrade,lastpending)
       if ret['updated']:
-        print "Orderbook cache updated. Lasttrade: "+str(lasttrade)+" Lastpending: "+str(lastpending)
+        printmsg("Orderbook cache updated. Lasttrade: "+str(lasttrade)+" Lastpending: "+str(lastpending))
         r.set("omniwallet:omnidex:lasttrade",ret['lasttrade'])
         r.set("omniwallet:omnidex:lastpending",ret['lastpending'])
         r.set("omniwallet:omnidex:book",json.dumps(ret['book']))
     except Exception as e:
-      print "Error updating orderbook cache "+str(e)
+      printmsg("Error updating orderbook cache "+str(e))
 
   
 def main():
