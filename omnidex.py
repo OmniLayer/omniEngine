@@ -1,11 +1,8 @@
-from flask import Flask, request, jsonify, abort, json, make_response
+import json 
 import re
 import time
 from sqltools import * 
 from math import ceil
-app = Flask(__name__)
-app.debug = True
-
 
 def fixDecimal(value):
     try:
@@ -54,90 +51,6 @@ def getOrderbook(lasttrade=0, lastpending=0):
     ret={"updated":updated ,"book":book, "lasttrade":trade, "lastpending":pending}
     return ret
    
-
-@app.route('/designatingcurrencies', methods=['POST'])
-def getDesignatingCurrencies():
-    try:
-        value = int(re.sub(r'\D+', '', request.form['ecosystem']))
-        valid_values = [1,2]
-        if value not in valid_values:
-            abort(make_response('Field \'ecosystem\' invalid value, request failed', 400))
-        
-        ecosystem = "Production" if value == 1 else "Test" 
-    except KeyError:
-        abort(make_response('No field \'ecosystem\' in request, request failed', 400))
-    except ValueError:
-        abort(make_response('Field \'ecosystem\' invalid value, request failed', 400))
-
-    #designating_currencies = dbSelect("select distinct ao.propertyiddesired as propertyid, sp.propertyname from activeoffers ao "
-    #                                  "inner join SmartProperties sp on ao.propertyiddesired = sp.propertyid and sp.ecosystem = %s "
-                                      #"where (ao.propertyidselling not in (1, 2, 31)) or (ao.propertyidselling = 1 and ao.propertyiddesired = 31) "
-    #                                  "where ao.offerstate='active' "
-    #                                  "order by ao.propertyiddesired ",[ecosystem])
-    designating_currencies = dbSelect("select distinct propertyiddesired,desiredname from markets where "
-                                      "CASE WHEN %s='Production' THEN "
-                                      "propertyiddesired > 0 and propertyiddesired < 2147483648 and propertyiddesired !=2 "
-                                      "ELSE propertyiddesired > 2147483650 or propertyiddesired=2 END "
-                                      "and (supply > 0 or propertyiddesired in "
-                                        "(select propertyidselling as marketid from markets where "
-                                        "CASE WHEN %s='Production' THEN "
-                                        "propertyidselling > 0 and propertyidselling < 2147483648 and propertyidselling !=2 "
-                                        "ELSE propertyidselling > 2147483650 or propertyidselling=2 END "
-                                        " and supply >0)) "
-                                      "order by propertyiddesired",(ecosystem,ecosystem))
-    return jsonify({"status" : 200, "currencies": [
-	{
-	 "propertyid":currency[0], "propertyname" : currency[1], "displayname" : str(currency[1])+" #"+str(currency[0])
-	} for currency in designating_currencies]})
-
-
-@app.route('/<int:denominator>')
-def get_markets_by_denominator(denominator):
-    markets = dbSelect("select ma.propertyidselling as marketid, ma.sellingname as marketname, "
-                        "CASE WHEN mb.unitprice=0 THEN 0 ELSE cast(1/mb.unitprice as numeric(27,8)) END as bidprice, "
-                       "ma.unitprice as askprice, ma.supply, ma.lastprice, ma.marketpropertytype "
-                       "from markets ma left outer join markets mb on ma.propertyidselling=mb.propertyiddesired "
-                       "and ma.propertyiddesired=mb.propertyidselling where ma.propertyiddesired=%s and "
-                       "( ma.supply>0 or ma.propertyidselling in "
-                        "(select propertyiddesired as marketid from markets where propertyidselling=%s and supply>0) "
-                       " ) order by ma.propertyidselling",(denominator,denominator))
-    return jsonify({"status" : 200, "markets": [
-	{
-	 "propertyid":currency[0], 
-	 "propertyname" : currency[1],
-	 "bidprice" : float(currency[2]),
-	 "askprice" : float(currency[3]),
-	 "supply" : currency[4],
-	 "lastprice" : float(currency[5]),
-         "propertytype" : currency[6]
-	} for currency in markets]})
-
-@app.route('/ohlcv/<int:propertyid_desired>/<int:propertyid_selling>')
-def get_OHLCV(propertyid_desired, propertyid_selling):
-    orderbook = dbSelect("SELECT timeframe.date,FIRST(offers.unitprice) ,MAX(offers.unitprice), MIN(offers.unitprice), "
-                         "LAST(offers.unitprice), SUM(offers.totalselling) FROM generate_series('2016-01-01 00:00'::timestamp,current_date, '1 day') "
-                         "timeframe(date) INNER JOIN (SELECT ao.totalselling, ao.unitprice, createtx.TXRecvTime as createdate, "
-                         "COALESCE(lasttx.TXRecvTime,createtx.TXRecvTime) as solddate from ActiveOffers ao inner join Transactions createtx "
-                         "on ao.CreateTXDBSerialNum = createtx.TxDBSerialNum left outer join Transactions lasttx on ao.LastTXDBSerialNum = lasttx.TxDBSerialNum "
-                         "where (ao.OfferState = 'sold' or ao.OfferState = 'active')  and ao.unitprice > 0 and ao.PropertyIdSelling = %s and "
-                         "ao.PropertyIdDesired = %s ORDER BY createtx.TXRecvTime DESC) offers on DATE(offers.createdate) <= timeframe.date and "
-                         "DATE(offers.solddate) >= timeframe.date group by timeframe.date",[propertyid_selling, propertyid_desired])
-    return jsonify({"status" : 200, "orderbook": [
-        {
-            "date":int((time.mktime(order[0].timetuple()) + order[0].microsecond/1000000.0)/86400), 
-            "open":order[1], #if order[1] is not None else 160 - (0.01 * orderbook.index(order)),
-            "high" : order[2], #if order[2] is not None else 160 + (0.01 * orderbook.index(order)),
-            "low" : order[3], #if order[3] is not None else 160 - (0.01 * orderbook.index(order)),
-            "close" : order[4], #if order[4] is not None else 160 + (0.01 * orderbook.index(order)),
-            "volume": order[5], #if order[5] is not None else 34.5 + (11.2 * orderbook.index(order)),
-            "adjustment":(order[2] + order[3]) /2
-        } for order in orderbook]})
-
-
-@app.route('/<int:propertyid_desired>/<int:propertyid_selling>')
-def get_orders_by_market_json(propertyid_desired, propertyid_selling):
-    return jsonify(get_orders_by_market(propertyid_desired, propertyid_selling))
-
 
 def get_orders_by_market(propertyid_desired, propertyid_selling):
     orderbook = dbSelect("SELECT ao.propertyiddesired, ao.propertyidselling, ao.AmountAvailable, ao.AmountDesired, ao.TotalSelling, ao.AmountAccepted, "
