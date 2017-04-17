@@ -3,7 +3,7 @@ import redis, json
 
 r = redis.StrictRedis(host='localhost', port=6379, db=0)
 
-def updateOrderbookCache()
+def updateOrderbookCache():
   while True:
     time.sleep(20)
     print "Checking for orderbook updates"
