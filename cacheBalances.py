@@ -17,6 +17,8 @@ def updateBalancesCache():
         printmsg("loaded "+str(len(addresses))+" addresses from redis")
         balances=get_bulkbalancedata(addresses)
         r.set("omniwallet:balances:balbook",json.dumps(balances))
+        #expire balance data after 10 minutes (prevent stale data in case we crash)
+        r.expire("omniwallet:balances:balbook",600)
 
     except Exception as e:
       printmsg("error updating balances: "+str(e))
