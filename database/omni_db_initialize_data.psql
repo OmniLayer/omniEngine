@@ -5,7 +5,7 @@ insert into Protocols values (
 ; 
 
 insert into Protocols values (
-	'Mastercoin', 'Bitcoin', 'http://mastercoin.org'
+	'Omni', 'Bitcoin', 'http://omnilayer.org'
 )
 ;
 
