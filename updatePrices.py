@@ -103,6 +103,7 @@ def getSource(sp):
              56:"https://bittrex.com/api/v1.1/public/getmarkethistory?market=BTC-SEC&count=100",
              58:"https://bittrex.com/api/v1.1/public/getmarkethistory?market=BTC-AGRS&count=100",
              59:"https://bittrex.com/api/v1.1/public/getmarkethistory?market=BTC-PDC&count=100",
+             89:"https://api.livecoin.net/exchange/last_trades?currencyPair=DIBC/BTC",
              90:"https://market.bitsquare.io/api/trades?market=sfsc_btc"
             }
     return convert[sp]
@@ -192,7 +193,12 @@ def formatData(sp, source):
     for trade in trades:
       trade['rate']=trade['Price']
       trade['amount']=trade['Quantity']  
-
+      
+  if sp in [89]:
+    for trade in trades:
+      trade['rate']=trade['price']
+      trade['amount']=trade['quantity']
+      
   if sp in [90]:
     for trade in trades:
       trade['rate']=trade['price']
