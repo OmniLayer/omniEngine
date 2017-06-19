@@ -282,8 +282,9 @@ create table if not exists ExchangeRates (
 	, Rate1For2 float		/* (1 for 2) */		
 	, AsOf timestamp(0) DEFAULT now()
 	, Source varchar(256)		/* URL */
+	, Id serial
 
-	, primary key (PropertyID1, Protocol1, PropertyID2, Protocol2, AsOf, Source) 
+	, primary key (Id, PropertyID1, PropertyID2, Protocol1, Protocol2) 
 )
 ;
 

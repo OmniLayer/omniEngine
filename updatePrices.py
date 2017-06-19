@@ -103,6 +103,7 @@ def getSource(sp):
              56:"https://bittrex.com/api/v1.1/public/getmarkethistory?market=BTC-SEC&count=100",
              58:"https://bittrex.com/api/v1.1/public/getmarkethistory?market=BTC-AGRS&count=100",
              59:"https://bittrex.com/api/v1.1/public/getmarkethistory?market=BTC-PDC&count=100",
+             89:"https://api.livecoin.net/exchange/last_trades?currencyPair=DIBC/BTC",
              90:"https://market.bitsquare.io/api/trades?market=sfsc_btc"
             }
     return convert[sp]
@@ -127,7 +128,7 @@ def upsertRate(protocol1, propertyid1, protocol2, propertyid2, rate, source, tim
     # if we have a record with the same exchangerate / source just update timestamp, otherwise insert new record
     dbExecute("with upsert as "
                 "(update exchangerates set asof=DEFAULT where protocol1=%s and propertyid1=%s and "
-                " protocol2=%s and propertyid2=%s and rate1for2=%s and source=%s  returning *) "
+                " protocol2=%s and propertyid2=%s and rate1for2::numeric=%s and source=%s  returning *) "
               "insert into exchangerates (protocol1, propertyid1, protocol2, propertyid2, rate1for2, source) select %s,%s,%s,%s,%s,%s "
               "where not exists (select * from upsert)",
               (protocol1, propertyid1, protocol2, propertyid2, rate, source, protocol1, propertyid1, protocol2, propertyid2, rate, source))
@@ -135,7 +136,7 @@ def upsertRate(protocol1, propertyid1, protocol2, propertyid2, rate, source, tim
     # if we have a record with the same exchangerate / source just update timestamp, otherwise insert new record
     dbExecute("with upsert as "
                 "(update exchangerates set asof=%s where protocol1=%s and propertyid1=%s and "
-                " protocol2=%s and propertyid2=%s and rate1for2=%s and source=%s  returning *) "
+                " protocol2=%s and propertyid2=%s and rate1for2::numeric=%s and source=%s  returning *) "
               "insert into exchangerates (protocol1, propertyid1, protocol2, propertyid2, rate1for2, source, asof) select %s,%s,%s,%s,%s,%s,%s "
               "where not exists (select * from upsert)",
               (timestamp, protocol1, propertyid1, protocol2, propertyid2, rate, source, protocol1, propertyid1, protocol2, propertyid2, rate, source, timestamp))
@@ -192,7 +193,12 @@ def formatData(sp, source):
     for trade in trades:
       trade['rate']=trade['Price']
       trade['amount']=trade['Quantity']  
-
+      
+  if sp in [89]:
+    for trade in trades:
+      trade['rate']=trade['price']
+      trade['amount']=trade['quantity']
+      
   if sp in [90]:
     for trade in trades:
       trade['rate']=trade['price']
