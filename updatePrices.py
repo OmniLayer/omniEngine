@@ -162,7 +162,7 @@ def updateBTC():
           new.append(abv)
         else:
           upsertRate('Fiat', fpid, 'Bitcoin', 0, value, source, timestamp)
-      if len(new > 0):
+      if len(new) > 0:
         printdebug(("New Symbols not in db",new),5)
     except requests.exceptions.RequestException as e:
       #error or timeout, skip for now
