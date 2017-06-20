@@ -5,6 +5,7 @@ import getpass
 from datetime import datetime
 from sqltools import *
 from common import *
+from decimal import Decimal
 import urllib3.contrib.pyopenssl
 urllib3.contrib.pyopenssl.inject_into_urllib3()
 
@@ -142,6 +143,34 @@ def upsertRate(protocol1, propertyid1, protocol2, propertyid2, rate, source, tim
               (timestamp, protocol1, propertyid1, protocol2, propertyid2, rate, source, protocol1, propertyid1, protocol2, propertyid2, rate, source, timestamp))
 
 def updateBTC():
+    try:
+      source='https://apiv2.bitcoinaverage.com/constants/exchangerates/global'
+      r= requests.get( source, timeout=15 )
+      curlist=r.json()
+      #timestamp=curlist.pop('timestamp')
+      if 'ignored_exchanges' in curlist:
+        curlist.pop('ignored_exchanges')
+      btc=curlist['rates']['BTC']['rate']
+      timestamp=curlist['time']
+      new=[]
+      for abv in curlist['rates']:
+        value = Decimal(curlist['rates'][abv]['rate']) / Decimal(btc)
+        value = float(int(Decimal(value) * Decimal(1e2)) / Decimal(1e2))
+        #get our fiat property id using internal conversion schema
+        fpid=fiat2propertyid(abv)
+        if fpid == -1:
+          new.append(abv)
+        else:
+          upsertRate('Fiat', fpid, 'Bitcoin', 0, value, source, timestamp)
+      if len(new > 0):
+        printdebug(("New Symbols not in db",new),5)
+    except requests.exceptions.RequestException as e:
+      #error or timeout, skip for now
+      printdebug(("Error updating BTC Price",e),3)
+      pass
+
+
+def updateBTC_OLD():
     try:
       source='https://api.bitcoinaverage.com/all'
       r= requests.get( source, timeout=15 )
