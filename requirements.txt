@@ -1,5 +1,9 @@
 --Apt-get---
-sudo apt-get install libffi-dev
+sudo apt-get install libffi-dev python-psycopg2
+
+#you may need to force the older version of psycopg2 if there are issues with newer version
+#sudo apt-get install python-psycopg2=2.4.5
+
 
 ---Pip---
 #pip install urllib3[secure]
