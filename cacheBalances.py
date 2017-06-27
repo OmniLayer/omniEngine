@@ -10,18 +10,19 @@ def printmsg(msg):
 def updateBalancesCache():
   while True:
     printmsg("Checking for balance updates")
-    try:
-      addresses=r.get("omniwallet:balances:addresses")
-      if addresses != None:
-        addresses = json.loads(addresses)
-        printmsg("loaded "+str(len(addresses))+" addresses from redis")
-        balances=get_bulkbalancedata(addresses)
-        r.set("omniwallet:balances:balbook",json.dumps(balances))
-        #expire balance data after 10 minutes (prevent stale data in case we crash)
-        r.expire("omniwallet:balances:balbook",600)
+    for space in r.keys("omniwallet:balances:addresses*"):
+      try:
+        addresses=r.get(space)
+        if addresses != None:
+          addresses = json.loads(addresses)
+          printmsg("loaded "+str(len(addresses))+" addresses from redis "+str(space))
+          balances=get_bulkbalancedata(addresses)
+          r.set("omniwallet:balances:balbook"+str(space[29:]),json.dumps(balances))
+          #expire balance data after 10 minutes (prevent stale data in case we crash)
+          r.expire("omniwallet:balances:balbook"+str(space[29:]),600)
 
-    except Exception as e:
-      printmsg("error updating balances: "+str(e))
+      except Exception as e:
+        printmsg("error updating balances: "+str(space)+' '+str(e))
     time.sleep(30)
 
 
