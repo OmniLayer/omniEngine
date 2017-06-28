@@ -574,7 +574,7 @@ def updatedex(rawtx, TxDBSerialNum, Protocol):
 
       #convert all btc stuff, need additional logic for metadex  
       amountdesired=int(decimal.Decimal(str(rawtx['result']['bitcoindesired']))*decimal.Decimal(1e8))
-      minimumfee=int(decimal.Decimal(str(rawtx['result']['fee']))*decimal.Decimal(1e8))
+      minimumfee=int(decimal.Decimal(str(rawtx['result']['feerequired']))*decimal.Decimal(1e8))
 
       #rawtx does't have ppc, do the calculation to store
       unitprice=int(amountdesired/amountavailable)
@@ -630,8 +630,10 @@ def updatedex2(rawtx, rawtrade, TxDBSerialNum):
       else:
         amountdesired=int(rawtrade['result']['amounttofill'])
 
-      #convert all btc stuff, need additional logic for metadex  
-      minimumfee=int(decimal.Decimal(str(rawtx['result']['fee']))*decimal.Decimal(1e8))
+      #convert all btc stuff, need additional logic for metadex
+      #minimumfee=int(decimal.Decimal(str(rawtx['result']['fee']))*decimal.Decimal(1e8))
+      #no min fee for dex 2.0
+      minimumfee=0
 
       unitprice=rawtx['result']['unitprice']
       timelimit=0
