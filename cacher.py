@@ -2,8 +2,7 @@
 import redis
 import json
 
-#r = redis.StrictRedis(host=config.REDIS_HOST, port=config.REDIS_PORT, db=config.REDIS_DB)
-r = redis.StrictRedis(host='localhost', port=6379, db=0)
+r = redis.StrictRedis(host=config.REDIS_HOST, port=config.REDIS_PORT, db=config.REDIS_DB)
 
 def rGet(key):
   return r.get(key)
@@ -26,5 +25,5 @@ def rSetNotUpdateBTC(baldata):
     rExpire("omniwallet:balances:address:"+str(addr),150)
 
 def rExpireAllBalBTC():
-  for addr in rKeys("omniwallet:balances:address:*")
+  for addr in rKeys("omniwallet:balances:address:*"):
     rDelete(addr)
