@@ -1,4 +1,4 @@
-#import config
+import config
 import redis
 import json
 
