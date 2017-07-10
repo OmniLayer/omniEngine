@@ -183,7 +183,7 @@ def bc_getbulkbalance(addresses):
           else:
             mlist=mlist+" "+slist
 
-      baldata={'bal':dict(data['bal'],**cbdata),'error':data['error'], 'fresh':mlist}
+      baldata={'bal':dict(tbal,**cbdata),'error':None, 'fresh':mlist}
     else:
       baldata={'bal':cbdata,'error':None, 'fresh':list}
   except Exception as e:
