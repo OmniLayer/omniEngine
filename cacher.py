@@ -20,7 +20,7 @@ def rKeys(key):
   return r.keys(key)
 
 def rSetNotUpdateBTC(baldata):
-  for addr in baldata['fresh'].split():
+  for addr in baldata['fresh']:
     rSet("omniwallet:balances:address:"+str(addr),json.dumps( {"bal":baldata['bal'][addr],"error":None}))
     rExpire("omniwallet:balances:address:"+str(addr),150)
 
