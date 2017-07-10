@@ -164,34 +164,40 @@ def bc_getbulkbalance(addresses):
         recurse.append(a)
       counter+=1
 
-  try:
-    data=bc_getbulkbalance_blockonomics(split)
-    if data['error']:
-      raise Exception("issue getting blockonomics baldata",data)
+  if len(split)==0:
+    if len(cbdata) > 0:
+      retval={'bal':cbdata, 'fresh':None}
     else:
-      retval={'bal':dict(data['bal'],**cbdata), 'fresh':split}
-  except Exception as e:
-    print e
+      retval={'bal':{}, 'fresh':None}
+  else:
     try:
-      data=bc_getbulkbalance_blockchain(split)
+      data=bc_getbulkbalance_blockonomics(split)
       if data['error']:
-        raise Exception("issue getting blockchain baldata",data)
+        raise Exception("issue getting blockonomics baldata",data)
       else:
         retval={'bal':dict(data['bal'],**cbdata), 'fresh':split}
     except Exception as e:
       print e
       try:
-        data=bc_getbulkbalance_blockr(split)
+        data=bc_getbulkbalance_blockchain(split)
         if data['error']:
-          raise Exception("issue getting blockr baldata",data)
+          raise Exception("issue getting blockchain baldata",data)
         else:
           retval={'bal':dict(data['bal'],**cbdata), 'fresh':split}
       except Exception as e:
         print e
-        if len(cbdata) > 0:
-          retval={'bal':cbdata, 'fresh':None}
-        else:
-          retval={'bal':{}, 'fresh':None}
+        try:
+          data=bc_getbulkbalance_blockr(split)
+          if data['error']:
+            raise Exception("issue getting blockr baldata",data)
+          else:
+            retval={'bal':dict(data['bal'],**cbdata), 'fresh':split}
+        except Exception as e:
+          print e
+          if len(cbdata) > 0:
+            retval={'bal':cbdata, 'fresh':None}
+          else:
+            retval={'bal':{}, 'fresh':None}
 
 
   rSetNotUpdateBTC(retval)
