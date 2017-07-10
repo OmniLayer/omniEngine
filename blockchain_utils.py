@@ -146,8 +146,11 @@ def bc_getbalance_blockr(address):
 def bc_getbulkbalance(addresses):
   try:
     #get bulk data from blockonomics
+    blist=[]
     list=""
+    counter=0
     cbdata={}
+    baldata={}
     for a in addresses:
       try:
         cb=rGet("omniwallet:balances:address:"+str(a))
@@ -161,9 +164,26 @@ def bc_getbulkbalance(addresses):
           list = a
         else:
           list += " "+a
-    if (len(list) > 0):
-      data=bc_getbulkbalance_blockonomics(list)
-      baldata={'bal':dict(data['bal'],**cbdata),'error':data['error'], 'fresh':list}
+        counter+=1
+        if counter==20:
+          blist.append(list)
+          list=""
+          counter=0
+    if (len(blist) > 0):
+      tbal={}
+      mlist=""
+      for slist in blist:
+        data=bc_getbulkbalance_blockonomics(slist)
+        if data['error']:
+          print "issue getting bal data for",slist,data
+        else:
+          tbal=dict(tbal,**data['bal'])
+          if mlist=="":
+            mlist=slist
+          else:
+            mlist=mlist+" "+slist
+
+      baldata={'bal':dict(data['bal'],**cbdata),'error':data['error'], 'fresh':mlist}
     else:
       baldata={'bal':cbdata,'error':None, 'fresh':list}
   except Exception as e:
