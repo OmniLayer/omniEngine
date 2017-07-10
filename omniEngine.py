@@ -2,6 +2,7 @@ from sql import *
 import os.path
 import sys
 from datetime import datetime
+from cacher import *
 
 USER=getpass.getuser()
 lockFile='/tmp/omniEngine.lock.'+str(USER)
@@ -89,6 +90,8 @@ else:
 
   if currentBlock > endBlock:
     printdebug("Already up to date",0)
+  else:
+    rExpireAllBalBTC()
 
   #get highest TxDBSerialNum (number of rows in the Transactions table)
   #22111443 btc tx's before block 252317
