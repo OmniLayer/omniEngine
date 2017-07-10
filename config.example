@@ -1,0 +1,8 @@
+#Blocktrail API Key (used for lookups of utxo's)
+BTAPIKEY = None
+
+#Redis Connection Info
+REDIS_HOST='localhost'
+REDIS_PORT=6379
+REDIS_DB=0
+
