@@ -1,7 +1,6 @@
 from balancehelper import *
-import redis, json, time, datetime
-
-r = redis.StrictRedis(host='localhost', port=6379, db=0)
+from cacher import *
+import json, time, datetime
 
 def printmsg(msg):
     print str(datetime.datetime.now())+str(" ")+str(msg)
@@ -10,16 +9,16 @@ def printmsg(msg):
 def updateBalancesCache():
   while True:
     printmsg("Checking for balance updates")
-    for space in r.keys("omniwallet:balances:addresses*"):
+    for space in rKeys("omniwallet:balances:addresses*"):
       try:
-        addresses=r.get(space)
+        addresses=rGet(space)
         if addresses != None:
           addresses = json.loads(addresses)
           printmsg("loaded "+str(len(addresses))+" addresses from redis "+str(space))
           balances=get_bulkbalancedata(addresses)
-          r.set("omniwallet:balances:balbook"+str(space[29:]),json.dumps(balances))
+          rSet("omniwallet:balances:balbook"+str(space[29:]),json.dumps(balances))
           #expire balance data after 10 minutes (prevent stale data in case we crash)
-          r.expire("omniwallet:balances:balbook"+str(space[29:]),600)
+          rExpire("omniwallet:balances:balbook"+str(space[29:]),600)
 
       except Exception as e:
         printmsg("error updating balances: "+str(space)+' '+str(e))
