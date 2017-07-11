@@ -3,11 +3,11 @@ import os.path
 import sys
 from datetime import datetime
 from cacher import *
+import config
 
 USER=getpass.getuser()
 lockFile='/tmp/omniEngine.lock.'+str(USER)
 now=datetime.now()
-testnet=0
 sys.argv.pop(0)
 
 if os.path.isfile(lockFile):
@@ -176,7 +176,7 @@ else:
       #check any active crowdsales and update json if the endtime has passed (based on block time)
       expireCrowdsales(block_data['result']['time'], Protocol)
       #exodus address generates dev msc, sync our balance to match the generated balanace
-      if testnet:
+      if config.TESTNET:
         syncAddress('mpexoDuSkGGqvqrkrjiFng38QPkJQVFyqv', Protocol)
         #upadate temp orderbook
         #updateorderblob()
