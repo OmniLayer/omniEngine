@@ -2,6 +2,7 @@ from sql import *
 import os.path
 import sys
 from datetime import datetime
+from datetime import timedelta
 from cacher import *
 
 USER=getpass.getuser()
@@ -9,6 +10,7 @@ lockFile='/tmp/omniEngine.lock.'+str(USER)
 now=datetime.now()
 testnet=0
 sys.argv.pop(0)
+lastStatusUpdateTime=None
 
 if os.path.isfile(lockFile):
   #open the lock file to read pid and timestamp
@@ -112,7 +114,16 @@ else:
 
       #Status update every 10 blocks
       if height % 10 == 0 or currentBlock:
-        printdebug(("Block",height,"of",endBlock),1)
+        if lastStatusUpdateTime == None:
+          printdebug(("Block",height,"of",endBlock),1)
+          lastStatusUpdateTime=datetime.now()
+        else:
+          statusUpdateTime=datetime.now()
+          timeDelta = statusUpdateTime - lastStatusUpdateTime
+          blocksLeft = endBlock - currentBlock
+          projectedTime = str(timedelta(microseconds=timeDelta.microseconds * blocksLeft))
+          printdebug(("Block",height,"of",endBlock, "(took", timeDelta.microseconds, "microseconds, blocks left:", blocksLeft, ", eta", projectedTime,")"),1)
+          lastStatusUpdateTime=statusUpdateTime
 
       #Process Bitcoin Transacations
       Protocol="Bitcoin"
