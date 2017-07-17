@@ -90,7 +90,7 @@ def bc_getutxo_blockr(address, ramount):
   except:
     return {"error": "Connection error", "code": r.status_code}
 
-
+#get public key from blockchain.info
 def bc_getpubkey(address):
   try:
     r = requests.get('https://blockchain.info/q/pubkeyaddr/'+address)
@@ -115,6 +115,7 @@ def bc_getbalance(address):
     rExpire("omniwallet:balances:address:"+str(address),expTime)
   return balance
 
+#get balance from bitgo.com
 def bc_getbalance_bitgo(address):
   try:
     r= requests.get('https://www.bitgo.com/api/v1/address/'+address)
@@ -126,6 +127,7 @@ def bc_getbalance_bitgo(address):
   except:
     return bc_getbalance_blockcypher(address)
 
+#get balance from blockcypher.com
 def bc_getbalance_blockcypher(address):
   try:
     r= requests.get('https://api.blockcypher.com/v1/btc/main/addrs/'+address+'/balance')
@@ -137,6 +139,7 @@ def bc_getbalance_blockcypher(address):
   except:
     return bc_getbalance_blockr(address)
 
+#get balance from btc.blockr.io
 def bc_getbalance_blockr(address):
   try:
     r= requests.get('http://btc.blockr.io/api/v1/address/balance/'+address)
