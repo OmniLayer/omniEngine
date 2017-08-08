@@ -251,23 +251,13 @@ def updateOMNISP():
         trades=formatData(sp, source)
         volume = 0;
         sum = 0;
+        value = 0;
         for trade in trades:
           volume += float( trade['amount'] )
           sum += float( trade['amount'] ) * float(trade['rate'] )
 
-        #try:
-        #  for trade in r.json():
-        #    volume += float( trade['amount'] )
-        #    sum += float( trade['amount'] ) * float(trade['rate'] )
-        #except ValueError:
-        #  for trade in eval(r.content):
-        #    volume += float( trade['amount'] )
-        #    sum += float( trade['amount'] ) * float(trade['rate'] )
-  
-        #BTC is calculated in satashis in getvalue, so adjust our value here to compensate
-  
-        #value="{:.8f}".format( sum / volume)
-        value=(sum / volume)
+        if volume != 0:
+          value=(sum / volume)
       elif sp == 31:
         #Temp set sp value to ~$10
         source='Fixed'
