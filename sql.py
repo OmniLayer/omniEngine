@@ -1650,7 +1650,7 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
            #make sure we don't double match? only process 'matches' on the later/2nd tx
            #need additional check from zath for when tx's are in same block
            
-           matchtxdbserialnum=gettxdbserialnum(match['txid'])
+           matchtxdbserialnum=gettxdbserialnum(match['txid'], TxDBSerialNum)
            if txblock == match['block'] and matchtxdbserialnum < TxDBSerialNum:
             BuyerRole='buyer'
             BuyerAddress=match['address']
