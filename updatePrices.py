@@ -97,11 +97,11 @@ def getSource(sp):
   try:
     #convert={1:"https://masterxchange.com/api/trades.php",
     #         3:"https://masterxchange.com/api/v2/trades.php?currency=maid"
+    #         56:"https://bittrex.com/api/v1.1/public/getmarkethistory?market=BTC-SEC&count=100",
     #        }
     convert={1:"https://poloniex.com/public?command=returnTradeHistory&currencyPair=BTC_OMNI",
              3:"https://poloniex.com/public?command=returnTradeHistory&currencyPair=BTC_MAID",
              39:"https://bittrex.com/api/v1.1/public/getmarkethistory?market=BTC-AMP&count=100",
-             56:"https://bittrex.com/api/v1.1/public/getmarkethistory?market=BTC-SEC&count=100",
              58:"https://bittrex.com/api/v1.1/public/getmarkethistory?market=BTC-AGRS&count=100",
              59:"https://bittrex.com/api/v1.1/public/getmarkethistory?market=BTC-PDC&count=100",
              89:"https://api.livecoin.net/exchange/last_trades?currencyPair=DIBC/BTC",
@@ -217,21 +217,24 @@ def formatData(sp, source):
   except ValueError:
     trades=eval(r.content)
 
-  if sp in [39,56,58,59]:
-    trades=trades['result']
-    for trade in trades:
-      trade['rate']=trade['Price']
-      trade['amount']=trade['Quantity']  
+  try:
+    if sp in [39,56,58,59]:
+      trades=trades['result']
+      for trade in trades:
+        trade['rate']=trade['Price']
+        trade['amount']=trade['Quantity']  
       
-  if sp in [89]:
-    for trade in trades:
-      trade['rate']=trade['price']
-      trade['amount']=trade['quantity']
+    if sp in [89]:
+      for trade in trades:
+        trade['rate']=trade['price']
+        trade['amount']=trade['quantity']
       
-  if sp in [90]:
-    for trade in trades:
-      trade['rate']=trade['price']
+    if sp in [90]:
+      for trade in trades:
+        trade['rate']=trade['price']
 
+  except TypeError:
+    trades=[]
 
   return trades
 
