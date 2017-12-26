@@ -96,16 +96,23 @@ def fiat2propertyid(abv):
 def getSource(sp):
   try:
     #convert={1:"https://masterxchange.com/api/trades.php",
+    #         1:"https://poloniex.com/public?command=returnTradeHistory&currencyPair=BTC_OMNI",
     #         3:"https://masterxchange.com/api/v2/trades.php?currency=maid"
-    #         
-    #         89:"https://api.livecoin.net/exchange/last_trades?currencyPair=DIBC/BTC",
-    #        }
-    convert={1:"https://poloniex.com/public?command=returnTradeHistory&currencyPair=BTC_OMNI",
              3:"https://poloniex.com/public?command=returnTradeHistory&currencyPair=BTC_MAID",
              39:"https://bittrex.com/api/v1.1/public/getmarkethistory?market=BTC-AMP&count=100",
-             56:"https://bittrex.com/api/v1.1/public/getmarkethistory?market=BTC-SAFEX&count=100",
+    #         56:"https://bittrex.com/api/v1.1/public/getmarkethistory?market=BTC-SAFEX&count=100",
              58:"https://bittrex.com/api/v1.1/public/getmarkethistory?market=BTC-AGRS&count=100",
              59:"https://bittrex.com/api/v1.1/public/getmarkethistory?market=BTC-PDC&count=100",             
+    #         89:"https://api.livecoin.net/exchange/last_trades?currencyPair=DIBC/BTC",
+    #        }
+    convert={1:{"id":"OMNI","coinmarketcap" : True},
+             3:{"id":"MAID","coinmarketcap" : True},
+             39:{"id":"AMP","coinmarketcap" : True},
+             56:{"id":"SAFEX","coinmarketcap" : True},
+             58:{"id":"AGRS","coinmarketcap" : True},
+             59:{"id":"PDC","coinmarketcap" : True},
+             66:{"id":"GARY","coinmarketcap" : True},
+             89:{"id":"DIBC","coinmarketcap" : True},
              90:"https://market.bitsquare.io/api/trades?market=sfsc_btc"
             }
     return convert[sp]
@@ -171,46 +178,8 @@ def updateBTC():
       pass
 
 
-def updateBTC_OLD():
-    try:
-      source='https://api.bitcoinaverage.com/all'
-      r= requests.get( source, timeout=15 )
-      curlist=r.json()
-      #timestamp=curlist.pop('timestamp')
-      if 'ignored_exchanges' in curlist:
-        curlist.pop('ignored_exchanges')
-      for abv in curlist:
-        value=curlist[abv]['averages']['last']
-        timestamp=curlist[abv]['averages']['timestamp']
-        #get our fiat property id using internal conversion schema  
-        fpid=fiat2propertyid(abv)
-        if fpid == -1:
-           printdebug(("Currency Symbol",abv,"not in db. New currency?"),5)
-        else:
-          upsertRate('Fiat', fpid, 'Bitcoin', 0, value, source, timestamp)
-
-      #currencies removed from bitcoinaverage
-      for abv in ['CHF', 'AUD', 'NOK', 'HKD', 'RON']:
-        source2='http://download.finance.yahoo.com/d/quotes.csv?s=USD'+abv+'=X&f=snl1d1t1ab'
-        r2= requests.get( source2, timeout=15 )
-        data=r2.text.split(',')
-        value=float(data[2])*curlist['USD']['averages']['last']
-        timestamp=str(data[3])+" "+str(data[4])
-        #get our fiat property id using internal conversion schema  
-        fpid=fiat2propertyid(abv)
-        if fpid == -1:
-           printdebug(("Currency Symbol",abv,"not in db. New currency?"),5)
-        else:
-          upsertRate('Fiat', fpid, 'Bitcoin', 0, value, source2, timestamp)
-
-    except requests.exceptions.RequestException as e:
-      #error or timeout, skip for now
-      printdebug(("Error updating BTC Price",e),3)
-      pass
-
 def formatData(sp, source):
   trades=[]
-  source=getSource(sp)
   r = requests.get( source, timeout=15 )
 
   try:
@@ -219,20 +188,26 @@ def formatData(sp, source):
     trades=eval(r.content)
 
   try:
-    if sp in [39,56,58,59]:
-      trades=trades['result']
-      for trade in trades:
-        trade['rate']=trade['Price']
-        trade['amount']=trade['Quantity']  
+    if 'coinmarketcap' in source:
+      tmap={}
+      for x in trades:
+        tmap[x['symbol']]=x
+      trades=tmap 
+    else:
+      if sp in [39,58,59]:
+        trades=trades['result']
+        for trade in trades:
+          trade['rate']=trade['Price']
+          trade['amount']=trade['Quantity']  
       
-    if sp in [89]:
-      for trade in trades:
-        trade['rate']=trade['price']
-        trade['amount']=trade['quantity']
+      if sp in [89]:
+        for trade in trades:
+          trade['rate']=trade['price']
+          trade['amount']=trade['quantity']
       
-    if sp in [90]:
-      for trade in trades:
-        trade['rate']=trade['price']
+      if sp in [90]:
+        for trade in trades:
+          trade['rate']=trade['price']
 
   except TypeError:
     trades=[]
@@ -243,11 +218,17 @@ def updateOMNISP():
   try:
     #get list of smart properties we know about
     ROWS=dbSelect("select propertyid from smartproperties where propertyid >0 and Protocol='Omni' order by propertyid")
-    for x in ROWS:
+    #get Coinmarket Cap data
+    cmcSource="https://api.coinmarketcap.com/v1/ticker/?limit=0"
+    cmcData=formatData(0, cmcSource)
 
+    for x in ROWS:
       sp=x[0]  
       source=getSource(sp)
-      if source != None:
+      if 'coinmarketcap' in source :
+        value=Decimal(cmcData[source['id']]['price_btc'])
+        source=str(cmcSource)+str("&symbol=")+str(source['id'])
+      elif source != None:
         #r = requests.get( source, timeout=15 )
         trades=formatData(sp, source)
         volume = 0;
