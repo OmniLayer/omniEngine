@@ -225,29 +225,24 @@ def updateOMNISP():
     for x in ROWS:
       sp=x[0]  
       source=getSource(sp)
-      if 'coinmarketcap' in source :
-        value=Decimal(cmcData[source['id']]['price_btc'])
-        source=str(cmcSource)+str("&symbol=")+str(source['id'])
-      elif source != None:
-        #r = requests.get( source, timeout=15 )
-        trades=formatData(sp, source)
-        volume = 0;
-        sum = 0;
-        value = 0;
-        for trade in trades:
-          volume += float( trade['amount'] )
-          sum += float( trade['amount'] ) * float(trade['rate'] )
-
-        if volume != 0:
-          value=(sum / volume)
-      elif sp == 31:
-        #Temp set sp value to ~$10
-        source='Fixed'
-        value=getfixedprice(1)
-      elif sp == 34:
-        #Temp set sp value to ~$10
-        source='Fixed'
-        value=getfixedprice(10)
+      if source != None:
+        if 'coinmarketcap' in source :
+          value=Decimal(cmcData[source['id']]['price_btc'])
+          source=str(cmcSource)+str("&symbol=")+str(source['id'])
+        elif sp == 31:
+          #Fix sp value to ~$1
+          source='Fixed'
+          value=getfixedprice(1)
+        else:
+          trades=formatData(sp, source)
+          volume = 0;
+          sum = 0;
+          value = 0;
+          for trade in trades:
+            volume += float( trade['amount'] )
+            sum += float( trade['amount'] ) * float(trade['rate'] )
+          if volume != 0:
+            value=(sum / volume)
       else:
         #no Known source for a valuation, set to 0
         value=0
