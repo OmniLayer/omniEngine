@@ -105,27 +105,37 @@ def getSource(sp):
     #         59:"https://bittrex.com/api/v1.1/public/getmarkethistory?market=BTC-PDC&count=100",             
     #         89:"https://api.livecoin.net/exchange/last_trades?currencyPair=DIBC/BTC",
     #        }
-    convert={1:{"id":"OMNI","coinmarketcap" : True},
-             3:{"id":"MAID","coinmarketcap" : True},
-             39:{"id":"AMP","coinmarketcap" : True},
-             56:{"id":"SAFEX","coinmarketcap" : True},
-             58:{"id":"AGRS","coinmarketcap" : True},
-             59:{"id":"PDC","coinmarketcap" : True},
-             66:{"id":"GARY","coinmarketcap" : True},
-             89:{"id":"DIBC","coinmarketcap" : True},
+    convert={1:{"id":"OMNI","source":"coinmarketcap"},
+             3:{"id":"MAID","source":"coinmarketcap"},
+             31:{"id":"USDt","source":"fixed","value":1,"base":0},
+             39:{"id":"AMP","source":"coinmarketcap"},
+             41:{"id":"EURt","source":"fixed","value":1,"base":2},
+             56:{"id":"SAFEX","source":"coinmarketcap"},
+             58:{"id":"AGRS","source":"coinmarketcap"},
+             59:{"id":"PDC","source":"coinmarketcap"},
+             66:{"id":"GARY","source":"coinmarketcap"},
+             89:{"id":"DIBC","source":"coinmarketcap"},
              90:"https://market.bitsquare.io/api/trades?market=sfsc_btc"
             }
     return convert[sp]
   except KeyError:
     return None
 
-def getfixedprice(desiredvalue):
-        ROWS=dbSelect("select rate1for2 from exchangerates where protocol1='Fiat' and propertyid1=0 and protocol2='Bitcoin' and propertyid2=0 "
-                      "order by asof desc limit 1")
-        if len(ROWS)>0:
-          return desiredvalue / ROWS[0][0]
-        else:
-          return 0
+def getfixedprice(desiredvalue, base):
+  #base id, currency
+  #  0 | USD       #  1 | CAD       #  2 | EUR       #  3 | AUD
+  #  4 | IDR       #  5 | ILS       #  6 | GBP       #  7 | RON
+  #  8 | SEK       #  9 | SGD       # 10 | HKD       # 11 | CHF
+  # 12 | CNY       # 13 | TRY       # 14 | NZD       # 15 | NOK
+  # 16 | RUB       # 17 | MXN       # 18 | BRL       # 19 | PLN       
+  # 20 | ZAR       # 21 | JPY
+
+  ROWS=dbSelect("select rate1for2 from exchangerates where protocol1='Fiat' and propertyid1=%s and protocol2='Bitcoin' and propertyid2=0 "
+                "order by asof desc limit 1",[int(base)])
+  if len(ROWS)>0:
+    return desiredvalue / ROWS[0][0]
+  else:
+    return 0
 
 def upsertRate(protocol1, propertyid1, protocol2, propertyid2, rate, source, timestamp=None):
 
@@ -224,16 +234,17 @@ def updateOMNISP():
 
     for x in ROWS:
       sp=x[0]  
-      source=getSource(sp)
-      if source != None:
-        if 'coinmarketcap' in source :
+      src=getSource(sp)
+      if src != None:
+        if src['source'] == 'coinmarketcap':
           value=Decimal(cmcData[source['id']]['price_btc'])
           source=str(cmcSource)+str("&symbol=")+str(source['id'])
-        elif sp == 31:
-          #Fix sp value to ~$1
+        elif src['source'] == 'fixed':
+          #Fix sp value
           source='Fixed'
-          value=getfixedprice(1)
+          value=getfixedprice(src['value'],src['base'])
         else:
+          source=src
           trades=formatData(sp, source)
           volume = 0;
           sum = 0;
