@@ -236,24 +236,28 @@ def updateOMNISP():
       sp=x[0]  
       src=getSource(sp)
       if src != None:
-        if src['source'] == 'coinmarketcap':
-          value=Decimal(cmcData[src['id']]['price_btc'])
-          source=str(cmcSource)+str("&symbol=")+str(src['id'])
-        elif src['source'] == 'fixed':
-          #Fix sp value
-          source='Fixed'
-          value=getfixedprice(src['value'],src['base'])
-        else:
-          source=src
-          trades=formatData(sp, source)
-          volume = 0;
-          sum = 0;
-          value = 0;
-          for trade in trades:
-            volume += float( trade['amount'] )
-            sum += float( trade['amount'] ) * float(trade['rate'] )
-          if volume != 0:
-            value=(sum / volume)
+        try:
+          if 'source' in src and src['source'] == 'coinmarketcap':
+            value=Decimal(cmcData[src['id']]['price_btc'])
+            source=str(cmcSource)+str("&symbol=")+str(src['id'])
+          elif 'source' in src and src['source'] == 'fixed':
+            #Fix sp value
+            source='Fixed'
+            value=getfixedprice(src['value'],src['base'])
+          else:
+            source=src
+            trades=formatData(sp, source)
+            volume = 0;
+            sum = 0;
+            value = 0;
+            for trade in trades:
+              volume += float( trade['amount'] )
+              sum += float( trade['amount'] ) * float(trade['rate'] )
+            if volume != 0:
+              value=(sum / volume)
+        except Exception as e:
+          printdebug(("OMNISP Error processing:",e,sp,src),3)
+          pass
       else:
         #no Known source for a valuation, set to 0
         value=0
