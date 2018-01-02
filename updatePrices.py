@@ -237,8 +237,8 @@ def updateOMNISP():
       src=getSource(sp)
       if src != None:
         if src['source'] == 'coinmarketcap':
-          value=Decimal(cmcData[source['id']]['price_btc'])
-          source=str(cmcSource)+str("&symbol=")+str(source['id'])
+          value=Decimal(cmcData[src['id']]['price_btc'])
+          source=str(cmcSource)+str("&symbol=")+str(src['id'])
         elif src['source'] == 'fixed':
           #Fix sp value
           source='Fixed'
