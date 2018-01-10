@@ -115,7 +115,8 @@ def getSource(sp):
              59:{"id":"PDC","source":"coinmarketcap"},
              66:{"id":"GARY","source":"coinmarketcap"},
              89:{"id":"DIBC","source":"coinmarketcap"},
-             90:"https://market.bitsquare.io/api/trades?market=sfsc_btc"
+             90:"https://market.bitsquare.io/api/trades?market=sfsc_btc",
+             149:{"id":"ALT","source":"coinmarketcap"}
             }
     return convert[sp]
   except KeyError:
