@@ -99,13 +99,14 @@ create table if not exists AddressesInWallets (		/* many-to-many */
 	Address varchar(64) not null		/* Address must exist in the AddressBalances table */
 	, WalletID uuid	not null		/* WalletID must exist in the Wallets table */
 
-	, primary key (WalletID, Address)
-/*	, foreign key (WalletID) references Wallets on delete CASCADE on update CASCADE */	/* del/upd rows here if corresponding row is deleted/updated */
+	, primary key (WalletID, Address, protocol, propertyid)
+	, foreign key (WalletID) references Wallets on delete CASCADE on update CASCADE 	/* del/upd rows here if corresponding row is deleted/updated */
+        , foreign key (address, protocol, propertyid) references addressbalances
 )
 ;
 
 /* to find the wallets that have a particular address. */
-create index AddressIndex on AddressesInWallets (Address)
+create index AddressIndex on AddressesInWallets (Address, protocol, propertyid)
 ;
 
 /* block header information, from https://en.bitcoin.it/wiki/Protocol_specification & getblock RPC JSON */
@@ -150,11 +151,15 @@ create table if not exists Transactions (
 ;
 
 /* to find transactions by the db internal id */
-/* create unique index TxDBSerials on Transactions (TxDBSerialNum, Protocol)
-; */
+create unique index TxDBSerials on Transactions (TxDBSerialNum, Protocol)
+;
 
 /* to find transactions by type & version */
 create index TxTypes on Transactions (TxType, TxVersion, Protocol)
+;
+
+/* to find transactions by serialnum */
+create index TxDbSerialNum on Transactions (Txdbserialnum)
 ;
 
 /* to find transactions by order in the blockchain */
@@ -167,7 +172,7 @@ create table if not exists TxJSON (
 	, Protocol Protocol not null		/* initially 'Bitcoin' or 'Omni' */
 	, TxData json not null			/* the tx message fields */
 
-/*	, primary key (TxDBSerialNum, Protocol) */
+	, primary key (TxDBSerialNum, Protocol) 
 /*	, foreign key (TxDBSerialNum, Protocol) references Transactions(TxDBSerialNum, Protocol) */
 )
 ;
@@ -185,14 +190,18 @@ create table if not exists AddressesInTxs (					/* many-to-many */
 	, BalanceAcceptedCreditDebit numeric(19) null		/* how much the balance changed */
 	, LinkedTxDBSerialNum int8 not null default -1	/* tx with the associated output for inputs, or with the associated input for outputs */
 
-/*	, primary key (Address, TxDBSerialNum, PropertyID, AddressRole) */
+	, primary key (Address, TxDBSerialNum, PropertyID, AddressRole, addresstxindex)
 /*	, foreign key (Address, Protocol, PropertyID) references AddressBalances */
 /*	, foreign key (TxDBSerialNum, Protocol) references Transactions (TxDBSerialNum, Protocol) */
 )
 ;
 
 /* to find info about addresses affected by a particular transaction */
-create index TxDBSerial on AddressesinTxs (TxDBSerialNum, PropertyID)
+create index addr_idx on AddressesinTxs (address, TxDBSerialNum, PropertyID)
+;
+
+/* to find by txdbserialnum */
+create index aitdbser_idx on addressesintxs (txdbserialnum)
 ;
 
 /* "temporary" table for pre-populating the LinkedTxDBSerialNum field when doing bulk loads of AddressesInTxs */
@@ -252,7 +261,7 @@ create table if not exists PropertyHistory (
 	, PropertyID bigint not null		/* signed 64-bit, to store unsigned 32 bit values */
 	, TxDBSerialNum int8 not null		/* the tx that affected this SP, for faster joins */
 
-/*	, primary key (PropertyID, Protocol) */
+	, primary key (PropertyID, Protocol, txdbserialnum) 
 /*	, foreign key (PropertyID, Protocol) references SmartProperties */
 )
 ;
@@ -268,7 +277,7 @@ create table if not exists Following (
 	, ObjectID varchar(64)	/* works with Addresses initially */
 				/* future - Event, see EventTypes (to generate alerts/notifications) */
 	, primary key (WalletID)
-/*	, foreign key (WalletID) references Wallets */
+	, foreign key (WalletID) references Wallets 
 )
 ;
 
@@ -313,6 +322,8 @@ create table if not exists ActiveOffers (
 
 create index Sellers on ActiveOffers (Seller)
 ;
+create index idsellingdesired on ActiveOffers (propertyidselling, propertyiddesired)
+;
 
 create table if not exists OfferAccepts (
         Buyer varchar(64) not null                     /* Buyers address */
@@ -325,7 +336,7 @@ create table if not exists OfferAccepts (
       , ExpiredState boolean default false             /* true/false if this accept is expired */
       , AmountPurchased numeric(19) not null default 0 /* amount user has purchsed/paid for so far */
       
-/*      , primary key (SaleTxDbSerialNum) */
+      , primary key (SaleTxDbSerialNum, linkedtxdbserialnum) 
 /*      , foreign key (SaleTxDbSerialNum) references ActiveOffers (CreateTxDBSerialNum) */
 /*      , foreign key (LinkedTxDBSerialNum) references Transactions (TxDBSerialNum) */
 )
