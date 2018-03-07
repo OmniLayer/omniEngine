@@ -250,7 +250,7 @@ def checkPending(blocktxs):
 
 def updateAddPending():
   pendingList=omni_listpendingtransactions()
-  for rawtx in pendingList:
+  for rawtx in pendingList['result']:
    try:
     saddressrole="sender"
     raddressrole="recipient"
