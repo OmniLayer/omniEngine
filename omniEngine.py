@@ -217,18 +217,18 @@ else:
   #/while loop.  Finished processing all current blocks.
 
   #check/add/update and pending tx in the database
-  #try:
-    #updateAddPending()
-    #dbCommit()
-  #except Exception,e:
+  try:
+    updateAddPending()
+    dbCommit()
+  except Exception,e:
     #Catch any issues and stop processing. Try to undo any incomplete changes
-  #  print "Problem with ", e
-  #  if dbRollback():
-  #    print "Database rolledback, last successful block", (currentBlock -1)
-  #  else:
-  #    print "Problem rolling database back, check block data for", currentBlock
-  #  os.remove(lockFile)
-  #  exit(1)
+    print "Problem updating pending ", e
+    if dbRollback():
+      print "Database rolledback"
+    else:
+      print "Problem rolling database back, check pending data"
+    os.remove(lockFile)
+    exit(1)
 
   #remove the lock file and let ourself finish
   os.remove(lockFile)
