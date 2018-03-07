@@ -250,7 +250,7 @@ def checkPending(blocktxs):
 
 def updateAddPending():
   pendingList=omni_listpendingtransactions()
-  printdebug(("processing ",len(pendingList['result']," pending transactions"),0)
+  printdebug(("processing ",len(pendingList['result'])," pending transactions"),0)
   counter=0
   for rawtx in pendingList['result']:
    try:
