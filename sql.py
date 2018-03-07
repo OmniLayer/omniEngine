@@ -264,7 +264,7 @@ def updateAddPending():
     txhash = rawtx['txid']
 
     #check if tx is already in db and skip
-    existing=dbSelect("select * from transactions where txhash=%s",[txhash])
+    existing=dbSelect("select * from transactions where txhash=%s and protocol='Omni'",[txhash])
     if len(existing) > 0:
       continue
 
