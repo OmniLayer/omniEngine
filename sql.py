@@ -213,7 +213,7 @@ def reorgRollback(block):
 def checkPending(blocktxs):
     #Check any pending tx to see if 1. They are in the current block of tx's we are processing or 2. 1 days have passed since broadcast and they are no longer in network.
     #Remove them if either of these has happened
-    pendingtxs=dbSelect("select txhash,txdbserialnum,protocol,extract(epoch from txrecvtime) from transactions where txstate='pending' and txdbserialnum < -1")
+    pendingtxs=dbSelect("select txhash,txdbserialnum,protocol,extract(epoch from txrecvtime) from transactions where txstate='pending' and txdbserialnum < 0")
     for tx in pendingtxs:
       txhash=tx[0]
       txdbserialnum=tx[1]
@@ -247,6 +247,88 @@ def checkPending(blocktxs):
         dbExecute("delete from addressesintxs where txdbserialnum=%s and protocol=%s", (txdbserialnum,protocol))
         dbExecute("delete from transactions where txdbserialnum=%s and protocol=%s", (txdbserialnum,protocol))
         dbExecute("delete from txjson where txdbserialnum=%s and protocol=%s", (txdbserialnum,protocol))
+
+def updateAddPending():
+  pendingList=omni_listpendingtransactions()
+  for rawtx in pendingList:
+   try:
+    saddressrole="sender"
+    raddressrole="recipient"
+    sbacd=None
+    rbacd=None
+    sender = rawtx['sendingaddress']
+    receiver = rawtx['referenceaddress']
+    propertyid = rawtx['propertyid'] if 'propertyid' in rawtx else rawtx['propertyidforsale']
+    txtype = rawtx['type_int']
+    txversion = rawtx['version']
+    txhash = rawtx['txid']
+
+    #check if tx is already in db and skip
+    existing=dbSelect("select * from transactions where txhash=%s",[txhash])
+    if len(existing) > 0:
+      continue
+
+    protocol = "Omni"
+    addresstxindex=0
+    txdbserialnum = dbSelect("select least(-1,min(txdbserialnum)) from transactions;")[0][0]
+    txdbserialnum -= 1
+    if 'amount' in rawtx:
+      if rawtx['divisible']:
+        amount = int(decimal.Decimal(str(rawtx['amount']))*decimal.Decimal(1e8))
+      else:
+        amount = int(rawtx['amount'])
+    else:
+      if rawtx['propertyidforsaleisdivisible']:
+        amount = int(decimal.Decimal(str(rawtx['amountforsale']))*decimal.Decimal(1e8))
+      else:
+        amount = int(rawtx['amountforsale'])
+
+    if txtype in [26,55]:
+      #handle grants to ourself/others and cancel by price on OmniDex
+      if receiver == "":
+        sendamount=amount
+        recvamount=0
+      else:
+        sendamount=0
+        recvamount=amount
+    elif txtype == 22:
+      #sender = buyer
+      saddressrole="buyer"
+      sbacd=None
+      #receiver = seller
+      raddressrole="seller"
+      rbacd=amount
+      #unused in this tx
+      sendamount=None
+      recvamount=None
+    else:
+      #all other txs deduct from our balance and, where applicable, apply to the reciever
+      sendamount=-amount
+      recvamount=amount  
+
+    dbExecute("insert into transactions (txhash,protocol,txdbserialnum,txtype,txversion) values(%s,%s,%s,%s,%s)",
+              (txhash,protocol,txdbserialnum,txtype,txversion))
+    
+    address=sender
+    #insert the addressesintxs entry for the sender
+    dbExecute("insert into addressesintxs (address,propertyid,protocol,txdbserialnum,addresstxindex,addressrole,balanceavailablecreditdebit,balanceacceptedcreditdebit) "
+              "values(%s,%s,%s,%s,%s,%s,%s,%s)", (address,propertyid,protocol,txdbserialnum,addresstxindex,saddressrole,sendamount,sbacd))
+
+    #update pending balance
+    #dbExecute("update addressbalances set balancepending=balancepending+%s::numeric where address=%s and propertyid=%s and protocol=%s", (sendamount,address,propertyid,protocol))
+
+    if receiver != "":
+      address=receiver
+      dbExecute("insert into addressesintxs (address,propertyid,protocol,txdbserialnum,addresstxindex,addressrole,balanceavailablecreditdebit,balanceacceptedcreditdebit) "
+                "values(%s,%s,%s,%s,%s,%s,%s,%s)", (address,propertyid,protocol,txdbserialnum,addresstxindex,raddressrole,recvamount,rbacd))
+      #update pending balance
+      #dbExecute("update addressbalances set balancepending=balancepending+%s::numeric where address=%s and propertyid=%s and protocol=%s", (recvamount,address,propertyid,protocol))
+
+    #store decoded omni data until tx confirms
+    dbExecute("insert into txjson (txdbserialnum, protocol, txdata) values (%s,%s,%s)", (txdbserialnum, protocol, json.dumps(rawtx)) )
+
+   except Exception,e:
+    print "Error: ", e, "\n Could not add OMNI PendingTx: ", rawtx
         
 
 def keyByAddress(item):
