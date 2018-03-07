@@ -250,6 +250,8 @@ def checkPending(blocktxs):
 
 def updateAddPending():
   pendingList=omni_listpendingtransactions()
+  printdebug(("processing ",len(pendingList['result']," pending transactions"),0)
+  counter=0
   for rawtx in pendingList['result']:
    try:
     saddressrole="sender"
@@ -327,9 +329,10 @@ def updateAddPending():
     #store decoded omni data until tx confirms
     dbExecute("insert into txjson (txdbserialnum, protocol, txdata) values (%s,%s,%s)", (txdbserialnum, protocol, json.dumps(rawtx)) )
 
+    counter+=1
    except Exception,e:
     print "Error: ", e, "\n Could not add OMNI PendingTx: ", rawtx
-        
+  printdebug(("added ",counter," pending txs to db"),0)      
 
 def keyByAddress(item):
     return item[0]

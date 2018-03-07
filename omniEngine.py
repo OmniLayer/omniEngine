@@ -220,6 +220,7 @@ else:
   try:
     updateAddPending()
     dbCommit()
+    printdebug("Pending List updated",0)
   except Exception,e:
     #Catch any issues and stop processing. Try to undo any incomplete changes
     print "Problem updating pending ", e
