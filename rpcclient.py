@@ -149,6 +149,9 @@ def gettrade(txhash):
 def getsto_MP(txid):
     return host.call("getsto_MP", txid , "*")
 
+def omni_listpendingtransactions():
+    return host.call("omni_listpendingtransactions")
+
 def getsimplesendPayload(propertyid, amount):
     return host.call("omni_createpayload_simplesend", int(propertyid), amount)
 def getsendallPayload(ecosystem):
