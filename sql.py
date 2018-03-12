@@ -1089,7 +1089,6 @@ def checkbalances_MP():
           #address not in database, insert
           item =[{'Address':Address, 'bal':{'Status': 'Missing', 'PropertyID': PropertyID, 'BalanceAvailable':BalanceAvailable,'BalanceReserved': BalanceReserved,'BalanceAccepted':BalanceAccepted }}]
           #add the missing/incorrect item to our list to return
-            BalanceFrozen=int(BalanceFrozen)
           try:
             retval[PropertyID]=retval[PropertyID]+item 
           except KeyError:
