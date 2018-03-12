@@ -1127,12 +1127,12 @@ def checkbalances_MP():
 
 
 
-def updateBalance(Address, Protocol, PropertyID, Ecosystem, BalanceAvailable, BalanceReserved, BalanceAccepted, LastTxDBSerialNum):
+def updateBalance(Address, Protocol, PropertyID, Ecosystem, BalanceAvailable, BalanceReserved, BalanceAccepted, LastTxDBSerialNum, BalanceFrozen=0):
       printdebug("Starting updateBalance:", 4)
       printdebug("Address, Protocol, PropertyID, Ecosystem, BalanceAvailable, BalanceReserved, BalanceAccepted, TxDBSerialNum", 4)
       printdebug((Address, Protocol, PropertyID, Ecosystem, BalanceAvailable, BalanceReserved, BalanceAccepted, LastTxDBSerialNum, "\n"), 4)
 
-      rows=dbSelect("select BalanceAvailable, BalanceReserved, BalanceAccepted, LastTxDBSerialNum "
+      rows=dbSelect("select BalanceAvailable, BalanceReserved, BalanceAccepted, BalanceFrozen, LastTxDBSerialNum "
                     "from AddressBalances where address=%s and Protocol=%s and propertyid=%s",
                     (Address, Protocol, PropertyID) )
 
@@ -1163,19 +1163,25 @@ def updateBalance(Address, Protocol, PropertyID, Ecosystem, BalanceAvailable, Ba
         except (ValueError, TypeError):
           BalanceAccepted=0
 
+        try:
+          BalanceFrozen=int(BalanceFrozen)
+        except (ValueError, TypeError):
+          BalanceFrozen=0
+
         #address not in database, insert
         dbExecute("INSERT into AddressBalances "
-                    "(Address, Protocol, PropertyID, Ecosystem, BalanceAvailable, BalanceReserved, BalanceAccepted, LastTxDBSerialNum) "
-                    "VALUES (%s,%s,%s,%s,%s,%s,%s, %s)",
-                    (Address, Protocol, PropertyID, Ecosystem, BalanceAvailable, BalanceReserved, BalanceAccepted, LastTxDBSerialNum) )
+                    "(Address, Protocol, PropertyID, Ecosystem, BalanceAvailable, BalanceReserved, BalanceAccepted, BalanceFrozen, LastTxDBSerialNum) "
+                    "VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)",
+                    (Address, Protocol, PropertyID, Ecosystem, BalanceAvailable, BalanceReserved, BalanceAccepted, BalanceFrozen, LastTxDBSerialNum) )
       else:
         #address in database update
         #check if null values and default to no change on update
         dbAvail=rows[0][0]
         dbResvd=rows[0][1]
         dbAccpt=rows[0][2]
+        dbFrzn=rows[0][3]
         if LastTxDBSerialNum == None:
-          LastTxDBSerialNum=rows[0][3]
+          LastTxDBSerialNum=rows[0][4]
 
         try:
           BalanceAvailable=int(BalanceAvailable)+dbAvail
@@ -1201,8 +1207,16 @@ def updateBalance(Address, Protocol, PropertyID, Ecosystem, BalanceAvailable, Ba
           except (ValueError, TypeError):
             BalanceAccepted=0
 
-        dbExecute("UPDATE AddressBalances set BalanceAvailable=%s, BalanceReserved=%s, BalanceAccepted=%s, LastTxDBSerialNum=%s where address=%s and PropertyID=%s and Protocol=%s",
-                  (BalanceAvailable, BalanceReserved, BalanceAccepted, LastTxDBSerialNum, Address, PropertyID, Protocol) )
+        try:
+          BalanceFrozen=int(BalanceFrozen)+dbFrzn
+        except (ValueError, TypeError):
+          try:
+            BalanceFrozen=dbFrzn+0
+          except (ValueError, TypeError):
+            BalanceFrozen=0
+
+        dbExecute("UPDATE AddressBalances set BalanceAvailable=%s, BalanceReserved=%s, BalanceAccepted=%s, BalanceFrozen=%s, LastTxDBSerialNum=%s where address=%s and PropertyID=%s and Protocol=%s",
+                  (BalanceAvailable, BalanceReserved, BalanceAccepted, BalanceFrozen, LastTxDBSerialNum, Address, PropertyID, Protocol) )
 
 
 def expireCrowdsales(BlockTime, Protocol):
@@ -1366,6 +1380,24 @@ def insertProperty(rawtx, Protocol, PropertyID=None):
         #insert this tx into the history table
         dbExecute("insert into PropertyHistory (Protocol, PropertyID, TxDBSerialNum) Values(%s, %s, %s)", (Protocol, PropertyID, LastTxDBSerialNum))
 
+def getDecodePayload(rawtx):
+    try:
+      if rawtx['result']['valid']:
+        txid=rawtx['result']['txid']
+        payload=omni_getpayload(txid)['result']['payload']
+        pid=int(payload[8:16],16)
+        #amount=int(payload[16:28],16)
+      else:
+        pid=0
+        #amount=0
+    except:
+      pid=0
+      #amount=0
+
+    #return {'pid':pid,'amount':amount}
+    return {'pid':pid}
+
+
 def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
     printdebug("Starting insertTxAddr:", 8)
     printdebug("rawtx, Protocol, TxDBSerialNum, Block", 9)
@@ -1433,6 +1465,9 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
       Address = rawtx['result']['sendingaddress']
       #PropertyID=rawtx['result']['propertyid']
 
+      if txtype in [185,186]:
+        payload=getDecodePayload(rawtx)
+
       #Check if we are a DEx Purchase/payment. Format is a littler different and variables below would fail if we tried. 
       if txtype not in [-22,4,21]:
         Valid=rawtx['result']['valid']
@@ -1442,6 +1477,8 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
             PropertyID = rawtx['result']['propertyidforsale']
           elif txtype == 28:
             PropertyID = rawtx['result']['ecosystem']
+          elif txtype in [185,186]:
+            PropertyID = payload['pid']
           else:
             PropertyID = rawtx['result']['propertyid']
         except KeyError:
@@ -1453,7 +1490,7 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
 
         Ecosystem=getEcosystem(PropertyID) 
 
-        if txtype in [53,70,-1,25,26,27,28,65534,65535]:
+        if txtype in [53,70,-1,25,26,27,28,185,186,65534,65535]:
           value=0
           value_neg=0
         else: 
@@ -1961,6 +1998,44 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
                     (Address, PropertyID, Protocol, TxDBSerialNum, AddressTxIndex, AddressRole, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit, linkedtxdbserialnum))
           Address = rawtx['result']['referenceaddress']
           AddressRole = 'recipient'
+
+      elif txtype in [185,186]:
+        #update freeze info/balances
+        AddressRole = "issuer"
+        BalanceAvailableCreditDebit=None
+        BalanceReservedCreditDebit=None
+        BalanceAcceptedCreditDebit=None
+        dbExecute("insert into addressesintxs "
+                  "(Address, PropertyID, Protocol, TxDBSerialNum, AddressTxIndex, AddressRole, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit, linkedtxdbserialnum)"
+                  "values(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
+                  (Address, PropertyID, Protocol, TxDBSerialNum, AddressTxIndex, AddressRole, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit, linkedtxdbserialnum))
+
+        Address = rawtx['result']['referenceaddress']
+        AddressRole = 'recipient'
+        
+        ROWS=dbSelect("select BalanceAvailable,BalanceFrozen from addressbalances where address=%s and propertyid=%s", (Address, PropertyID))
+
+        if txtype == 185:
+          BalanceAvailableCreditDebit = -int(ROWS[0][0])
+          BalanceFrozenCreditDebit = (BalanceAvailableCreditDebit*-1)
+        elif txtype == 186:
+          BalanceAvailableCreditDebit = int(ROWS[0][1])
+          BalanceFrozenCreditDebit = (BalanceAvailableCreditDebit*-1)
+
+        dbExecute("insert into addressesintxs "
+                  "(Address, PropertyID, Protocol, TxDBSerialNum, AddressTxIndex, AddressRole, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit, BalanceFrozenCreditDebit, linkedtxdbserialnum)"
+                  "values(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
+                  (Address, PropertyID, Protocol, TxDBSerialNum, AddressTxIndex, AddressRole, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit, BalanceFrozenCreditDebit, linkedtxdbserialnum))
+
+        if PropertyID==0:
+          #something went wrong decoding payload, don't update balance
+          return
+        else:
+          if Valid:
+            updateBalance(Address, Protocol, PropertyID, Ecosystem, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit, TxDBSerialNum, BalanceFrozenCreditDebit)
+        #don't process anything else
+        return
+
 
       #end if/elif txtype switch
 

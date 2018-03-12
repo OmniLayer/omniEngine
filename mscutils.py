@@ -52,6 +52,8 @@ def get_TxType(text_type):
              "Grant Property Tokens": 55,
              "Revoke Property Tokens": 56,
              "Change Issuer Address": 70,
+             "Freeze Property Tokens": 185,
+             "Unfreeze Property Tokens": 186,
              "Notification": -1,
              "Feature Activation": 65534,
              "ALERT": 65535
