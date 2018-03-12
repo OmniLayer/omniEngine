@@ -2093,7 +2093,10 @@ def insertTx(rawtx, Protocol, blockheight, seq, TxDBSerialNum):
           Ecosystem=getEcosystem(rawtx['result']['propertyidforsale'])
         elif TxType in [185,186]:
            try:
-             Ecosystem=getEcosystem( getDecodePayload(rawtx)['pid'] )
+             pid=getDecodePayload(rawtx)['pid']
+             Ecosystem=getEcosystem( pid )
+             if 'propertyid' not in rawtx['result']:
+               rawtx['result']['propertyid']=pid
            except:
              Ecosystem=getEcosystem(0)
         else:
