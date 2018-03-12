@@ -1065,9 +1065,7 @@ def checkbalances_MP():
                       "where address=%s and Protocol=%s and propertyid=%s",
                       (Address, Protocol, PropertyID) )
 
-          BalanceFrozen=int(BalanceFrozen)
-        except (ValueError, TypeError):
-          BalanceFrozen=0        try:
+        try:
           #check db for None/Null returns and convert to match core 0 output
           if rows[0][1] == None:
             dbBalanceAvailable = 0
@@ -1092,8 +1090,7 @@ def checkbalances_MP():
           item =[{'Address':Address, 'bal':{'Status': 'Missing', 'PropertyID': PropertyID, 'BalanceAvailable':BalanceAvailable,'BalanceReserved': BalanceReserved,'BalanceAccepted':BalanceAccepted }}]
           #add the missing/incorrect item to our list to return
             BalanceFrozen=int(BalanceFrozen)
-        except (ValueError, TypeError):
-          BalanceFrozen=0        try:
+          try:
             retval[PropertyID]=retval[PropertyID]+item 
           except KeyError:
             retval[PropertyID]=item
