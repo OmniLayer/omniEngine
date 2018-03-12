@@ -88,6 +88,7 @@ create table if not exists AddressBalances (
 	, BalanceAvailable numeric(19) not null default 0
 	, BalanceReserved numeric(19) not null default 0
 	, BalanceAccepted numeric(19) not null default 0
+	, BalanceFrozen numeric(19) not null default 0
 	, LastTxDBSerialNum int8 null			/* last tx that affected this currency for this address, null if no tx's */
 
 	, primary key (Address, Protocol, PropertyID)
@@ -188,6 +189,7 @@ create table if not exists AddressesInTxs (					/* many-to-many */
 	, BalanceAvailableCreditDebit numeric(19) null		/* how much the balance changed */
 	, BalanceReservedCreditDebit numeric(19) null		/* how much the balance changed */
 	, BalanceAcceptedCreditDebit numeric(19) null		/* how much the balance changed */
+	, BalanceFrozenCreditDebit numeric(19) null		/* how much the balance changed */
 	, LinkedTxDBSerialNum int8 not null default -1	/* tx with the associated output for inputs, or with the associated input for outputs */
 
 	, primary key (Address, TxDBSerialNum, PropertyID, AddressRole, addresstxindex)
