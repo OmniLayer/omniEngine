@@ -215,7 +215,13 @@ else:
     currentBlock += 1
 
   #/while loop.  Finished processing all current blocks.
-
+  try:
+    #Also make sure we update the json data in SmartProperties
+    updateProperty(0,"Bitcoin")
+    dbCommit()
+  else:
+    pass
+    
   #check/add/update and pending tx in the database
   try:
     updateAddPending()

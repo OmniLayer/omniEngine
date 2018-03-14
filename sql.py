@@ -2,6 +2,7 @@ import datetime
 import decimal
 import math
 import sys
+import requests
 from rpcclient import *
 from mscutils import *
 from sqltools import *
@@ -1258,42 +1259,53 @@ def updateProperty(PropertyID, Protocol, LastTxDBSerialNum=None):
     else:
       reorg = False
 
-    PropertyDataJson=getproperty_MP(PropertyID)
-    #rawtx=gettransaction_MP(PropertyDataJson['result']['creationtxid'])
-    #TxType = get_TxType(rawtx['result']['type'])
-    rawprop = PropertyDataJson['result']
-    Ecosystem = getEcosystem(PropertyID)
-    Issuer = rawprop['issuer']
+    if PropertyID == 0:
+      rawprop = {"name":"BTC", "blocktime":1231006505, "data":"The Times 03/Jan/2009 Chancellor on brink of second bailout for banks", "issuer":"Satoshi Nakamoto", "url":"http://www.bitcoin.org", "propertyid":0 ,"divisible": true}
+      Issuer = rawprop['issuer']
+      try:
+        r = requests.get('https://blockchain.info/q/totalbc')
+        amt=int(r.text)
+        rawprop['totaltokens'] = str(int(amt/1e8))
+      except:
+        pass
+    else:
+      PropertyDataJson=getproperty_MP(PropertyID)
+      #rawtx=gettransaction_MP(PropertyDataJson['result']['creationtxid'])
+      #TxType = get_TxType(rawtx['result']['type'])
+      rawprop = PropertyDataJson['result']
 
-    if PropertyID in [1,2]:
-      rawprop['blocktime']=1377994675
+      Ecosystem = getEcosystem(PropertyID)
+      Issuer = rawprop['issuer']
 
-    #if TxType == 51 or TxType == 53:
-    try:
-      #get additional json info for crowdsales
-      rawprop = dict(rawprop.items() + getcrowdsale_MP(PropertyID)['result'].items())
-      #closed/ended crowdsales can generate extra tokens for issuer. handle that here
-      if rawprop['divisible']:
-        addedissuertokens = int(decimal.Decimal(str(rawprop['addedissuertokens']))*decimal.Decimal(1e8))
-      else:
-        addedissuertokens = int(rawprop['addedissuertokens'])
-      issuer=rawprop['issuer']
-      if addedissuertokens > 0:
-        if reorg:
-          updateBalance(issuer, Protocol, PropertyID, Ecosystem, -addedissuertokens, 0, 0, -1)
-          rawprop['active']='true'
+      if PropertyID in [1,2]:
+        rawprop['blocktime']=1377994675
+
+      #if TxType == 51 or TxType == 53:
+      try:
+        #get additional json info for crowdsales
+        rawprop = dict(rawprop.items() + getcrowdsale_MP(PropertyID)['result'].items())
+        #closed/ended crowdsales can generate extra tokens for issuer. handle that here
+        if rawprop['divisible']:
+          addedissuertokens = int(decimal.Decimal(str(rawprop['addedissuertokens']))*decimal.Decimal(1e8))
         else:
-          if rawprop['active']:
-            #only update balance with addedissuertokens at end of crowdsale. Prevents duplicate updates
-            updateBalance(issuer, Protocol, PropertyID, Ecosystem, addedissuertokens, 0, 0, LastTxDBSerialNum)
-    except Exception:
-      printdebug("Updating Property. Property not created with crowdsale", 8)
+          addedissuertokens = int(rawprop['addedissuertokens'])
+        issuer=rawprop['issuer']
+        if addedissuertokens > 0:
+          if reorg:
+            updateBalance(issuer, Protocol, PropertyID, Ecosystem, -addedissuertokens, 0, 0, -1)
+            rawprop['active']='true'
+          else:
+            if rawprop['active']:
+              #only update balance with addedissuertokens at end of crowdsale. Prevents duplicate updates
+              updateBalance(issuer, Protocol, PropertyID, Ecosystem, addedissuertokens, 0, 0, LastTxDBSerialNum)
+      except Exception:
+        printdebug("Updating Property. Property not created with crowdsale", 8)
 
-    #elif TxType > 53 and TxType < 57:
-    try:
-      rawprop = dict(rawprop.items() + getgrants_MP(PropertyID)['result'].items())
-    except Exception:
-      printdebug("Updating Property. Not a Managed Property", 8)
+      #elif TxType > 53 and TxType < 57:
+      try:
+        rawprop = dict(rawprop.items() + getgrants_MP(PropertyID)['result'].items())
+      except Exception:
+        printdebug("Updating Property. Not a Managed Property", 8)
 
     #if we where called with a tx update that otherwise just update json (expired by time update)
     if LastTxDBSerialNum == None:
