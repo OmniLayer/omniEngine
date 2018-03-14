@@ -1260,7 +1260,7 @@ def updateProperty(PropertyID, Protocol, LastTxDBSerialNum=None):
       reorg = False
 
     if PropertyID == 0:
-      rawprop = {"name":"BTC", "blocktime":1231006505, "data":"The Times 03/Jan/2009 Chancellor on brink of second bailout for banks", "issuer":"Satoshi Nakamoto", "url":"http://www.bitcoin.org", "propertyid":0 ,"divisible": true}
+      rawprop = {"name":"BTC", "blocktime":1231006505, "data":"The Times 03/Jan/2009 Chancellor on brink of second bailout for banks", "issuer":"Satoshi Nakamoto", "url":"http://www.bitcoin.org", "propertyid":0 ,"divisible": True}
       Issuer = rawprop['issuer']
       try:
         r = requests.get('https://blockchain.info/q/totalbc')
