@@ -219,7 +219,7 @@ else:
     #Also make sure we update the json data in SmartProperties
     updateProperty(0,"Bitcoin")
     dbCommit()
-  else:
+  except:
     pass
     
   #check/add/update and pending tx in the database
