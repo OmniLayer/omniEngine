@@ -1266,7 +1266,7 @@ def updateProperty(PropertyID, Protocol, LastTxDBSerialNum=None):
     Issuer = rawprop['issuer']
 
     if PropertyID in [1,2]:
-      rawprop['blocktime']=1385291518
+      rawprop['blocktime']=1377994675
 
     #if TxType == 51 or TxType == 53:
     try:
