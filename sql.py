@@ -1265,6 +1265,9 @@ def updateProperty(PropertyID, Protocol, LastTxDBSerialNum=None):
     Ecosystem = getEcosystem(PropertyID)
     Issuer = rawprop['issuer']
 
+    if PropertyID in [1,2]:
+      rawprop['blocktime']=1385291518
+
     #if TxType == 51 or TxType == 53:
     try:
       #get additional json info for crowdsales
