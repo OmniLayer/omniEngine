@@ -1279,6 +1279,8 @@ def updateProperty(PropertyID, Protocol, LastTxDBSerialNum=None):
 
       if PropertyID in [1,2]:
         rawprop['blocktime']=1377994675
+        rawprop['registered']=True
+        rawprop['rdata']="Omni is a platform for creating and trading custom digital assets and currencies. It is a software layer built on top of the most popular, most audited, most secure blockchain -- Bitcoin. Omni transactions are Bitcoin transactions that enable next-generation features on the Bitcoin Blockchain. Our reference implementation, Omni Core is an enhanced Bitcoin Core that provides all the features of Bitcoin as well as advanced Omni Layer features."
 
       #if TxType == 51 or TxType == 53:
       try:
