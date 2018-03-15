@@ -222,20 +222,24 @@ def checkPending(blocktxs):
       #get an expiration time 7 days from now
       #expire=int(time.time()) - 604466
       #get an expiration time 12 hours from now
-      expire=int(time.time()) - 43200
+      #expire=int(time.time()) - 43200
+      #get an expiration time 5 hours from now
+      expire=int(time.time()) - 18000
       submitted=int(tx[3])
       removeOld=False
 
       if submitted < expire:
-        printdebug(("Found Pending TX, Age 7+ days:",txhash),5)
-        try:
-          expiretx=getrawtransaction(txhash)
-          if 'result' in expiretx:
-            printdebug(("Pending TX still on network, skipping removal:",txhash),5)
-            removeOld=False
-        except Exception,e:
-            printdebug(("Pending TX not on network, flagging removal:",txhash),5)
-            removeOld=True
+        printdebug(("Found Pending TX, Age 5 hours:",txhash),5)
+        #we repopulate from client after so remove old txs
+        removeOld=True
+        #try:
+        #  expiretx=getrawtransaction(txhash)
+        #  if 'result' in expiretx:
+        #    printdebug(("Pending TX still on network, skipping removal:",txhash),5)
+        #    removeOld=False
+        #except Exception,e:
+        #    printdebug(("Pending TX not on network, flagging removal:",txhash),5)
+        #    removeOld=True
 
       if txhash in blocktxs or removeOld:
         #remove the pending item
