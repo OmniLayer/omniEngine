@@ -245,6 +245,8 @@ create table if not exists SmartProperties (
 	, PropertyCategory varchar(256) null		/* see PropertyCategories - TBD */
 	, PropertySubcategory varchar(256) null		/* see PropertyCategories - TBD */
 	, PropertyData json null			/* with the current data for this SP, varies by SP type */
+        , RegistrationData varchar(1500) null           /* allow extra data for registered properties */
+        , flags json null                               /* if we need to set any flags/warnings for the property */
 
 	, primary key (PropertyID, Protocol)
 /*	, foreign key (Issuer, Protocol, PropertyID) references AddressBalances (Address, Protocol, PropertyID) */
