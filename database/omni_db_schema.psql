@@ -245,6 +245,8 @@ create table if not exists SmartProperties (
 	, PropertyCategory varchar(256) null		/* see PropertyCategories - TBD */
 	, PropertySubcategory varchar(256) null		/* see PropertyCategories - TBD */
 	, PropertyData json null			/* with the current data for this SP, varies by SP type */
+        , RegistrationData varchar(5000) null           /* allow extra data for registered properties */
+        , flags json null                               /* if we need to set any flags/warnings for the property */
 
 	, primary key (PropertyID, Protocol)
 /*	, foreign key (Issuer, Protocol, PropertyID) references AddressBalances (Address, Protocol, PropertyID) */
@@ -298,6 +300,23 @@ create table if not exists ExchangeRates (
 	, primary key (Id, PropertyID1, PropertyID2, Protocol1, Protocol2) 
 )
 ;
+
+create table if not exists MatchedTrades (
+      TxDBSerialNum int8 not null default -1       /* tx with the associated sale information */
+      , TxHash varchar(64) not null                /* our txhash */
+      , PropertyIdSold bigint not null             /* Property ID sold  */
+      , PropertyIdReceived bigint not null         /* Property ID bought   */
+      , AmountSold varchar(20) not null            /* amount sold */
+      , AmountReceived varchar(20) not null        /* amount bought */
+      , Block integer not null                     /* block match took place */
+      , TradingFee varchar(20) not null default 0  /* any associated trading fees */
+      , MatchedTxHash varchar(64) not null 
+
+      , primary key (TxDBSerialNum,PropertyIdSold,PropertyIdReceived,MatchedTxHash)
+      , foreign key (TxDBSerialNum) references transactions(TxDBSerialNum)
+)
+;
+
 
 create table if not exists ActiveOffers (
         AmountAccepted numeric(19) not null             /* Amount available that has been accepted but not purchased */
