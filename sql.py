@@ -754,6 +754,21 @@ def updatedex2(rawtx, rawtrade, TxDBSerialNum):
     #elif txtype == 28:
     #cancel by ecosystem
 
+def insertMatch(rawtrade, match, TxDBSerialNum):
+    txhash = rawtrade['result']['txid']
+    propertyidsold = rawtrade['result']['propertyidforsale']
+    propertyidreceived = rawtrade['result']['propertyiddesired']
+    amountsold = match['amountsold']
+    amountreceived = match['amountreceived']
+    block = match['block']
+    tradingfee = match['tradingfee']
+    matchedtxhash = match['txid']
+    dbExecute("insert into matchedtrades (txdbserialnum,txhash,propertyidsold,propertyidreceived,amountsold,amountreceived,block,tradingfee,matchedtxhash) "
+                  "values (%s,%s,%s,%s,%s,%s,%s,%s,%s)",
+                  (TxDBSerialNum,txhash,propertyidsold,propertyidreceived,amountsold,amountreceived,block,tradingfee,matchedtxhash) )
+
+
+
 def updatemarketvolume():
     ROWS=dbSelect("select COALESCE(sum(balanceavailablecreditdebit),0) from transactions tx, addressesintxs atx where "
                   "tx.txdbserialnum=atx.txdbserialnum and tx.txstate='valid' and tx.txtype=25 and "
@@ -1840,7 +1855,10 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
             updateBalance(BuyerAddress, Protocol, PropertyIdDesired, Ecosystem, BalanceAvailableCreditDebit, -amountreceived, BalanceAcceptedCreditDebit, TxDBSerialNum)
 
             #make sure the active offers table is up to date for the match
-            updatedex2remaining(match['txid'], TxDBSerialNum)            
+            updatedex2remaining(match['txid'], TxDBSerialNum)
+
+            #record the match for easier reporting later
+            insertMatch(rawtrade, match, TxDBSerialNum)
 
           #Finally, make sure to update markets table after all other matches are processed
           updatemarkets(PropertyIdForSale,PropertyIdDesired,TxDBSerialNum, rawtx)
