@@ -1975,7 +1975,7 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
         BalanceAvailableCreditDebit=None
 
         #update smart property table
-        #insertProperty(rawtx, Protocol)
+        insertProperty(rawtx, Protocol)
         updateProperty(PropertyID, Protocol, TxDBSerialNum)        
 
       elif txtype == 54:
@@ -2026,7 +2026,7 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
           BalanceAvailableCreditDebit=None
 
           #update smart property table
-          #insertProperty(rawtx, Protocol)
+          insertProperty(rawtx, Protocol)
           updateProperty(PropertyID, Protocol, TxDBSerialNum)
 
           dbExecute("insert into addressesintxs "
