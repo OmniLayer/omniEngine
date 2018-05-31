@@ -222,6 +222,13 @@ else:
     dbCommit()
   except:
     pass
+
+  try:
+    #Also make sure we update the txstats data
+    updateTxStats()
+    dbCommit()
+  except:
+    pass
     
   #check/add/update and pending tx in the database
   try:
