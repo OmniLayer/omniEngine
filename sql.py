@@ -212,7 +212,7 @@ def reorgRollback(block):
     dbExecute("select setval('transactions_txdbserialnum_seq', %s)",[newTxDBSerialNum])
 
 
-def updateStats():
+def updateTxStats():
     ROWS=dbSelect("select blocknumber,blocktime from blocks order by blocknumber desc limit 1")
     curblock=ROWS[0][0]
     btime=ROWS[0][1]
