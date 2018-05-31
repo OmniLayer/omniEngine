@@ -227,6 +227,7 @@ else:
     #Also make sure we update the txstats data
     updateTxStats()
     dbCommit()
+    printdebug("TxStats updated",0)
   except:
     pass
     
