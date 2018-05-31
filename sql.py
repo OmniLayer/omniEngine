@@ -211,6 +211,20 @@ def reorgRollback(block):
     #reset txdbserialnum field to what it was before these blocks/tx went in
     dbExecute("select setval('transactions_txdbserialnum_seq', %s)",[newTxDBSerialNum])
 
+
+def updateStats():
+    ROWS=dbSelect("select blocknumber,blocktime from blocks order by blocknumber desc limit 1")
+    curblock=ROWS[0][0]
+    btime=ROWS[0][1]
+    ROWS=dbSelect("select max(blocknumber) from txstats")
+    lastblock=ROWS[0][0]
+    if (curblock > lastblock):
+      ROWS=dbSelect("select count(*) from transactions where txrecvtime >= NOW() - '1 day'::INTERVAL and txdbserialnum>0")
+      txs=ROWS[0][0]
+      dbExecute("insert into txstats (blocknumber,blocktime,txcount) values(%s,%s,%s)",
+                (curblock, btime, txs))
+
+
 def checkPending(blocktxs):
     #Check any pending tx to see if 1. They are in the current block of tx's we are processing or 2. 1 days have passed since broadcast and they are no longer in network.
     #Remove them if either of these has happened
