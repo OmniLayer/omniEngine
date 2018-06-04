@@ -293,39 +293,43 @@ def updateAddPending():
     addresstxindex=0
     txdbserialnum = dbSelect("select least(-1,min(txdbserialnum)) from transactions;")[0][0]
     txdbserialnum -= 1
-    if 'amount' in rawtx:
-      if rawtx['divisible']:
-        amount = int(decimal.Decimal(str(rawtx['amount']))*decimal.Decimal(1e8))
-      else:
-        amount = int(rawtx['amount'])
-    else:
-      if rawtx['propertyidforsaleisdivisible']:
-        amount = int(decimal.Decimal(str(rawtx['amountforsale']))*decimal.Decimal(1e8))
-      else:
-        amount = int(rawtx['amountforsale'])
-
-    if txtype in [26,55]:
-      #handle grants to ourself/others and cancel by price on OmniDex
-      if receiver == "":
-        sendamount=amount
-        recvamount=0
-      else:
-        sendamount=0
-        recvamount=amount
-    elif txtype == 22:
-      #sender = buyer
-      saddressrole="buyer"
-      sbacd=None
-      #receiver = seller
-      raddressrole="seller"
-      rbacd=amount
-      #unused in this tx
+    if txtype in [4]:
       sendamount=None
       recvamount=None
     else:
-      #all other txs deduct from our balance and, where applicable, apply to the reciever
-      sendamount=-amount
-      recvamount=amount  
+      if 'amount' in rawtx:
+        if rawtx['divisible']:
+          amount = int(decimal.Decimal(str(rawtx['amount']))*decimal.Decimal(1e8))
+        else:
+          amount = int(rawtx['amount'])
+      else:
+        if rawtx['propertyidforsaleisdivisible']:
+          amount = int(decimal.Decimal(str(rawtx['amountforsale']))*decimal.Decimal(1e8))
+        else:
+          amount = int(rawtx['amountforsale'])
+
+      if txtype in [26,55]:
+        #handle grants to ourself/others and cancel by price on OmniDex
+        if receiver == "":
+          sendamount=amount
+          recvamount=0
+        else:
+          sendamount=0
+          recvamount=amount
+      elif txtype == 22:
+        #sender = buyer
+        saddressrole="buyer"
+        sbacd=None
+        #receiver = seller
+        raddressrole="seller"
+        rbacd=amount
+        #unused in this tx
+        sendamount=None
+        recvamount=None
+      else:
+        #all other txs deduct from our balance and, where applicable, apply to the reciever
+        sendamount=-amount
+        recvamount=amount  
 
     dbExecute("insert into transactions (txhash,protocol,txdbserialnum,txtype,txversion) values(%s,%s,%s,%s,%s)",
               (txhash,protocol,txdbserialnum,txtype,txversion))
