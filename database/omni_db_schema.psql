@@ -94,6 +94,9 @@ create table if not exists AddressBalances (
 	, primary key (Address, Protocol, PropertyID)
 )
 ;
+/* to get balance list by pid */
+create index ab_nonzero on addressbalances (balanceavailable, balancereserved, balancefrozen, address) where (balanceavailable>0 or balancereserved>0 or balancefrozen>0)
+;
 
 /* Addresses with private keys owned by each Wallet. See Following table for objects watched by a wallet. */
 create table if not exists AddressesInWallets (		/* many-to-many */
@@ -127,14 +130,32 @@ create table if not exists Blocks (
 	, primary key (Protocol, BlockNumber)
 )
 ;
-
 /* to find block info by block number */
 create index BlockNumTime on Blocks (BlockNumber, Protocol, BlockTime)
 ;
 	
+/* transaction stats */
+create table if not exists TxStats (
+        ID Serial
+        , Protocol Protocol not null default 'Omni'   /* initially 'Omni' */
+        , BlockNumber integer not null
+        , BlockTime timestamp(0) not null             /* timestamp recording when this block was created (Will overflow in 2106) */
+        , TxCount integer null                        /* Number of transaction entries in past 24 hours */
+
+        , primary key (ID)
+)
+;
+
+/* to find block info by block number */
+create index txstats_block on txstats (BlockNumber, Protocol, BlockTime)
+;
+
+
+
 /* all the transactions we know about; keeping them (forever?) even after an address or wallet is de-activated */
 create table if not exists Transactions (
-	TxHash varchar(64) not null					/* varchar so we can use LIKE & other string matching  */
+        ID Serial
+	, TxHash varchar(64) not null					/* varchar so we can use LIKE & other string matching  */
 	, Protocol Protocol not null					/* initially 'Bitcoin' or 'Omni' */
 	, TxDBSerialNum serial8 unique					/* db internal identifier for each tx, for faster joins */
 	, TxType integer not null					/* from the RPC result for an 'Omni' tx, 0 for 'Bitcoin' tx's */
@@ -146,9 +167,12 @@ create table if not exists Transactions (
 	, TxBlockNumber integer null		
 	, TxSeqInBlock integer null					/* determined by order of tx's in the block */
 
-	, primary key (TxHash, Protocol, TxBlockNumber)
+	, primary key (ID)
 /*	, foreign key (Protocol, TxBlockNumber) references Blocks */
 )
+;
+/* index for searching hash and protocol */
+create index tx_hash_prot_block on Transactions (txhash, protocol, txblocknumber)
 ;
 
 /* to find transactions by the db internal id */
@@ -169,13 +193,20 @@ create index TxSeq on Transactions (TxBlockNumber, TxSeqInBlock)
 
 /* data that is specific to the particular transaction type, as a JSON object */
 create table if not exists TxJSON (
-	TxDBSerialNum int8 not null		/* db internal identifier for each tx, for faster joins */
+        ID Serial
+	, TxDBSerialNum int8 not null		/* db internal identifier for each tx, for faster joins */
 	, Protocol Protocol not null		/* initially 'Bitcoin' or 'Omni' */
-	, TxData json not null			/* the tx message fields */
+	, TxData jsonb not null			/* the tx message fields */
 
-	, primary key (TxDBSerialNum, Protocol) 
+	, primary key (id) 
 /*	, foreign key (TxDBSerialNum, Protocol) references Transactions(TxDBSerialNum, Protocol) */
 )
+;
+
+/* add index for serialnum and protocol */
+create index txj_txdbser_prot on txjson (txdbserialnum,protocol)
+;
+create index txj_json_type on txjson (cast(txdata->>'type_int' as numeric))
 ;
 
 /* Addresses that are involved in each transaction, with their role and changes to balances */
@@ -244,9 +275,9 @@ create table if not exists SmartProperties (
 	, PropertyServiceURL varchar(256) null
 	, PropertyCategory varchar(256) null		/* see PropertyCategories - TBD */
 	, PropertySubcategory varchar(256) null		/* see PropertyCategories - TBD */
-	, PropertyData json null			/* with the current data for this SP, varies by SP type */
+	, PropertyData jsonb null			/* with the current data for this SP, varies by SP type */
         , RegistrationData varchar(5000) null           /* allow extra data for registered properties */
-        , flags json null                               /* if we need to set any flags/warnings for the property */
+        , flags jsonb null                               /* if we need to set any flags/warnings for the property */
 
 	, primary key (PropertyID, Protocol)
 /*	, foreign key (Issuer, Protocol, PropertyID) references AddressBalances (Address, Protocol, PropertyID) */
@@ -258,6 +289,12 @@ create table if not exists SmartProperties (
 /* to find Smart Properties by issuing address */
 create unique index SP_Issuer on SmartProperties (Issuer, PropertyID, Protocol)
 ;
+/* to order properties in searches  */
+create unique index SP_name_id_prot on SmartProperties (PropertyName, PropertyID, Protocol)
+;
+create index sp_json_crowdsale_state on SmartProperties ((PropertyData->>'active'))
+;
+
 
 /* the list of transactions that affected each SP */
 create table if not exists PropertyHistory (
