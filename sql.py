@@ -279,7 +279,6 @@ def updateAddPending():
     rbacd=None
     sender = rawtx['sendingaddress']
     receiver = rawtx['referenceaddress']
-    propertyid = rawtx['propertyid'] if 'propertyid' in rawtx else rawtx['propertyidforsale']
     txtype = rawtx['type_int']
     txversion = rawtx['version']
     txhash = rawtx['txid']
@@ -297,6 +296,8 @@ def updateAddPending():
       sendamount=None
       recvamount=None
     else:
+      propertyid = rawtx['propertyid'] if 'propertyid' in rawtx else rawtx['propertyidforsale']
+
       if 'amount' in rawtx:
         if rawtx['divisible']:
           amount = int(decimal.Decimal(str(rawtx['amount']))*decimal.Decimal(1e8))
@@ -331,23 +332,24 @@ def updateAddPending():
         sendamount=-amount
         recvamount=amount  
 
-    dbExecute("insert into transactions (txhash,protocol,txdbserialnum,txtype,txversion) values(%s,%s,%s,%s,%s)",
-              (txhash,protocol,txdbserialnum,txtype,txversion))
     
-    address=sender
-    #insert the addressesintxs entry for the sender
-    dbExecute("insert into addressesintxs (address,propertyid,protocol,txdbserialnum,addresstxindex,addressrole,balanceavailablecreditdebit,balanceacceptedcreditdebit) "
-              "values(%s,%s,%s,%s,%s,%s,%s,%s)", (address,propertyid,protocol,txdbserialnum,addresstxindex,saddressrole,sendamount,sbacd))
-
-    #update pending balance
-    #dbExecute("update addressbalances set balancepending=balancepending+%s::numeric where address=%s and propertyid=%s and protocol=%s", (sendamount,address,propertyid,protocol))
-
-    if receiver != "":
-      address=receiver
+      address=sender
+      #insert the addressesintxs entry for the sender
       dbExecute("insert into addressesintxs (address,propertyid,protocol,txdbserialnum,addresstxindex,addressrole,balanceavailablecreditdebit,balanceacceptedcreditdebit) "
-                "values(%s,%s,%s,%s,%s,%s,%s,%s)", (address,propertyid,protocol,txdbserialnum,addresstxindex,raddressrole,recvamount,rbacd))
+                "values(%s,%s,%s,%s,%s,%s,%s,%s)", (address,propertyid,protocol,txdbserialnum,addresstxindex,saddressrole,sendamount,sbacd))
+
       #update pending balance
-      #dbExecute("update addressbalances set balancepending=balancepending+%s::numeric where address=%s and propertyid=%s and protocol=%s", (recvamount,address,propertyid,protocol))
+      #dbExecute("update addressbalances set balancepending=balancepending+%s::numeric where address=%s and propertyid=%s and protocol=%s", (sendamount,address,propertyid,protocol))
+
+      if receiver != "":
+        address=receiver
+        dbExecute("insert into addressesintxs (address,propertyid,protocol,txdbserialnum,addresstxindex,addressrole,balanceavailablecreditdebit,balanceacceptedcreditdebit) "
+                  "values(%s,%s,%s,%s,%s,%s,%s,%s)", (address,propertyid,protocol,txdbserialnum,addresstxindex,raddressrole,recvamount,rbacd))
+        #update pending balance
+        #dbExecute("update addressbalances set balancepending=balancepending+%s::numeric where address=%s and propertyid=%s and protocol=%s", (recvamount,address,propertyid,protocol))
+
+    dbExecute("insert into transactions (txhash,protocol,txdbserialnum,txtype,txversion) values(%s,%s,%s,%s,%s)",
+             (txhash,protocol,txdbserialnum,txtype,txversion))
 
     #store decoded omni data until tx confirms
     dbExecute("insert into txjson (txdbserialnum, protocol, txdata) values (%s,%s,%s)", (txdbserialnum, protocol, json.dumps(rawtx)) )
