@@ -206,8 +206,21 @@ create table if not exists TxJSON (
 /* add index for serialnum and protocol */
 create index txj_txdbser_prot on txjson (txdbserialnum,protocol)
 ;
+
+/* index to search/filter by txtype */
 create index txj_json_type on txjson (cast(txdata->>'type_int' as numeric))
 ;
+
+/* index to search/filter by txid */
+create index txj_json_txid on txjson (cast(txdata->>'txid' as text))
+;
+
+/* index to search/filter by address */
+create index txj_json_saddress on txjson (cast(txdata->>'sendingaddress' as text))
+;
+create index txj_json_raddress on txjson (cast(txdata->>'referenceaddress' as text))
+;
+
 
 /* Addresses that are involved in each transaction, with their role and changes to balances */
 create table if not exists AddressesInTxs (					/* many-to-many */
