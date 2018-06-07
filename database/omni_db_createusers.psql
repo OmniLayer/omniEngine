@@ -19,7 +19,7 @@ GRANT connect ON DATABASE omniwallet to :omniengine, :omniwww;
 
 GRANT USAGE ON SCHEMA public TO :omniengine,:omniwww;
 GRANT SELECT,UPDATE ON ALL SEQUENCES IN SCHEMA public TO :omniengine;
-GRANT SELECT ON ALL SEQUENCES IN SCHEMA public TO :omniwww;
+GRANT USAGE,SELECT ON ALL SEQUENCES IN SCHEMA public TO :omniwww;
 
 GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO :omniengine;
 
