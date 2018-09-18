@@ -1400,7 +1400,7 @@ def insertProperty(rawtx, Protocol, PropertyID=None):
       CreateTxDBSerialNum = gettxdbserialnum(createhash)
 
       PropertyName = rawprop['name']
-      #propertyurl = rawprop['url']
+      PropertyURL = rawprop['url']
       if rawprop['divisible']:
         PropertyType = 2
       else:
@@ -1425,6 +1425,7 @@ def insertProperty(rawtx, Protocol, PropertyID=None):
         dbExecute("insert into PropertyHistory (Protocol, PropertyID, TxDBSerialNum) Values(%s, %s, %s)", (Protocol, PropertyID, LastTxDBSerialNum))
       else:
         #doesn't exist, insert
+        flags=getFlags(Protocol,PropertyName,PropertyData,PropertyURL,PropertyID)
         dbExecute("insert into SmartProperties"
                   "(Issuer, Ecosystem, CreateTxDBSerialNum, LastTxDBSerialNum, PropertyName, PropertyType, "
                   "PropertyCategory, PropertySubcategory, PropertyData, Protocol, PropertyID )"
@@ -1433,6 +1434,30 @@ def insertProperty(rawtx, Protocol, PropertyID=None):
                    PropertySubcategory, json.dumps(rawprop), Protocol, PropertyID))
         #insert this tx into the history table
         dbExecute("insert into PropertyHistory (Protocol, PropertyID, TxDBSerialNum) Values(%s, %s, %s)", (Protocol, PropertyID, LastTxDBSerialNum))
+
+def getFlags(Protocol,name,data,url,PropertyID):
+  flags=None
+  try:
+    if len(name) > 0:
+      sname='%'+str(name)+'%'
+      rname=dbSelect("select count(*) from smartproperties where Protocol=%s and (LOWER(PropertyName) like LOWER(%s) or LOWER(PropertyData->>'data') like LOWER(%s) or LOWER(PropertyData->>'url') like LOWER(%s))", (Protocol, sname,sname,sname))
+    else:
+      rname=[[0]]
+    if len(data) > 0:
+      sdata='%'+str(data)+'%'
+      rdata=dbSelect("select count(*) from smartproperties where Protocol=%s and (LOWER(PropertyName) like LOWER(%s) or LOWER(PropertyData->>'data') like LOWER(%s) or LOWER(PropertyData->>'url') like LOWER(%s))", (Protocol, sdata,sdata,sdata))
+    else:
+      rdata[[0]]
+    if len(url) > 0:
+      surl='%'+str(url)+'%'
+      rurl=dbSelect("select count(*) from smartproperties where Protocol=%s and (LOWER(PropertyName) like LOWER(%s) or LOWER(PropertyData->>'data') like LOWER(%s) or LOWER(PropertyData->>'url') like LOWER(%s))", (Protocol, surl,surl,surl))
+    else:
+      rurl=[[0]]
+    if int(rname[0][0]) + int(rdata[0][0]) + int(rurl[0][0]) > 0:
+      flags=flags={"duplicate": True}
+  except:
+    printdebug(("Error finding flags",Protocol,PropertyID,name,data,url,"\n"), 8)
+  return flags
 
 def getDecodePayload(rawtx):
     try:
@@ -1570,14 +1595,16 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
         if Valid:
           updateBalance(Address, Protocol, PropertyID, Ecosystem, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit, TxDBSerialNum)
  
-        if 'referenceaddress' in rawtx['result']:
+        if 'referenceaddress' in rawtx['result'] and rawtx['result']['referenceaddress'] not in [None,'']:
 	  #credit the receiver
           Address = rawtx['result']['referenceaddress']
           AddressRole="recipient"
           BalanceAvailableCreditDebit=value
         else:
           #no reference address, most likely from invalid tx. Pass/return and ignore trying to record the rest of the tx
-          return
+          AddressRole="recipient"
+          BalanceAvailableCreditDebit=value
+          #return
 
       #elif txtype == 2:
 	#Restricted Send does nothing yet?
@@ -2180,14 +2207,14 @@ def insertTx(rawtx, Protocol, blockheight, seq, TxDBSerialNum):
 
     if TxDBSerialNum == -1:
         dbExecute("INSERT into transactions "
-                  "(TxHash, Protocol, TxType, TxVersion, Ecosystem, TxState, TxErrorCode, TxBlockNumber, TxSeqInBlock ) "
-                  "VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)", 
-                  (TxHash, Protocol, TxType, TxVersion, Ecosystem, TxState, TxErrorCode, TxBlockNumber, TxSeqInBlock))
+                  "(TxHash, Protocol, TxType, TxVersion, Ecosystem, TxState, TxErrorCode, TxBlockNumber, TxSeqInBlock, TxRecvTime ) "
+                  "VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",
+                  (TxHash, Protocol, TxType, TxVersion, Ecosystem, TxState, TxErrorCode, TxBlockNumber, TxSeqInBlock, TxBlockTime))
     else:
         dbExecute("INSERT into transactions "
-                  "(TxHash, Protocol, TxType, TxVersion, Ecosystem, TxState, TxErrorCode, TxBlockNumber, TxSeqInBlock, TxDBSerialNum ) "
-                  "VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",
-                  (TxHash, Protocol, TxType, TxVersion, Ecosystem, TxState, TxErrorCode, TxBlockNumber, TxSeqInBlock, TxDBSerialNum))
+                  "(TxHash, Protocol, TxType, TxVersion, Ecosystem, TxState, TxErrorCode, TxBlockNumber, TxSeqInBlock, TxDBSerialNum, TxRecvTime ) "
+                  "VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",
+                  (TxHash, Protocol, TxType, TxVersion, Ecosystem, TxState, TxErrorCode, TxBlockNumber, TxSeqInBlock, TxDBSerialNum, TxBlockTime))
 
     serial=dbSelect("Select TxDBSerialNum from transactions where txhash=%s and protocol=%s", (TxHash, Protocol))
     dbExecute("insert into txjson (txdbserialnum, protocol, txdata) values (%s,%s,%s)", (serial[0]['txdbserialnum'], Protocol, json.dumps(rawtx['result'])) )
