@@ -1595,7 +1595,7 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
         if Valid:
           updateBalance(Address, Protocol, PropertyID, Ecosystem, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit, TxDBSerialNum)
  
-        if 'referenceaddress' in rawtx['result'] and rawtx['result']['referenceaddress'] not in [None,'']:
+        if 'referenceaddress' in rawtx['result']:
 	  #credit the receiver
           Address = rawtx['result']['referenceaddress']
           AddressRole="recipient"
