@@ -38,7 +38,7 @@ def reparsetx_MP(txhash):
       exit(1)
 
     if txstate=='valid':
-        addressesintxs=dbSelect("select address, addressrole, protocol, propertyid, balanceavailablecreditdebit, balancereservedcreditdebit, balanceacceptedcreditdebit,linkedtxdbserialnum "
+        addressesintxs=dbSelect("select address, addressrole, protocol, propertyid, balanceavailablecreditdebit, balancereservedcreditdebit, balanceacceptedcreditdebit, balancefrozencreditdebit, linkedtxdbserialnum "
                                 "from addressesintxs where txdbserialnum=%s", [TxDBSerialNum])
 
         for entry in addressesintxs:
@@ -47,7 +47,7 @@ def reparsetx_MP(txhash):
           Protocol=entry[2]
           PropertyID=entry[3]
           Ecosystem=getEcosystem(PropertyID)
-          linkedtxdbserialnum=entry[7]
+          linkedtxdbserialnum=entry[8]
 
           #figure out how much 'moved' and undo it in addressbalances
           if entry[4] == None:
@@ -62,9 +62,13 @@ def reparsetx_MP(txhash):
             dbBalanceAccepted = 0
           else:
             dbBalanceAccepted = entry[6]*-1
+          if entry[7] == None:
+            dbBalanceFrozen = 0
+          else:
+            dbBalanceFrozen = entry[7]*-1
 
           #use -1 for txdbserialnum as we don't know what the previous tx that last modified it's balanace was. 
-          updateBalance(Address, Protocol, PropertyID, Ecosystem, dbBalanceAvailable, dbBalanceReserved, dbBalanceAccepted, -TxDBSerialNum)
+          updateBalance(Address, Protocol, PropertyID, Ecosystem, dbBalanceAvailable, dbBalanceReserved, dbBalanceAccepted, -TxDBSerialNum, dbBalanceFrozen)
             
         #/end for entry in addressesintxs
     #/end if txstate='valid'
@@ -1019,7 +1023,7 @@ def resetbalances_MP():
       #reset/zero out the existing address balanaces for current propertyid
       #if we don't do this we could run into a balnace mismatch issue since 
       #mastercore doesn't give us address balances for addresses with 0 balanaces so we could miss some address
-      dbExecute("update addressbalances set BalanceAvailable=0, BalanceReserved=0, BalanceAccepted=0 where protocol=%s and propertyid=%s", (Protocol,PropertyID))
+      dbExecute("update addressbalances set BalanceAvailable=0, BalanceReserved=0, BalanceAccepted=0, BalanceFrozen=0 where protocol=%s and propertyid=%s", (Protocol,PropertyID))
 
       #Check each address and get balance info
       for addr in bal_data['result']:
@@ -1036,10 +1040,12 @@ def resetbalances_MP():
         if property['divisible']:
           BalanceAvailable=int(decimal.Decimal(str(addr['balance']))*decimal.Decimal(1e8))
           BalanceReserved=int(decimal.Decimal(str(addr['reserved']))*decimal.Decimal(1e8))
+          BalanceFrozen=int(decimal.Decimal(str(addr['frozen']))*decimal.Decimal(1e8))
           BalanceAccepted=int(decimal.Decimal(str(accept))*decimal.Decimal(1e8))
         else:
           BalanceAvailable=int(addr['balance'])
           BalanceReserved=int(addr['reserved'])
+          BalanceFrozen=int(addr['frozen'])
           BalanceAccepted=int(accept)
 
         rows=dbSelect("select address from AddressBalances where address=%s and Protocol=%s and propertyid=%s", 
@@ -1048,13 +1054,13 @@ def resetbalances_MP():
         if len(rows) == 0:
           #address not in database, insert
           dbExecute("INSERT into AddressBalances "
-                    "(Address, Protocol, PropertyID, Ecosystem, BalanceAvailable, BalanceReserved, BalanceAccepted) "
-                    "VALUES (%s,%s,%s,%s,%s,%s,%s)",
-                    (Address, Protocol, PropertyID, Ecosystem, BalanceAvailable, BalanceReserved, BalanceAccepted) )
+                    "(Address, Protocol, PropertyID, Ecosystem, BalanceAvailable, BalanceReserved, BalanceAccepted, BalanceFrozen) "
+                    "VALUES (%s,%s,%s,%s,%s,%s,%s,%s)",
+                    (Address, Protocol, PropertyID, Ecosystem, BalanceAvailable, BalanceReserved, BalanceAccepted, BalanceFrozen) )
         else:
           #address in database update
-          dbExecute("UPDATE AddressBalances set BalanceAvailable=%s, BalanceReserved=%s, BalanceAccepted=%s where address=%s and PropertyID=%s", 
-                    (BalanceAvailable, BalanceReserved, BalanceAccepted, Address, PropertyID) )
+          dbExecute("UPDATE AddressBalances set BalanceAvailable=%s, BalanceReserved=%s, BalanceAccepted=%s, BalanceFrozen=%s where address=%s and PropertyID=%s",
+                    (BalanceAvailable, BalanceReserved, BalanceAccepted, BalanceFrozen, Address, PropertyID) )
 
 def checkbalances_MP():
     printdebug(("Starting checkbalances_MP"),8)
@@ -1477,6 +1483,21 @@ def getDecodePayload(rawtx):
     return {'pid':pid}
 
 
+def updateAddrStats(Address,Protocol,TxDBSerialNum,Block):
+    printdebug("Starting updateAddrStats:", 8)
+    printdebug("Address,Protocol,TxDBSerialNum,Block", 9)
+    printdebug((Address,Protocol,TxDBSerialNum,Block,"\n"), 9)
+    dbExecute("with upsert as "
+              "(update AddressStats set TxCount=TxCount+1, LastTxDBSerialNum=%s, BlockNumber=%s, LastUpdate=(SELECT CURRENT_TIMESTAMP(0)) "
+              "where Address=%s and Protocol=%s and LastTxDBSerialNum<%s returning *), "
+              "cexist as "
+              "(select * from AddressStats where Address=%s and Protocol=%s) "
+              "insert into AddressStats (Address, Protocol, TxCount, LastTxDBSerialNum, BlockNumber, LastUpdate) "
+              "select %s,%s,1,%s,%s,CURRENT_TIMESTAMP(0) "
+              "where not exists (select * from upsert) and not exists (select * from cexist)",
+              (TxDBSerialNum, Block, Address, Protocol, TxDBSerialNum, Address, Protocol, Address, Protocol, TxDBSerialNum, Block) )
+
+
 def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
     printdebug("Starting insertTxAddr:", 8)
     printdebug("rawtx, Protocol, TxDBSerialNum, Block", 9)
@@ -1502,7 +1523,7 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
                       "values(%s, %s, %s, %s, %s, %s, %s)",
                       (addr, PropertyID, Protocol, TxDBSerialNum, AddressTxIndex, AddressRole, BalanceAvailableCreditDebit))
             updateBalance(addr, Protocol, PropertyID, Ecosystem, BalanceAvailableCreditDebit, 0, 0, TxDBSerialNum)
-
+            updateAddrStats(addr,Protocol,TxDBSerialNum,Block)
 
       #process all inputs, Start AddressTxIndex=0 since inputs don't have a Index number in json and iterate for each input
       AddressTxIndex=0
@@ -1531,6 +1552,7 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
                       "values(%s, %s, %s, %s, %s, %s, %s, %s)",
                       (addr, PropertyID, Protocol, TxDBSerialNum, LinkedTxDBSerialNum, AddressTxIndex, AddressRole, BalanceAvailableCreditDebit))
             updateBalance(addr, Protocol, PropertyID, Ecosystem, BalanceAvailableCreditDebit, 0, 0, TxDBSerialNum)
+            updateAddrStats(addr,Protocol,TxDBSerialNum,Block)
           AddressTxIndex+=1
 
     elif Protocol == "Omni":
@@ -1543,6 +1565,8 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
       linkedtxdbserialnum=-1
       Address = rawtx['result']['sendingaddress']
       #PropertyID=rawtx['result']['propertyid']
+      #update sender stats
+      updateAddrStats(Address,Protocol,TxDBSerialNum,Block)
 
       if txtype in [185,186]:
         payload=getDecodePayload(rawtx)
@@ -1591,7 +1615,6 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
                   "(Address, PropertyID, Protocol, TxDBSerialNum, AddressTxIndex, AddressRole, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit)"
                   "values(%s, %s, %s, %s, %s, %s, %s, %s, %s)",
                   (Address, PropertyID, Protocol, TxDBSerialNum, AddressTxIndex, AddressRole, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit))
-  
         if Valid:
           updateBalance(Address, Protocol, PropertyID, Ecosystem, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit, TxDBSerialNum)
  
@@ -1600,11 +1623,11 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
           Address = rawtx['result']['referenceaddress']
           AddressRole="recipient"
           BalanceAvailableCreditDebit=value
+          updateAddrStats(Address,Protocol,TxDBSerialNum,Block)
         else:
-          #no reference address, most likely from invalid tx. Pass/return and ignore trying to record the rest of the tx
+          #no reference address, most likely from invalid tx. Pass and ignore trying to record the rest of the tx
           AddressRole="recipient"
           BalanceAvailableCreditDebit=value
-          #return
 
       #elif txtype == 2:
 	#Restricted Send does nothing yet?
@@ -1649,6 +1672,7 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
 
              updateBalance(rAddress, Protocol, PropertyID, Ecosystem, rBalance, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit, TxDBSerialNum)
              txindex+=1
+             updateAddrStats(rAddress,Protocol,TxDBSerialNum,Block)
 
         #Debit the sender
         AddressRole='payer'
@@ -1683,6 +1707,7 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
                     "(Address, PropertyID, Protocol, TxDBSerialNum, AddressTxIndex, AddressRole, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit)"
                     "values(%s, %s, %s, %s, %s, %s, %s, %s, %s)",
                     (RecvAddress, PropertyID, Protocol, TxDBSerialNum, AddressTxIndex, RecvRole, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit))
+          updateAddrStats(RecvAddress,Protocol,TxDBSerialNum,Block)
 
           if Valid:
             #if valid debit sender
@@ -1736,6 +1761,7 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
         #Process records for the seller
         AddressRole='seller'
         Address = rawtx['result']['referenceaddress']
+        updateAddrStats(Address,Protocol,TxDBSerialNum,Block)
 
         #update the accepted offers (actually track invalid offers for reporting as well)
         offerAccept(rawtx, TxDBSerialNum, Block)
@@ -1764,6 +1790,7 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
           Seller = payment['referenceaddress']
           PropertyIDBought = payment['propertyid']
           Valid=payment['valid']
+          updateAddrStats(Seller,Protocol,TxDBSerialNum,Block)
 
           #Right now payments are only in btc
           #we already insert btc payments in btc processing might need to skip this
@@ -1857,6 +1884,7 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
            if txblock == match['block'] and matchtxdbserialnum < TxDBSerialNum:
             BuyerRole='buyer'
             BuyerAddress=match['address']
+            updateAddrStats(BuyerAddress,Protocol,TxDBSerialNum,Block)
 
             if rawtx['result']['propertyidforsaleisdivisible']:
               amountsold = int(decimal.Decimal(str(match['amountsold']))*decimal.Decimal(1e8))
@@ -1978,6 +2006,8 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
         AddressRole = 'recipient'
         BalanceAvailableCreditDebit = value
         Address= rawtx['result']['referenceaddress']
+        updateAddrStats(Address,Protocol,TxDBSerialNum,Block)
+
         dbExecute("insert into addressesintxs "
                   "(Address, PropertyID, Protocol, TxDBSerialNum, AddressTxIndex, AddressRole, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit)"
                   "values(%s, %s, %s, %s, %s, %s, %s, %s, %s)",
@@ -2041,6 +2071,7 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
           #check if we have a reciever for the grant
           Receiver = rawtx['result']['referenceaddress']
           ReceiveRole = 'recipient'
+          updateAddrStats(Receiver,Protocol,TxDBSerialNum,Block)
         except KeyError:
           Receiver = None
         #check if the reference address is defined and its not the same as the sender
@@ -2082,6 +2113,7 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
                     (Address, PropertyID, Protocol, TxDBSerialNum, AddressTxIndex, AddressRole, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit, linkedtxdbserialnum))
           Address = rawtx['result']['referenceaddress']
           AddressRole = 'recipient'
+          updateAddrStats(Address,Protocol,TxDBSerialNum,Block)
 
       elif txtype in [185,186]:
         #update freeze info/balances
@@ -2096,6 +2128,7 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
 
         Address = rawtx['result']['referenceaddress']
         AddressRole = 'recipient'
+        updateAddrStats(Address,Protocol,TxDBSerialNum,Block)
         
         ROWS=dbSelect("select BalanceAvailable,BalanceFrozen from addressbalances where address=%s and propertyid=%s", (Address, PropertyID))
 
