@@ -1004,25 +1004,32 @@ def syncAddress(Address, Protocol):
 
 def resetbalances_MP():
     printdebug(("Starting resetbalances_MP"),8)
-    #for now sync / reset balance data from mastercore balance list
+    #for now sync / reset balance data from omnicore balance list
     Protocol="Omni"
 
     #get DEx sales to process 'accepted' amounts  
     DExSales=getactivedexsells_MP()
 
-    #Find all known properties in mastercore
+    #Find all known properties in omnicore and cache data so we can work from it without worrying about changes in new blocks
+    listlookup={}
+    printdebug(("resetbalances_MP: caching balances"),0)
     for property in listproperties_MP()['result']:
       PropertyID = property['propertyid']
+      listlookup[PropertyID]={'property':property, 'baldata': getallbalancesforid_MP(PropertyID)}
+
+    printdebug(("resetbalances_MP: processing cache"),0)
+    for PropertyID in listlookup:
+      bal_data = listlookup[PropertyID]['baldata']
+      property = listlookup[PropertyID]['property']
       Ecosystem=getEcosystem(PropertyID)
       #if PropertyID == 2 or ( PropertyID >= 2147483651 and PropertyID <= 4294967295 ):
       #  Ecosystem= "Test"
       #else:
       #  Ecosystem= "Production"
-      bal_data=getallbalancesforid_MP(PropertyID)
 
       #reset/zero out the existing address balanaces for current propertyid
       #if we don't do this we could run into a balnace mismatch issue since 
-      #mastercore doesn't give us address balances for addresses with 0 balanaces so we could miss some address
+      #omnicore doesn't give us address balances for addresses with 0 balanaces so we could miss some address
       dbExecute("update addressbalances set BalanceAvailable=0, BalanceReserved=0, BalanceAccepted=0, BalanceFrozen=0 where protocol=%s and propertyid=%s", (Protocol,PropertyID))
 
       #Check each address and get balance info
@@ -1065,7 +1072,7 @@ def resetbalances_MP():
 def checkbalances_MP():
     printdebug(("Starting checkbalances_MP"),8)
 
-    #for now sync / reset balance data from mastercore balance list
+    #for now sync / reset balance data from omnicore balance list
     Protocol="Omni"
 
     #get DEx sales to process 'accepted' amounts
@@ -1073,7 +1080,7 @@ def checkbalances_MP():
 
     retval={}
 
-    #Find all known properties in mastercore
+    #Find all known properties in omnicore
     for property in listproperties_MP()['result']:
       PropertyID = property['propertyid']
       Ecosystem=getEcosystem(PropertyID)
@@ -2187,10 +2194,10 @@ def insertTx(rawtx, Protocol, blockheight, seq, TxDBSerialNum):
       TxSubmitTime = datetime.datetime.utcfromtimestamp(rawtx['result']['time'])
 
     elif Protocol == "Omni":
-      #currently type a text output from mastercore 'Simple Send' and version is unknown
+      #currently type a text output from omnicore 'Simple Send' and version is unknown
       TxType= get_TxType(rawtx['result']['type'])
       TxVersion=0
-      #!!temp workaround, Need to update for DEx Purchases after conversation with MasterCore team
+      #!!temp workaround, Need to update for DEx Purchases after conversation with omnicore team
       if TxType == -22:
         TxState=getTxState(rawtx['result']['purchases'][0]['valid'])
         Ecosystem=getEcosystem(rawtx['result']['purchases'][0]['propertyid'])
