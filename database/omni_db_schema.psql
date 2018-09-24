@@ -98,6 +98,24 @@ create table if not exists AddressBalances (
 create index ab_nonzero on addressbalances (balanceavailable, balancereserved, balancefrozen, address) where (balanceavailable>0 or balancereserved>0 or balancefrozen>0)
 ;
 
+/*
+ * Stats for each address we've seen
+ */
+create table if not exists AddressStats (
+        ID Serial
+        , Address varchar(64) not null                                    /* Bitcoin addresses are 34 chars */
+        , Protocol Protocol not null default 'Omni'                       /* initially 'Bitcoin' or 'Omni' */
+        , TxCount numeric(19) not null default 0                          /* Count of txs address is involved in */
+        , LastTxDBSerialNum int8 not null default 0                       /* last tx that affected this currency for this address, null if no tx's */
+        , BlockNumber integer not null                                    /* Last block address was seen in */
+        , LastUpdate timestamp(0) without time zone null DEFAULT now()    /* last timestamp updated */
+
+        , primary key (ID, Address, Protocol)
+        , unique(Address,Protocol)
+)
+;
+
+
 /* Addresses with private keys owned by each Wallet. See Following table for objects watched by a wallet. */
 create table if not exists AddressesInWallets (		/* many-to-many */
 	Address varchar(64) not null		/* Address must exist in the AddressBalances table */
