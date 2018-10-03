@@ -225,8 +225,10 @@ def updateTxStats():
     if (curblock > lastblock):
       ROWS=dbSelect("select count(*) from transactions where txrecvtime >= NOW() - '1 day'::INTERVAL and txdbserialnum>0")
       txs=ROWS[0][0]
-      dbExecute("insert into txstats (blocknumber,blocktime,txcount) values(%s,%s,%s)",
-                (curblock, btime, txs))
+      BROWS=dbSelect("select count(*) from transactions where txblocknumber=%s",[curblock])
+      btxs=BROWS[0][0]
+      dbExecute("insert into txstats (blocknumber,blocktime,txcount,blockcount) values(%s,%s,%s,%s)",
+                (curblock, btime, txs,btxs))
 
 
 def checkPending(blocktxs):
