@@ -212,6 +212,14 @@ else:
       os.remove(lockFile)
       exit(1)
 
+    try:
+      #Also make sure we update the txstats data per block
+      updateTxStats()
+      dbCommit()
+      printdebug("TxStats updated",0)
+    except:
+      pass
+
     #increment/process next block if everything went clean
     currentBlock += 1
 
@@ -223,14 +231,6 @@ else:
   except:
     pass
 
-  try:
-    #Also make sure we update the txstats data
-    updateTxStats()
-    dbCommit()
-    printdebug("TxStats updated",0)
-  except:
-    pass
-    
   #check/add/update and pending tx in the database
   try:
     updateAddPending()

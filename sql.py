@@ -223,7 +223,7 @@ def updateTxStats():
     ROWS=dbSelect("select max(blocknumber) from txstats")
     lastblock=ROWS[0][0]
     if (curblock > lastblock):
-      ROWS=dbSelect("select count(*) from transactions where txrecvtime >= NOW() - '1 day'::INTERVAL and txdbserialnum>0")
+      ROWS=dbSelect("select count(*) from transactions where txrecvtime >= %s - '1 day'::INTERVAL and txrecvtime <= %s and txdbserialnum>0",(btime,btime))
       txs=ROWS[0][0]
       BROWS=dbSelect("select count(*) from transactions where txblocknumber=%s",[curblock])
       btxs=BROWS[0][0]
