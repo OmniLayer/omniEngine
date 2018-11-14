@@ -229,7 +229,7 @@ def updateTxStats():
       txs=ROWS[0][0]
       BROWS=dbSelect("select count(*) from transactions where txblocknumber=%s",[curblock])
       btxs=BROWS[0][0]
-      txfsum=dbSelect("select atx.propertyid, sum(atx.balanceavailablecreditdebit), sp.propertydata->>'divisible' as divisible "
+      txfsum=dbSelect("select atx.propertyid, sum(atx.balanceavailablecreditdebit), sp.propertydata->>'divisible' as divisible, count(atx.propertyid) as count "
                      "from addressesintxs atx, transactions tx, smartproperties sp "
                      "where atx.txdbserialnum=tx.txdbserialnum and atx.propertyid=sp.propertyid and sp.protocol='Omni' and tx.txstate='valid' and "
                      "tx.txblocknumber=%s and atx.addressrole='recipient' group by atx.propertyid, sp.propertydata->>'divisible'",[curblock])
@@ -244,6 +244,7 @@ def updateTxStats():
         pid=t[0]
         volume=decimal.Decimal(t[1])
         divisible=t[2]
+        count=t[3]
         if divisible in ['true','True',True]:
           volume=decimal.Decimal(volume)/decimal.Decimal(1e8)
         rawrate=dbSelect("select rate1for2 from exchangerates where protocol1='Bitcoin' and protocol2='Omni' and propertyid1=0 and propertyid2=%s order by asof desc limit 1",[pid])
@@ -257,7 +258,7 @@ def updateTxStats():
         prate=decimal.Decimal(srate[0]+'.'+srate[1][:8])
         value=int(round(value))
         total+=value
-        valuelist[pid]={'rate_usd':str(prate),'volume':str(volume),'value_usd_rounded':value}
+        valuelist[pid]={'rate_usd':str(prate),'volume':str(volume),'value_usd_rounded':value, 'tx_count': count}
       fvalue={'total_usd':total, 'details':valuelist}
       dbExecute("insert into txstats (blocknumber,blocktime,txcount,blockcount,value) values(%s,%s,%s,%s,%s)",
                 (curblock, btime, txs, btxs, json.dumps(fvalue)))
