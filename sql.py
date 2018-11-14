@@ -210,6 +210,8 @@ def reorgRollback(block):
     expireAccepts(-(block+1))
     expireCrowdsales(-BlockTime, "Omni")
       
+    #delete from txstats once we rollback all other data
+    dbExecute("delete from txstats where blocknumber>%s",[block])
     #delete from blocks once we rollback all other data
     dbExecute("delete from blocks where blocknumber>%s",[block])
     #reset txdbserialnum field to what it was before these blocks/tx went in
