@@ -242,18 +242,21 @@ def updateTxStats():
         pid=t[0]
         volume=decimal.Decimal(t[1])
         divisible=t[2]
+        if divisible:
+          volume=decimal.Decimal(volume)/decimal.Decimal(1e8)
         rawrate=dbSelect("select rate1for2 from exchangerates where protocol1='Bitcoin' and protocol2='Omni' and propertyid1=0 and propertyid2=%s order by asof desc limit 1",[pid])
         try:
           rate=decimal.Decimal(rawrate[0][0])
         except:
           rate=decimal.Decimal(0)
         value=rate*btcusd*volume
-        if divisible:
-          value=decimal.Decimal(value)/decimal.Decimal(1e8)
+        rateusd=rate*btcusd
+        srate=str(rateusd).split('.')
+        prate=decimal.Decimal(srate[0]+'.'+srate[1][:8])
         value=int(round(value))
         total+=value
-        valuelist[pid]=value
-      fvalue={'total':total, 'details':valuelist}
+        valuelist[pid]={'rate_usd':prate,'volume':volume,'value_usd_rounded':value}
+      fvalue={'total_usd':total, 'details':valuelist}
       dbExecute("insert into txstats (blocknumber,blocktime,txcount,blockcount,value) values(%s,%s,%s,%s,%s)",
                 (curblock, btime, txs, btxs, json.dumps(fvalue)))
 
