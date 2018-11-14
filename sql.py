@@ -227,8 +227,38 @@ def updateTxStats():
       txs=ROWS[0][0]
       BROWS=dbSelect("select count(*) from transactions where txblocknumber=%s",[curblock])
       btxs=BROWS[0][0]
-      dbExecute("insert into txstats (blocknumber,blocktime,txcount,blockcount) values(%s,%s,%s,%s)",
-                (curblock, btime, txs,btxs))
+      txfsum=dbSelect("select atx.propertyid, sum(atx.balanceavailablecreditdebit), sp.propertydata->>'divisible' as divisible "
+                     "from addressesintxs atx, transactions tx, smartproperties sp "
+                     "where atx.txdbserialnum=tx.txdbserialnum and atx.propertyid=sp.propertyid and sp.protocol='Omni' and tx.txstate='valid' and "
+                     "tx.txblocknumber=%s and atx.addressrole='recipient' group by atx.propertyid, sp.propertydata->>'divisible'",[curblock])
+      valuelist={}
+      total=0
+      rbtcusd=dbSelect("select rate1for2 from exchangerates where protocol1='Fiat' and protocol2='Bitcoin' and propertyid1=0 and propertyid2=0 order by asof desc limit 1")
+      try:
+        btcusd=decimal.Decimal(rbtcusd[0][0])
+      except:
+        btcusd=decimal.Decimal(0)
+      for t in txfsum:
+        pid=t[0]
+        volume=decimal.Decimal(t[1])
+        divisible=t[2]
+        if divisible:
+          volume=decimal.Decimal(volume)/decimal.Decimal(1e8)
+        rawrate=dbSelect("select rate1for2 from exchangerates where protocol1='Bitcoin' and protocol2='Omni' and propertyid1=0 and propertyid2=%s order by asof desc limit 1",[pid])
+        try:
+          rate=decimal.Decimal(rawrate[0][0])
+        except:
+          rate=decimal.Decimal(0)
+        value=rate*btcusd*volume
+        rateusd=rate*btcusd
+        srate=str(rateusd).split('.')
+        prate=decimal.Decimal(srate[0]+'.'+srate[1][:8])
+        value=int(round(value))
+        total+=value
+        valuelist[pid]={'rate_usd':prate,'volume':volume,'value_usd_rounded':value}
+      fvalue={'total_usd':total, 'details':valuelist}
+      dbExecute("insert into txstats (blocknumber,blocktime,txcount,blockcount,value) values(%s,%s,%s,%s,%s)",
+                (curblock, btime, txs, btxs, json.dumps(fvalue)))
 
 
 def checkPending(blocktxs):

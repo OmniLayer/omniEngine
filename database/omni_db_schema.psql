@@ -160,6 +160,7 @@ create table if not exists TxStats (
         , BlockTime timestamp(0) not null             /* timestamp recording when this block was created (Will overflow in 2106) */
         , TxCount integer null                        /* Number of transaction entries in past 24 hours */
         , BlockCount integer null                     /* Number of transaction in block */
+        , Value jsonb null                            /* the tx message fields */
 
         , primary key (ID)
 )
