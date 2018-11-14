@@ -314,7 +314,10 @@ def updateAddPending():
     sbacd=None
     rbacd=None
     sender = rawtx['sendingaddress']
-    receiver = rawtx['referenceaddress']
+    try:
+      receiver = rawtx['referenceaddress']
+    except:
+      receiver=''
     txtype = rawtx['type_int']
     txversion = rawtx['version']
     txhash = rawtx['txid']
