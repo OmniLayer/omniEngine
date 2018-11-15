@@ -1840,7 +1840,6 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
           #Right now payments are only in btc
           #we already insert btc payments in btc processing might need to skip this
           PropertyIDPaid = 0
-          #AddressTxIndex =  Do we need to change this?
 
           if getdivisible_MP(PropertyIDBought):
             AmountBought=int(decimal.Decimal(str(payment['amountbought']))*decimal.Decimal(1e8))
@@ -1868,6 +1867,7 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
                     "values(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
                     (Seller, PropertyIDBought, Protocol, TxDBSerialNum, AddressTxIndex, AddressRole, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit, saletxdbserialnum))
 
+          AddressTxIndex+=1
           if Valid:
             updateBalance(Seller, Protocol, PropertyIDBought, Ecosystem, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit, TxDBSerialNum)
 
@@ -1881,6 +1881,7 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
                     "values(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
                     (Buyer, PropertyIDBought, Protocol, TxDBSerialNum, AddressTxIndex, AddressRole, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit,offertxdbserialnum))
 
+          AddressTxIndex+=1
           if Valid:
             updateBalance(Buyer, Protocol, PropertyIDBought, Ecosystem, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit, TxDBSerialNum)
 
