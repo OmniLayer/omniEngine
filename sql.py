@@ -1643,10 +1643,14 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
           value_neg=0
         else: 
           #if rawtx['result']['divisible']:
-          if getDivisible(rawtx):
-            value=int(decimal.Decimal(str(rawtx['result']['amount']))*decimal.Decimal(1e8))
-          else:
-            value=int(rawtx['result']['amount'])
+          try:
+            if getDivisible(rawtx):
+              value=int(decimal.Decimal(str(rawtx['result']['amount']))*decimal.Decimal(1e8))
+            else:
+              value=int(rawtx['result']['amount'])
+          except:
+            printdebug(f"Invalid amount, continuing (Amount: {rawtx['result']['amount']})", 0)
+            value = 0
           value_neg=(value*-1)
  
 
