@@ -67,9 +67,9 @@ def reparsetx_MP(txhash):
           else:
             dbBalanceFrozen = entry[7]*-1
 
-          #use -1 for txdbserialnum as we don't know what the previous tx that last modified it's balanace was. 
+          #use -1 for txdbserialnum as we don't know what the previous tx that last modified it's balanace was.
           updateBalance(Address, Protocol, PropertyID, Ecosystem, dbBalanceAvailable, dbBalanceReserved, dbBalanceAccepted, -TxDBSerialNum, dbBalanceFrozen)
-            
+
         #/end for entry in addressesintxs
     #/end if txstate='valid'
 
@@ -88,7 +88,7 @@ def reorgRollback(block):
 
     BlockTime=dbSelect("select extract(epoch from blocktime) from blocks where blocknumber=%s",[block])[0][0]
 
-    #list of tx's we have processed since the reorg 
+    #list of tx's we have processed since the reorg
     txs=dbSelect("select txdbserialnum,txtype,txstate,txblocknumber from transactions where txblocknumber >%s order by txdbserialnum desc",[block])
 
     #(need to reset txdbserialnum counter when done)
@@ -99,7 +99,7 @@ def reorgRollback(block):
     #don't have btc tx's yet in db add extra step to get count of those
     txcount+=dbSelect("select sum(txcount) from blocks where blocknumber >%s",[block])[0][0]
     #================================================================
-    
+
     newTxDBSerialNum=dbSelect('select last_value from transactions_txdbserialnum_seq',None)[0][0]-txcount
 
     printdebug(("Removing",txcount,"transactions and setting txdbserialnum to",newTxDBSerialNum),4)
@@ -144,7 +144,7 @@ def reorgRollback(block):
           else:
             dbBalanceAccepted = entry[6]*-1
 
-          #use -1 for txdbserialnum as we don't know what the previous tx that last modified it's balanace was. 
+          #use -1 for txdbserialnum as we don't know what the previous tx that last modified it's balanace was.
           updateBalance(Address, Protocol, PropertyID, Ecosystem, dbBalanceAvailable, dbBalanceReserved, dbBalanceAccepted, -TxDbSerialNum)
 
           if Protocol=="Omni":
@@ -153,7 +153,7 @@ def reorgRollback(block):
               try:
                 rawtx=json.loads(dbSelect("select txdata from txjson where txdbserialnum=%s",[TxDbSerialNum])[0][0])
               except TypeError:
-                rawtx=dbSelect("select txdata from txjson where txdbserialnum=%s",[TxDbSerialNum])[0][0]            
+                rawtx=dbSelect("select txdata from txjson where txdbserialnum=%s",[TxDbSerialNum])[0][0]
               if 'subaction' in rawtx and rawtx['subaction'].lower()=='cancel':
                 printdebug(("Uncancelling DEx.1 sale",linkedtxdbserialnum,"from transaction",TxDbSerialNum,Address),7)
                 #cancellation, undo the cancellation (not sure about the lasttxdbserialnum yet
@@ -196,7 +196,7 @@ def reorgRollback(block):
                         (TxDbSerialNum,PropertyID,Protocol))
             elif txtype == 70 and Role == "issuer":
               updateProperty(PropertyID, Protocol, linkedtxdbserialnum)
-            
+
         #/end for entry in addressesintxs
       #/end if txstate='valid'
 
@@ -209,7 +209,7 @@ def reorgRollback(block):
     #Make sure we process any remaining expires that need to be undone if we didn't have an msc tx in the block
     expireAccepts(-(block+1))
     expireCrowdsales(-BlockTime, "Omni")
-      
+
     #delete from txstats once we rollback all other data
     dbExecute("delete from txstats where blocknumber>%s",[block])
     #delete from blocks once we rollback all other data
@@ -372,9 +372,9 @@ def updateAddPending():
       else:
         #all other txs deduct from our balance and, where applicable, apply to the reciever
         sendamount=-amount
-        recvamount=amount  
+        recvamount=amount
 
-    
+
       address=sender
       #insert the addressesintxs entry for the sender
       dbExecute("insert into addressesintxs (address,propertyid,protocol,txdbserialnum,addresstxindex,addressrole,balanceavailablecreditdebit,balanceacceptedcreditdebit) "
@@ -399,7 +399,7 @@ def updateAddPending():
     counter+=1
    except Exception,e:
     print "Error: ", e, "\n Could not add OMNI PendingTx: ", rawtx
-  printdebug(("added ",counter," pending txs to db"),0)      
+  printdebug(("added ",counter," pending txs to db"),0)
 
 def keyByAddress(item):
     return item[0]
@@ -427,7 +427,7 @@ def sendToOwners(Sender, Amount, PropertyID, Protocol, TxDBSerialNum, owners=Non
       #use the addresslist sent to us
       owners=sortSTO(owners)
 
-    #find out how much is actually owned/held in total 
+    #find out how much is actually owned/held in total
     toDistribute=Amount
     sumTotal=sum([holder[1] for holder in owners])
 
@@ -525,7 +525,7 @@ def expireAccepts(Block):
         #Sale still active, use the offers that are ready to expire to update the sellers accepted balance (reserved reflects total unsold amount left)
         dbExecute("update addressbalances as ab set balanceaccepted=ab.balanceaccepted-%s::numeric "
                   "from activeoffers as ao where ab.address=ao.seller and "
-                  "ab.propertyid = ao.propertyidselling and ao.createtxdbserialnum=%s", 
+                  "ab.propertyid = ao.propertyidselling and ao.createtxdbserialnum=%s",
                   (amountaccepted, saletxserialnum) )
 
     if Block < 0:
@@ -539,7 +539,7 @@ def updateAccept(Buyer, Seller, AmountBought, PropertyIDBought, TxDBSerialNum):
     printdebug(("Buyer, Seller, AmountBought, PropertyIDBought, TxDBSerialNum"),9)
     printdebug((Buyer, Seller, AmountBought, PropertyIDBought, TxDBSerialNum, "\n"),9)
 
-    #user has paid for their accept (either partially or in full) update accordingly. 
+    #user has paid for their accept (either partially or in full) update accordingly.
 
     #find the accept data for updating
     #saletx=dbSelect("select max(oa.saletxdbserialnum) from offeraccepts as oa inner join activeoffers as ao "
@@ -552,7 +552,7 @@ def updateAccept(Buyer, Seller, AmountBought, PropertyIDBought, TxDBSerialNum):
     accept=dbSelect("select oa.amountaccepted, oa.amountpurchased, ao.amountaccepted, ao.amountavailable, ao.offerstate, oa.saletxdbserialnum, oa.linkedtxdbserialnum "
                     "from offeraccepts oa inner join activeoffers ao on (oa.saletxdbserialnum=ao.createtxdbserialnum) "
                     "where oa.buyer=%s and ao.seller=%s and ao.propertyidselling=%s "
-                    "and oa.dexstate != 'invalid' and oa.dexstate != 'paid-complete' and oa.expiredstate=false", 
+                    "and oa.dexstate != 'invalid' and oa.dexstate != 'paid-complete' and oa.expiredstate=false",
                     (Buyer, Seller, PropertyIDBought) )
 
     buyeraccepted = accept[0][0] - AmountBought
@@ -565,12 +565,12 @@ def updateAccept(Buyer, Seller, AmountBought, PropertyIDBought, TxDBSerialNum):
     else:
       dexstate = 'paid-complete'
       #can we have a negative amount accepted?  bad math?
- 
+
     #update the buyers 'accept' in the offeraccepts table with the new data
     dbExecute("update offeraccepts as oa set amountaccepted=%s, amountpurchased=%s, dexstate=%s "
               "from activeoffers as ao where oa.saletxdbserialnum=ao.createtxdbserialnum and oa.buyer=%s and ao.seller=%s "
               "and ao.propertyidselling=%s and ao.createtxdbserialnum=%s and oa.dexstate != 'invalid' and "
-              "oa.dexstate != 'paid-complete' and oa.expiredstate=false", 
+              "oa.dexstate != 'paid-complete' and oa.expiredstate=false",
               (buyeraccepted, buyerpurchased, dexstate, Buyer, Seller, PropertyIDBought, saletxdbserialnum) )
 
     selleraccepted= accept[0][2] - AmountBought
@@ -596,7 +596,7 @@ def offerAccept (rawtx, TxDBSerialNum, Block):
 
     BuyerAddress=rawtx['result']['sendingaddress']
     SellerAddress=rawtx['result']['referenceaddress']
-    
+
     #what did the user accept
     propertyidbuying = rawtx['result']['propertyid']
     #what are they going to have to pay/send to complete. (BTC for now until metadex launch)
@@ -635,7 +635,7 @@ def offerAccept (rawtx, TxDBSerialNum, Block):
       expiredstate='false'
       #update original sale to reflect accept
       currentamountaccepted+=amountaccepted
-      amountavailable-=amountaccepted      
+      amountavailable-=amountaccepted
       dbExecute("update activeoffers set amountaccepted=%s, amountavailable=%s, lasttxdbserialnum=%s  where  seller=%s and offerstate='active' and propertyidselling=%s and propertyiddesired=%s",
                 (currentamountaccepted,amountavailable,TxDBSerialNum,SellerAddress,propertyidbuying,propertyidpaying) )
     else:
@@ -645,7 +645,7 @@ def offerAccept (rawtx, TxDBSerialNum, Block):
 
     #insert the offer
     dbExecute("insert into offeraccepts (buyer, amountaccepted, linkedtxdbserialnum, saletxdbserialnum, block, dexstate, expireblock, expiredstate) "
-              "values(%s,%s,%s,%s,%s,%s,%s,%s)", 
+              "values(%s,%s,%s,%s,%s,%s,%s,%s)",
               (BuyerAddress, amountaccepted, TxDBSerialNum, saletxdbserialnum, Block, dexstate, expireblock,expiredstate) )
 
 def updatedex(rawtx, TxDBSerialNum, Protocol):
@@ -673,7 +673,7 @@ def updatedex(rawtx, TxDBSerialNum, Protocol):
       subaction='new'
 
 
-    #find any balances left in the active sales to credit back to user 
+    #find any balances left in the active sales to credit back to user
     remaining=dbSelect("select amountavailable,createtxdbserialnum from activeoffers where seller=%s and offerstate='active' and propertyiddesired=%s and propertyidselling=%s",
                          ( Address, propertyiddesired, propertyidselling) )
     if remaining != []:
@@ -712,11 +712,11 @@ def updatedex(rawtx, TxDBSerialNum, Protocol):
         BalanceAvailable=amount
         #deduct whats left from the Reserved balanace (should be all unless there is an outstanding accept)
         BalanceReserved=amount*-1
-        #we don't modify any current accepts, 
+        #we don't modify any current accepts,
         BalanceAccepted=None
         Ecosystem=getEcosystem(propertyidselling)
         #credit any existing balances found for a 'replaced tx' back to seller since its about to have a new one
-        updateBalance(Address, Protocol, propertyidselling, Ecosystem, BalanceAvailable, BalanceReserved, BalanceAccepted, TxDBSerialNum)  
+        updateBalance(Address, Protocol, propertyidselling, Ecosystem, BalanceAvailable, BalanceReserved, BalanceAccepted, TxDBSerialNum)
 
       #insert the new/updated tx as active
       State='active'
@@ -724,7 +724,7 @@ def updatedex(rawtx, TxDBSerialNum, Protocol):
 
       totalselling=amountavailable
 
-      #convert all btc stuff, need additional logic for metadex  
+      #convert all btc stuff, need additional logic for metadex
       amountdesired=int(decimal.Decimal(str(rawtx['result']['bitcoindesired']))*decimal.Decimal(1e8))
       minimumfee=int(decimal.Decimal(str(rawtx['result']['feerequired']))*decimal.Decimal(1e8))
 
@@ -736,7 +736,7 @@ def updatedex(rawtx, TxDBSerialNum, Protocol):
       dbExecute("insert into activeoffers (amountaccepted, amountavailable, totalselling, amountdesired, minimumfee, propertyidselling, "
                 "propertyiddesired, seller, timelimit, createtxdbserialnum, unitprice, offerstate) values "
                 "(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",
-                (amountaccepted, amountavailable, totalselling, amountdesired, minimumfee, propertyidselling, 
+                (amountaccepted, amountavailable, totalselling, amountdesired, minimumfee, propertyidselling,
                 propertyiddesired, Address, timelimit, TxDBSerialNum, unitprice, State) )
       return None,createtxdbserialnum,State
 
@@ -792,7 +792,7 @@ def updatedex2(rawtx, rawtrade, TxDBSerialNum):
       #dbExecute("insert into activeoffers (amountaccepted, amountavailable, totalselling, amountdesired, minimumfee, propertyidselling, "
       #          "propertyiddesired, seller, createtxdbserialnum, unitprice, offerstate, timelimit) values "
       #          "(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",
-      #          (amountaccepted, amountavailable, totalselling, amountdesired, minimumfee, propertyidselling, 
+      #          (amountaccepted, amountavailable, totalselling, amountdesired, minimumfee, propertyidselling,
       #          propertyiddesired, Address, TxDBSerialNum, unitprice, State, timelimit) )
 
       dbExecute("with upsert as "
@@ -801,11 +801,11 @@ def updatedex2(rawtx, rawtrade, TxDBSerialNum):
                 "insert into activeoffers (amountaccepted, amountavailable, totalselling, amountdesired, minimumfee, propertyidselling, "
                 "propertyiddesired, seller, createtxdbserialnum, unitprice, offerstate, timelimit) select %s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s "
                 "where not exists (select * from upsert)",
-                (State, TxDBSerialNum, amountavailable, Address, propertyiddesired, propertyidselling, saletxdbserial,  
-                 amountaccepted, amountavailable, totalselling, amountdesired, minimumfee, propertyidselling, 
+                (State, TxDBSerialNum, amountavailable, Address, propertyiddesired, propertyidselling, saletxdbserial,
+                 amountaccepted, amountavailable, totalselling, amountdesired, minimumfee, propertyidselling,
                   propertyiddesired, Address, saletxdbserial, unitprice, State, timelimit) )
 
-      return 
+      return
 
     #elif txtype == 26:
     #cancel by price
@@ -929,7 +929,7 @@ def updatedex2remaining(TxHash, TxDBSerialNum):
     printdebug(("TxHash, TxDBSerialNum, rawtrade"),9)
     printdebug((TxHash, TxDBSerialNum, rawtrade, "\n"),9)
 
-    
+
     txstatus=rawtrade['result']['status']
     if txstatus.lower() in ['open','open part filled']:
       State='active'
@@ -977,11 +977,11 @@ def resetdextable_MP():
 
         totalselling=amountaccepted
 
-        #convert all btc stuff, need additional logic for metadex  
+        #convert all btc stuff, need additional logic for metadex
         amountdesired=int(decimal.Decimal(str(sale['bitcoindesired']))*decimal.Decimal(1e8))
         minimumfee=int(decimal.Decimal(str(sale['minimumfee']))*decimal.Decimal(1e8))
         unitprice=int(decimal.Decimal(str(sale['unitprice']))*decimal.Decimal(1e8))
-        
+
         seller=sale['seller']
         timelimit=sale['timelimit']
         createtxdbserialnum=gettxdbserialnum(sale['txid'])
@@ -991,7 +991,7 @@ def resetdextable_MP():
                   "propertyiddesired, seller, timelimit, createtxdbserialnum, unitprice, offerstate) values "
                   "(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",
                   (amountaccepted, amountavailable, totalselling, amountdesired, minimumfee, propertyidselling, propertyiddesired,
-                   seller, timelimit, createtxdbserialnum, unitprice, offerstate) )    
+                   seller, timelimit, createtxdbserialnum, unitprice, offerstate) )
 
 def syncAddress(Address, Protocol):
     #sync address balance in db to match core's balance
@@ -1038,14 +1038,14 @@ def syncAddress(Address, Protocol):
         dbExecute("UPDATE AddressBalances set BalanceAvailable=%s, BalanceReserved=%s, BalanceAccepted=%s where address=%s and PropertyID=%s",
                   (Available, Reserved, Accepted, Address, PropertyID) )
 
-      
+
 
 def resetbalances_MP():
     printdebug(("Starting resetbalances_MP"),8)
     #for now sync / reset balance data from omnicore balance list
     Protocol="Omni"
 
-    #get DEx sales to process 'accepted' amounts  
+    #get DEx sales to process 'accepted' amounts
     DExSales=getactivedexsells_MP()
 
     #Find all known properties in omnicore and cache data so we can work from it without worrying about changes in new blocks
@@ -1066,7 +1066,7 @@ def resetbalances_MP():
       #  Ecosystem= "Production"
 
       #reset/zero out the existing address balanaces for current propertyid
-      #if we don't do this we could run into a balnace mismatch issue since 
+      #if we don't do this we could run into a balnace mismatch issue since
       #omnicore doesn't give us address balances for addresses with 0 balanaces so we could miss some address
       dbExecute("update addressbalances set BalanceAvailable=0, BalanceReserved=0, BalanceAccepted=0, BalanceFrozen=0 where protocol=%s and propertyid=%s", (Protocol,PropertyID))
 
@@ -1093,7 +1093,7 @@ def resetbalances_MP():
           BalanceFrozen=int(addr['frozen'])
           BalanceAccepted=int(accept)
 
-        rows=dbSelect("select address from AddressBalances where address=%s and Protocol=%s and propertyid=%s", 
+        rows=dbSelect("select address from AddressBalances where address=%s and Protocol=%s and propertyid=%s",
                       (Address, Protocol, PropertyID) )
 
         if len(rows) == 0:
@@ -1181,18 +1181,18 @@ def checkbalances_MP():
           item =[{'Address':Address, 'bal':{'Status': 'Missing', 'PropertyID': PropertyID, 'BalanceAvailable':BalanceAvailable,'BalanceReserved': BalanceReserved,'BalanceAccepted':BalanceAccepted }}]
           #add the missing/incorrect item to our list to return
           try:
-            retval[PropertyID]=retval[PropertyID]+item 
+            retval[PropertyID]=retval[PropertyID]+item
           except KeyError:
             retval[PropertyID]=item
         else:
           #address in database update
           if BalanceAvailable != dbBalanceAvailable:
-            item =[{'Address':Address, 'bal':{'Status': 'Mismatch', 'PropertyID': PropertyID, 'BalanceAvailable':BalanceAvailable, 'dbBalanceAvailable': dbBalanceAvailable, 
+            item =[{'Address':Address, 'bal':{'Status': 'Mismatch', 'PropertyID': PropertyID, 'BalanceAvailable':BalanceAvailable, 'dbBalanceAvailable': dbBalanceAvailable,
                     'dbBalanceReserved': dbBalanceReserved, 'BalanceReserved': BalanceReserved,
                     'dbBalanceAccepted':dbBalanceAccepted, 'BalanceAccepted':BalanceAccepted }}]
             #add the missing/incorrect item to our list to return
             try:
-              retval[PropertyID]=retval[PropertyID]+item 
+              retval[PropertyID]=retval[PropertyID]+item
             except KeyError:
               retval[PropertyID]=item
           elif BalanceReserved != dbBalanceReserved:
@@ -1279,15 +1279,15 @@ def updateBalance(Address, Protocol, PropertyID, Ecosystem, BalanceAvailable, Ba
         except (ValueError, TypeError):
           try:
             BalanceAvailable=dbAvail+0
-          except (ValueError, TypeError): 
+          except (ValueError, TypeError):
             BalanceAvailable=0
 
         try:
           BalanceReserved=int(BalanceReserved)+dbResvd
         except (ValueError, TypeError):
           try:
-            BalanceReserved=dbResvd+0 
-          except (ValueError, TypeError):  
+            BalanceReserved=dbResvd+0
+          except (ValueError, TypeError):
             BalanceReserved=0
 
         try:
@@ -1316,7 +1316,7 @@ def expireCrowdsales(BlockTime, Protocol):
     printdebug((BlockTime, Protocol, "\n"), 9)
 
     if BlockTime < 0:
-      #Reorg 
+      #Reorg
       expired=dbSelect("select propertyid from smartproperties as sp inner join transactions as tx on "
                       "(sp.createtxdbserialnum=tx.txdbserialnum) where tx.txtype=51 and sp.protocol=%s and "
                       "cast(propertydata::json->>'endedtime' as numeric) >= %s and propertydata::json->>'active'='false'", (Protocol, BlockTime))
@@ -1327,9 +1327,9 @@ def expireCrowdsales(BlockTime, Protocol):
 
     else:
       #find the crowdsales that are ready to expire and update/expire them accordingly
-      expiring=dbSelect("select propertyid from smartproperties as sp inner join transactions as tx on (sp.createtxdbserialnum=tx.txdbserialnum) " 
+      expiring=dbSelect("select propertyid from smartproperties as sp inner join transactions as tx on (sp.createtxdbserialnum=tx.txdbserialnum) "
                         "where tx.txtype=51 and sp.protocol=%s and propertydata::json->>'active'='true' and "
-                        "( cast(propertydata::json->>'deadline' as numeric) < %s or cast(propertydata::json->>'endedtime' as numeric) < %s)", 
+                        "( cast(propertydata::json->>'deadline' as numeric) < %s or cast(propertydata::json->>'endedtime' as numeric) < %s)",
                         (Protocol, BlockTime, BlockTime))
 
       #Process all the crowdsales that should have expired by now
@@ -1421,13 +1421,13 @@ def insertProperty(rawtx, Protocol, PropertyID=None):
       #User PropertyID from tx unless specifically overwritten
       if PropertyID == None:
         PropertyID = rawtx['result']['propertyid']
-    
+
       PropertyDataJson = getproperty_MP(PropertyID)
-      rawprop = PropertyDataJson['result'] 
+      rawprop = PropertyDataJson['result']
 
       #if TxType == 51 or TxType == 53:
         #get additional json info for crowdsales
-      #  rawprop = dict(rawprop.items() + getcrowdsale_MP(PropertyID)['result'].items())        
+      #  rawprop = dict(rawprop.items() + getcrowdsale_MP(PropertyID)['result'].items())
       #elif TxType > 53 and TxType < 57:
       #  rawprop = dict(rawprop.items() + getgrants_MP(PropertyID)['result'].items())
 
@@ -1458,7 +1458,7 @@ def insertProperty(rawtx, Protocol, PropertyID=None):
         PropertyType = 1
       PropertyData = rawprop['data']
       PropertyCategory = rawprop['category']
-      PropertySubcategory =rawprop['subcategory'] 
+      PropertySubcategory =rawprop['subcategory']
 
       #, PrevPropertyID bigint null default 0
       #, PropertyServiceURL varchar(256) null
@@ -1470,7 +1470,7 @@ def insertProperty(rawtx, Protocol, PropertyID=None):
         dbExecute("update smartproperties set Issuer=%s, Ecosystem=%s, CreateTxDBSerialNum=%s, LastTxDBSerialNum=%s, "
                   "PropertyName=%s, PropertyType=%s, PropertyCategory=%s, PropertySubcategory=%s, PropertyData=%s "
                   "where Protocol=%s and PropertyID=%s",
-                  (Issuer, Ecosystem, CreateTxDBSerialNum, LastTxDBSerialNum, PropertyName, PropertyType, PropertyCategory, 
+                  (Issuer, Ecosystem, CreateTxDBSerialNum, LastTxDBSerialNum, PropertyName, PropertyType, PropertyCategory,
                    PropertySubcategory, json.dumps(rawprop), Protocol, PropertyID))
         #insert this tx into the history table
         dbExecute("insert into PropertyHistory (Protocol, PropertyID, TxDBSerialNum) Values(%s, %s, %s)", (Protocol, PropertyID, LastTxDBSerialNum))
@@ -1481,7 +1481,7 @@ def insertProperty(rawtx, Protocol, PropertyID=None):
                   "(Issuer, Ecosystem, CreateTxDBSerialNum, LastTxDBSerialNum, PropertyName, PropertyType, "
                   "PropertyCategory, PropertySubcategory, PropertyData, Protocol, PropertyID )"
                   "values(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
-                  (Issuer, Ecosystem, CreateTxDBSerialNum, LastTxDBSerialNum, PropertyName, PropertyType, PropertyCategory, 
+                  (Issuer, Ecosystem, CreateTxDBSerialNum, LastTxDBSerialNum, PropertyName, PropertyType, PropertyCategory,
                    PropertySubcategory, json.dumps(rawprop), Protocol, PropertyID))
         #insert this tx into the history table
         dbExecute("insert into PropertyHistory (Protocol, PropertyID, TxDBSerialNum) Values(%s, %s, %s)", (Protocol, PropertyID, LastTxDBSerialNum))
@@ -1616,7 +1616,7 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
       if txtype in [185,186]:
         payload=getDecodePayload(rawtx)
 
-      #Check if we are a DEx Purchase/payment. Format is a littler different and variables below would fail if we tried. 
+      #Check if we are a DEx Purchase/payment. Format is a littler different and variables below would fail if we tried.
       if txtype not in [-22,4,21]:
         Valid=rawtx['result']['valid']
 
@@ -1636,12 +1636,12 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
           else:
             PropertyID=0
 
-        Ecosystem=getEcosystem(PropertyID) 
+        Ecosystem=getEcosystem(PropertyID)
 
         if txtype in [53,70,-1,25,26,27,28,185,186,65534,65535]:
           value=0
           value_neg=0
-        else: 
+        else:
           #if rawtx['result']['divisible']:
           try:
             if getDivisible(rawtx):
@@ -1652,12 +1652,12 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
             printdebug(f"Invalid amount, continuing (Amount: {rawtx['result']['amount']})", 0)
             value = 0
           value_neg=(value*-1)
- 
+
 
 
       if txtype == 0:
         #Simple Send
-        BalanceAvailableCreditDebit=value_neg 
+        BalanceAvailableCreditDebit=value_neg
 
 	#debit the sender
         dbExecute("insert into addressesintxs "
@@ -1666,7 +1666,7 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
                   (Address, PropertyID, Protocol, TxDBSerialNum, AddressTxIndex, AddressRole, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit))
         if Valid:
           updateBalance(Address, Protocol, PropertyID, Ecosystem, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit, TxDBSerialNum)
- 
+
         if 'referenceaddress' in rawtx['result'] and rawtx['result']['referenceaddress'] not in [None,'']:
 	  #credit the receiver
           Address = rawtx['result']['referenceaddress']
@@ -1688,7 +1688,7 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
            rawsto=getsto_MP(rawtx['result']['txid'])
            #sto fee is in MSC (and gets burned) so convert before entering it
            stofee=-int(decimal.Decimal(str(rawsto['result']['totalstofee']))*decimal.Decimal(1e8))
-           if Ecosystem in ['Test','test']: 
+           if Ecosystem in ['Test','test']:
              feeid=2
              feeEco=Ecosystem
            else:
@@ -1702,7 +1702,7 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
                      (Address, feeid, Protocol, TxDBSerialNum, 1, AddressRole, stofee, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit))
            updateBalance(Address, Protocol, feeid, feeEco, stofee, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit, TxDBSerialNum)
 
-           #process the list of STO recievers 
+           #process the list of STO recievers
            txindex=0
            AddressRole='payee'
            isDivisible=getDivisible(rawtx)
@@ -1733,7 +1733,7 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
         Ecosystem=getEcosystem(rawtx['result']['ecosystem'])
         RecvAddress = rawtx['result']['referenceaddress']
         RecvRole="recipient"
- 
+
         if 'subsends' not in rawtx['result']:
           rawtx['result']['subsends']=[]
 
@@ -1804,7 +1804,7 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
         AddressRole='buyer'
         dbExecute("insert into addressesintxs "
                   "(Address, PropertyID, Protocol, TxDBSerialNum, AddressTxIndex, AddressRole, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit)"
-                  "values(%s, %s, %s, %s, %s, %s, %s, %s, %s)", 
+                  "values(%s, %s, %s, %s, %s, %s, %s, %s, %s)",
                   (Address, PropertyID, Protocol, TxDBSerialNum, AddressTxIndex, AddressRole, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit))
 
         #Process records for the seller
@@ -1833,7 +1833,7 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
         #DEx Accept Payment
 
         Buyer =  Address
-        #process all purchases in the transaction 
+        #process all purchases in the transaction
         for payment in rawtx['result']['purchases']:
 
           Seller = payment['referenceaddress']
@@ -1926,10 +1926,10 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
           txblock=rawtrade['result']['block']
           #check if it had any matched tx's and process those
           for match in rawtrade['result']['matches']:
-           
+
            #make sure we don't double match? only process 'matches' on the later/2nd tx
            #need additional check from zath for when tx's are in same block
-           
+
            matchtxdbserialnum=gettxdbserialnum(match['txid'], TxDBSerialNum)
            if txblock == match['block'] and matchtxdbserialnum < TxDBSerialNum:
             BuyerRole='buyer'
@@ -1945,7 +1945,7 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
               amountreceived = int(decimal.Decimal(str(match['amountreceived']))*decimal.Decimal(1e8))
             else:
               amountreceived = int(match['amountreceived'])
-            
+
             AddressTxIndex+=1
             #add entry and update balance for moving amounts for sale from reserved coloumn of seller to available column of buyer
             dbExecute("insert into addressesintxs "
@@ -1962,7 +1962,7 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
             updateBalance(Address, Protocol, PropertyIdForSale, Ecosystem, BalanceAvailableCreditDebit, -amountsold, BalanceAcceptedCreditDebit, TxDBSerialNum)
             updateBalance(BuyerAddress, Protocol, PropertyIdForSale, Ecosystem, amountsold, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit, TxDBSerialNum)
 
-            #add entry and update balance for moving amounts for sale from reserved coloumn of buyer to available column of seller 
+            #add entry and update balance for moving amounts for sale from reserved coloumn of buyer to available column of seller
             AddressTxIndex+=1
             dbExecute("insert into addressesintxs "
                       "(Address, PropertyID, Protocol, TxDBSerialNum, AddressTxIndex, AddressRole, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit, linkedtxdbserialnum)"
@@ -1998,10 +1998,10 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
         AddressTxIndex=-1
 
         if Valid:
-          rawtrade=gettrade(TxHash) 
+          rawtrade=gettrade(TxHash)
 
           for match in rawtrade['result']['cancelledtransactions']:
-            matchtxdbserialnum=gettxdbserialnum(match['txid'])          
+            matchtxdbserialnum=gettxdbserialnum(match['txid'])
             PropertyID=match['propertyid']
 
             if getdivisible_MP(PropertyID):
@@ -2034,7 +2034,7 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
         BalanceAvailableCreditDebit = value
         #update smart property table
         insertProperty(rawtx, Protocol)
-     
+
       elif txtype == 51:
         AddressRole = "issuer"
         #update smart property table
@@ -2071,7 +2071,7 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
         if getdivisible_MP(PropertyID):
           IssuerCreditDebit = int(decimal.Decimal(str(rawtx['result']['issuertokens']))*decimal.Decimal(1e8))
           BalanceAvailableCreditDebit = int(decimal.Decimal(str(rawtx['result']['purchasedtokens']))*decimal.Decimal(1e8))
-        else:  
+        else:
           IssuerCreditDebit = int(rawtx['result']['issuertokens'])
           BalanceAvailableCreditDebit = int(rawtx['result']['purchasedtokens'])
 
@@ -2086,13 +2086,13 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
 
         #Participating in crowdsale, update smartproperty history table with the propertyid bought
         dbExecute("insert into PropertyHistory (Protocol, PropertyID, TxDBSerialNum) Values(%s, %s, %s)", (Protocol, PropertyID, TxDBSerialNum))
-        #Trigger update smartproperty json data 
+        #Trigger update smartproperty json data
         updateProperty(PropertyID, Protocol, TxDBSerialNum)
 
         #now set the final variables to update addressesintxs/addressbalances with participant crowdsale specific property details
         Address = rawtx['result']['sendingaddress']
         AddressRole = 'participant'
- 
+
       #elif txtype == 52:
         #promote crowdsale does what?
 
@@ -2103,7 +2103,7 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
 
         #update smart property table
         insertProperty(rawtx, Protocol)
-        updateProperty(PropertyID, Protocol, TxDBSerialNum)        
+        updateProperty(PropertyID, Protocol, TxDBSerialNum)
 
       elif txtype == 54:
         #create a new grant property
@@ -2134,7 +2134,7 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
             updateBalance(Receiver, Protocol, PropertyID, Ecosystem, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit, TxDBSerialNum)
           #if we had a receiver then the tokens issued go to them, not to the issuer
           BalanceAvailableCreditDebit=None
-          
+
         #update smart property table
         insertProperty(rawtx, Protocol)
 
@@ -2179,7 +2179,7 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
         Address = rawtx['result']['referenceaddress']
         AddressRole = 'recipient'
         updateAddrStats(Address,Protocol,TxDBSerialNum,Block)
-        
+
         ROWS=dbSelect("select BalanceAvailable,BalanceFrozen from addressbalances where address=%s and propertyid=%s", (Address, PropertyID))
 
         if txtype == 185:
