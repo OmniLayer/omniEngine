@@ -15,7 +15,7 @@
  * currency (or smart property) is divisible or indivisible.
  */
 
-/* 
+/*
  * AddressRole type definitions:
  *	buyer accepted a DEx sell offer
  *	issuer created a smart property
@@ -36,8 +36,8 @@ create type OfferState as enum ('active', 'cancelled', 'replaced', 'sold');
 
 create table if not exists Sessions (
         SessionID text not null
-        , Challenge text 
-        , PChallenge text 
+        , Challenge text
+        , PChallenge text
         , PubKey text
         , TimeStamp timestamp without time zone DEFAULT now()
         , primary key (SessionID)
@@ -47,8 +47,8 @@ create table if not exists Sessions (
 /* Wallets have addresses with private keys. Objects being watched are in the Following table */
 create table if not exists Wallets (
 	WalletID uuid
-	, Created timestamp(0) null 
-	, LastLogin timestamp(0) null 
+	, Created timestamp(0) null
+	, LastLogin timestamp(0) null
 	, LastBackup timestamp(0) null
 	, IsSignedIn boolean not null default FALSE		/* signed in now? */
 	, WalletState WalletState not null default 'Active'
@@ -57,7 +57,7 @@ create table if not exists Wallets (
 	, UserName varchar(32) null				/* (future) encrypted */
 	, Email varchar(64) null				/* (future) encrypted */
 	, Settings json null					/* (future) user preferences */
-	
+
 	, primary key (WalletID)
 )
 ;
@@ -65,13 +65,13 @@ create table if not exists Wallets (
 /* Timestamped backup of wallets everytime they are modified/changed */
 create table if not exists WalletBackups (
 	WalletID uuid not null
-	, Created timestamp(0) without time zone DEFAULT now() 
+	, Created timestamp(0) without time zone DEFAULT now()
 	, WalletBlob text not null
 	, UserName varchar(32) null
 	, Email varchar(64) null
 	, Settings json null
         , id serial
-	
+
 	, primary key (id)
 )
 ;
@@ -83,7 +83,7 @@ create table if not exists WalletBackups (
 create table if not exists AddressBalances (
 	Address	varchar(64)				/* Bitcoin addresses are 34 chars */
 	, Protocol Protocol not null default 'Bitcoin'	/* initially 'Bitcoin' or 'Omni' */
-	, PropertyID bigint not null default 0		/* Bitcoin */		
+	, PropertyID bigint not null default 0		/* Bitcoin */
 	, Ecosystem Ecosystem null
 	, BalanceAvailable numeric(19) not null default 0
 	, BalanceReserved numeric(19) not null default 0
@@ -153,7 +153,7 @@ create table if not exists Blocks (
 /* to find block info by block number */
 create index BlockNumTime on Blocks (BlockNumber, Protocol, BlockTime)
 ;
-	
+
 /* transaction stats */
 create table if not exists TxStats (
         ID Serial
@@ -185,8 +185,8 @@ create table if not exists Transactions (
 	, Ecosystem Ecosystem null					/* Null for 'Bitcoin' tx's */
 	, TxRecvTime timestamp(0) without time zone null DEFAULT now()	/* when it was sent, if known */
 	, TxState TxState not null default 'pending'			/* pending, valid, not valid */
-	, TxErrorCode smallint null					/* successful? if not, why not? (see ErrorCodes) */		
-	, TxBlockNumber integer null		
+	, TxErrorCode smallint null					/* successful? if not, why not? (see ErrorCodes) */
+	, TxBlockNumber integer null
 	, TxSeqInBlock integer null					/* determined by order of tx's in the block */
 
 	, primary key (ID)
@@ -220,7 +220,7 @@ create table if not exists TxJSON (
 	, Protocol Protocol not null		/* initially 'Bitcoin' or 'Omni' */
 	, TxData jsonb not null			/* the tx message fields */
 
-	, primary key (id) 
+	, primary key (id)
 /*	, foreign key (TxDBSerialNum, Protocol) references Transactions(TxDBSerialNum, Protocol) */
 )
 ;
@@ -247,11 +247,11 @@ create index txj_json_raddress on txjson (cast(txdata->>'referenceaddress' as te
 /* Addresses that are involved in each transaction, with their role and changes to balances */
 create table if not exists AddressesInTxs (					/* many-to-many */
 	Address	varchar(64) not null
-	, PropertyID bigint not null	
+	, PropertyID bigint not null
 	, Protocol Protocol not null			/* initially 'Bitcoin' or 'Omni' */
 	, TxDBSerialNum int8 not null default -1	/* db internal identifier for each tx, for faster joins */
 	, AddressTxIndex int2 not null			/* position in the input or output list */
-	, AddressRole AddressRole not null		
+	, AddressRole AddressRole not null
 	, BalanceAvailableCreditDebit numeric(19) null		/* how much the balance changed */
 	, BalanceReservedCreditDebit numeric(19) null		/* how much the balance changed */
 	, BalanceAcceptedCreditDebit numeric(19) null		/* how much the balance changed */
@@ -275,7 +275,7 @@ create index aitdbser_idx on addressesintxs (txdbserialnum)
 /* "temporary" table for pre-populating the LinkedTxDBSerialNum field when doing bulk loads of AddressesInTxs */
 create table if not exists ToLinkAddressesInTxs (		/* many-to-many */
 	Address	varchar(64) not null
-	, PropertyID bigint not null	
+	, PropertyID bigint not null
 	, Protocol Protocol not null			/* initially 'Bitcoin' or 'Omni' */
 	, TxDBSerialNum int8 not null default -1	/* db internal identifier for each tx, for faster joins */
 	, AddressTxIndex int2 not null			/* position in the input or output list */
@@ -305,7 +305,7 @@ create table if not exists SmartProperties (
 	, CreateTxDBSerialNum int8 not null		/* the tx that created this SP, for faster joins */
 	, LastTxDBSerialNum int8 not null		/* the last tx that updated this SP, for faster joins */
 	, PropertyName varchar(256) null
-	, PropertyType smallint null		
+	, PropertyType smallint null
 	, PrevPropertyID bigint null default 0
 	, PropertyServiceURL varchar(256) null
 	, PropertyCategory varchar(256) null		/* see PropertyCategories - TBD */
@@ -337,7 +337,7 @@ create table if not exists PropertyHistory (
 	, PropertyID bigint not null		/* signed 64-bit, to store unsigned 32 bit values */
 	, TxDBSerialNum int8 not null		/* the tx that affected this SP, for faster joins */
 
-	, primary key (PropertyID, Protocol, txdbserialnum) 
+	, primary key (PropertyID, Protocol, txdbserialnum)
 /*	, foreign key (PropertyID, Protocol) references SmartProperties */
 )
 ;
@@ -347,29 +347,29 @@ create index TxDBSerialNumHist on PropertyHistory (TxDBSerialNum)
 ;
 
 /* A wallet can watch any object - address, SP, tx type (even a blocknumber?) */
-create table if not exists Following (			
-	 WalletID uuid			
+create table if not exists Following (
+	 WalletID uuid
 	, ObjectType ObjectType
 	, ObjectID varchar(64)	/* works with Addresses initially */
 				/* future - Event, see EventTypes (to generate alerts/notifications) */
 	, primary key (WalletID)
-	, foreign key (WalletID) references Wallets 
+	, foreign key (WalletID) references Wallets
 )
 ;
 
 /* directional exchange rates between pairs of properties; can work with fiat currencies as well */
 /* rate for 1 --> 2 not necessarily the same as the reciprocal of rate for 2 --> 1 */
-create table if not exists ExchangeRates (			
+create table if not exists ExchangeRates (
 	Protocol1 Protocol		/* see Protocols */
 	, PropertyID1 bigint		/* need exchange rates for fiat currencies */
 	, Protocol2 Protocol
-	, PropertyID2 bigint			
-	, Rate1For2 float		/* (1 for 2) */		
+	, PropertyID2 bigint
+	, Rate1For2 float		/* (1 for 2) */
 	, AsOf timestamp(0) DEFAULT now()
 	, Source varchar(256)		/* URL */
 	, Id serial
 
-	, primary key (Id, PropertyID1, PropertyID2, Protocol1, Protocol2) 
+	, primary key (Id, PropertyID1, PropertyID2, Protocol1, Protocol2)
 )
 ;
 
@@ -382,7 +382,7 @@ create table if not exists MatchedTrades (
       , AmountReceived varchar(20) not null        /* amount bought */
       , Block integer not null                     /* block match took place */
       , TradingFee varchar(20) not null default 0  /* any associated trading fees */
-      , MatchedTxHash varchar(64) not null 
+      , MatchedTxHash varchar(64) not null
 
       , primary key (TxDBSerialNum,PropertyIdSold,PropertyIdReceived,MatchedTxHash)
       , foreign key (TxDBSerialNum) references transactions(TxDBSerialNum)
@@ -406,7 +406,7 @@ create table if not exists ActiveOffers (
       , OfferState OfferState not null                  /* active, cancelled, replaced, soldout  */
       , LastTxDBSerialNum int8 not null default -1      /* last tx that produced a cancelled, replaced or soldout state */
       , TotalSelling numeric(19) not null               /* Total Amount put up for sale regardless of current accepts/sales */
-      
+
 /*      , primary key (PropertyIdSelling, PropertyIdDesired, Seller) */
 /*      , foreign key (PropertyIdSelling, Protocol) references SmartProperties */
 /*      , foreign key (PropertyIdDesired, Protocol) references SmartProperties */
@@ -428,8 +428,8 @@ create table if not exists OfferAccepts (
       , ExpireBlock int not null                       /* Last block payment for this accept can be received in */
       , ExpiredState boolean default false             /* true/false if this accept is expired */
       , AmountPurchased numeric(19) not null default 0 /* amount user has purchsed/paid for so far */
-      
-      , primary key (SaleTxDbSerialNum, linkedtxdbserialnum) 
+
+      , primary key (SaleTxDbSerialNum, linkedtxdbserialnum)
 /*      , foreign key (SaleTxDbSerialNum) references ActiveOffers (CreateTxDBSerialNum) */
 /*      , foreign key (LinkedTxDBSerialNum) references Transactions (TxDBSerialNum) */
 )
@@ -458,7 +458,7 @@ create table if not exists Categories (
 	Section varchar(2) not null
 	, Division varchar(4) not null
 	, Name varchar(256) not null
-	
+
 	, primary key (Section, Division)
 )
 ;
@@ -468,7 +468,7 @@ create table if not exists Categories (
  */
 create table if not exists Settings(
         Key varchar(32) not null
-        , Value varchar(64) not null 
+        , Value varchar(64) not null
         , Note varchar(256)
         , updated_at timestamp(0) DEFAULT now()
         , primary key (key)
