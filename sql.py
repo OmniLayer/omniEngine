@@ -233,6 +233,11 @@ def updateTxStats():
                      "from addressesintxs atx, transactions tx, smartproperties sp "
                      "where atx.txdbserialnum=tx.txdbserialnum and atx.propertyid=sp.propertyid and sp.protocol='Omni' and tx.txstate='valid' and "
                      "tx.txblocknumber=%s and atx.addressrole='recipient' group by atx.propertyid, sp.propertydata->>'divisible'",[curblock])
+      try:
+        VROWS=dbSelect("select sum(cast(value->>'total_usd' as numeric)) from txstats where blocktime >= %s - '1 day'::INTERVAL and blocktime <= %s",(btime,btime))
+        tval_day=int(VROWS[0][0])
+      except:
+        tval_day=0
       valuelist={}
       total=0
       rbtcusd=dbSelect("select rate1for2 from exchangerates where protocol1='Fiat' and protocol2='Bitcoin' and propertyid1=0 and propertyid2=0 order by asof desc limit 1")
@@ -259,7 +264,7 @@ def updateTxStats():
         value=int(round(value))
         total+=value
         valuelist[pid]={'rate_usd':str(prate),'volume':str(volume),'value_usd_rounded':value, 'tx_count': count}
-      fvalue={'total_usd':total, 'details':valuelist}
+      fvalue={'total_usd':total, 'details':valuelist, 'value_24hr':tval_day}
       dbExecute("insert into txstats (blocknumber,blocktime,txcount,blockcount,value) values(%s,%s,%s,%s,%s)",
                 (curblock, btime, txs, btxs, json.dumps(fvalue)))
 
