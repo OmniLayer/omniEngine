@@ -224,9 +224,27 @@ def updateTxStats():
     btime=ROWS[0][1]
     ROWS=dbSelect("select max(blocknumber) from txstats")
     lastblock=ROWS[0][0]
-    if (curblock > lastblock):
-      ROWS=dbSelect("select count(*) from transactions where txrecvtime >= %s - '1 day'::INTERVAL and txrecvtime <= %s and txdbserialnum>0",(btime,btime))
-      txs=ROWS[0][0]
+    nextblock=lastblock+1
+    printdebug(("TxStats: lastblock",lastblock,", curblock:",str(curblock)),0)
+    while (nextblock <= curblock):
+      if updateTxStatsBlock(nextblock):
+        printdebug(("TxStats: Block",nextblock,"processed"),0)
+      else:
+        printdebug(("TxStats: Block",nextblock,"FAILED"),0)
+      nextblock+=1
+
+
+def updateTxStatsBlock(blocknumber):
+    try:
+      _block=int(blocknumber)
+    except:
+      return False
+    ROWS=dbSelect("select blocknumber,blocktime from blocks where blocknumber=%s order by blocknumber desc limit 1",[_block])
+    curblock=ROWS[0][0]
+    btime=ROWS[0][1]
+    try:
+      TROWS=dbSelect("select count(*) from transactions where txrecvtime >= %s - '1 day'::INTERVAL and txrecvtime <= %s and txdbserialnum>0",(btime,btime))
+      txs=TROWS[0][0]
       BROWS=dbSelect("select count(*) from transactions where txblocknumber=%s",[curblock])
       btxs=BROWS[0][0]
       txfsum=dbSelect("select atx.propertyid, sum(atx.balanceavailablecreditdebit), sp.propertydata->>'divisible' as divisible, count(atx.propertyid) as count "
@@ -259,7 +277,7 @@ def updateTxStats():
           rate=decimal.Decimal(0)
         value=rate*btcusd*volume
         rateusd=rate*btcusd
-        srate=str(rateusd).split('.')
+        srate=str(float(rateusd)).split('.')
         prate=decimal.Decimal(srate[0]+'.'+srate[1][:8])
         value=int(round(value))
         total+=value
@@ -267,7 +285,9 @@ def updateTxStats():
       fvalue={'total_usd':total, 'details':valuelist, 'value_24hr':tval_day}
       dbExecute("insert into txstats (blocknumber,blocktime,txcount,blockcount,value) values(%s,%s,%s,%s,%s)",
                 (curblock, btime, txs, btxs, json.dumps(fvalue)))
-
+      return True
+    except:
+      return False
 
 def checkPending(blocktxs):
     #Check any pending tx to see if 1. They are in the current block of tx's we are processing or 2. 1 days have passed since broadcast and they are no longer in network.
