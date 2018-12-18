@@ -12,13 +12,11 @@ if config.TESTNET:
   BLOCKCHAININFO_API_URL = "https://blockchain.info"
   BLOCKONOMICS_API_URL = "https://www.blockonomics.co/api"
   
-  BLOCKR_API_URL = "http://tbtc.blockr.io/api/v1"
   BLOCKTRAIL_API_URL = "https://api.blocktrail.com/v1/tbtc"
   BLOCKCYPHER_API_URL = "https://api.blockcypher.com/v1/btc/test3"
   BITGO_API_URL = "https://test.bitgo.com/api/v1"
 else:
   BLOCKCHAININFO_API_URL = "https://blockchain.info"
-  BLOCKR_API_URL = "http://btc.blockr.io/api/v1"
   BLOCKTRAIL_API_URL = "https://api.blocktrail.com/v1/btc"
   BLOCKCYPHER_API_URL = "https://api.blockcypher.com/v1/btc/main"
   BITGO_API_URL = "https://www.bitgo.com/api/v1"
@@ -76,34 +74,6 @@ def bc_getutxo_blockcypher(address, ramount):
             return {"avail": avail, "utxos": retval, "error": "none"}
       return {"avail": avail, "error": "Low balance error"}
     else:
-      #return {"error": "Connection error", "code": r.status_code}
-      return bc_getutxo_blockr(address, ramount)
-  except:
-    return bc_getutxo_blockr(address, ramount)
-
-def bc_getutxo_blockr(address, ramount):
-  try:
-    r = requests.get(BLOCKR_API_URL + '/address/unspent/'+address+'?unconfirmed=1')
-
-    if r.status_code == 200:
-      #Process and format response from blockr.io
-
-      unspents = r.json()['data']['unspent']
-
-      print "got unspent list (blockr)", unspents
-      retval = []
-      avail = 0
-      for tx in unspents:
-        txUsed=gettxout(tx['tx'],tx['n'])
-        isUsed = ('result' in txUsed and txUsed['result']==None)
-        if tx['confirmations'] > 0 and not isUsed:
-          tx['amount'] =  int(decimal.Decimal(tx['amount'])*decimal.Decimal(1e8))
-          avail += tx['amount']
-          retval.append([ tx['tx'], tx['n'], tx['amount'] ])
-          if avail >= ramount:
-            return {"avail": avail, "utxos": retval, "error": "none"}
-      return {"avail": avail, "error": "Low balance error"}
-    else:
       return {"error": "Connection error", "code": r.status_code}
   except:
     return {"error": "Connection error", "code": r.status_code}
@@ -156,7 +126,7 @@ def bc_getbalance_blockcypher(address):
       balance = int(r.json()['balance'])
       return {"bal":balance , "error": None}
     else:
-      return bc_getbalance_blockr(address)
+      return {"bal": 0 , "error": "Couldn't get balance"}
   except:
     return {"bal": 0 , "error": "Couldn't get balance"}
 
