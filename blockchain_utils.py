@@ -12,13 +12,11 @@ if config.TESTNET:
   BLOCKCHAININFO_API_URL = "https://blockchain.info"
   BLOCKONOMICS_API_URL = "https://www.blockonomics.co/api"
   
-  BLOCKR_API_URL = "http://tbtc.blockr.io/api/v1"
   BLOCKTRAIL_API_URL = "https://api.blocktrail.com/v1/tbtc"
   BLOCKCYPHER_API_URL = "https://api.blockcypher.com/v1/btc/test3"
   BITGO_API_URL = "https://test.bitgo.com/api/v1"
 else:
   BLOCKCHAININFO_API_URL = "https://blockchain.info"
-  BLOCKR_API_URL = "http://btc.blockr.io/api/v1"
   BLOCKTRAIL_API_URL = "https://api.blocktrail.com/v1/btc"
   BLOCKCYPHER_API_URL = "https://api.blockcypher.com/v1/btc/main"
   BITGO_API_URL = "https://www.bitgo.com/api/v1"
@@ -76,34 +74,6 @@ def bc_getutxo_blockcypher(address, ramount):
             return {"avail": avail, "utxos": retval, "error": "none"}
       return {"avail": avail, "error": "Low balance error"}
     else:
-      #return {"error": "Connection error", "code": r.status_code}
-      return bc_getutxo_blockr(address, ramount)
-  except:
-    return bc_getutxo_blockr(address, ramount)
-
-def bc_getutxo_blockr(address, ramount):
-  try:
-    r = requests.get(BLOCKR_API_URL + '/address/unspent/'+address+'?unconfirmed=1')
-
-    if r.status_code == 200:
-      #Process and format response from blockr.io
-
-      unspents = r.json()['data']['unspent']
-
-      print "got unspent list (blockr)", unspents
-      retval = []
-      avail = 0
-      for tx in unspents:
-        txUsed=gettxout(tx['tx'],tx['n'])
-        isUsed = ('result' in txUsed and txUsed['result']==None)
-        if tx['confirmations'] > 0 and not isUsed:
-          tx['amount'] =  int(decimal.Decimal(tx['amount'])*decimal.Decimal(1e8))
-          avail += tx['amount']
-          retval.append([ tx['tx'], tx['n'], tx['amount'] ])
-          if avail >= ramount:
-            return {"avail": avail, "utxos": retval, "error": "none"}
-      return {"avail": avail, "error": "Low balance error"}
-    else:
       return {"error": "Connection error", "code": r.status_code}
   except:
     return {"error": "Connection error", "code": r.status_code}
@@ -141,7 +111,8 @@ def bc_getbalance_bitgo(address):
   try:
     r= requests.get(BITGO_API_URL + '/address/'+address)
     if r.status_code == 200:
-      balance = int(r.json()['confirmedBalance'])
+      #balance = int(r.json()['confirmedBalance'])
+      balance = int(r.json()['balance'])
       return {"bal":balance , "error": None}
     else:
       return bc_getbalance_blockcypher(address)
@@ -155,20 +126,9 @@ def bc_getbalance_blockcypher(address):
       balance = int(r.json()['balance'])
       return {"bal":balance , "error": None}
     else:
-      return bc_getbalance_blockr(address)
-  except:
-    return bc_getbalance_blockr(address)
-
-def bc_getbalance_blockr(address):
-  try:
-    r= requests.get(BLOCKR_API_URL + '/address/balance/'+address)
-    if r.status_code == 200:
-      balance = int(r.json()['data']['balance']*1e8)
-      return {"bal":balance , "error": None}
-    else:
       return {"bal": 0 , "error": "Couldn't get balance"}
   except:
-      return {"bal": 0 , "error": "Couldn't get balance"}
+    return {"bal": 0 , "error": "Couldn't get balance"}
 
 def bc_getbulkbalance(addresses):
   split=[]
@@ -213,18 +173,10 @@ def bc_getbulkbalance(addresses):
           retval={'bal':dict(data['bal'],**cbdata), 'fresh':split}
       except Exception as e:
         print e
-        try:
-          data=bc_getbulkbalance_blockr(split)
-          if data['error']:
-            raise Exception("issue getting blockr baldata",data)
-          else:
-            retval={'bal':dict(data['bal'],**cbdata), 'fresh':split}
-        except Exception as e:
-          print e
-          if len(cbdata) > 0:
-            retval={'bal':cbdata, 'fresh':None}
-          else:
-            retval={'bal':{}, 'fresh':None}
+        if len(cbdata) > 0:
+          retval={'bal':cbdata, 'fresh':None}
+        else:
+          retval={'bal':{}, 'fresh':None}
 
 
   rSetNotUpdateBTC(retval)
@@ -253,27 +205,6 @@ def bc_getbulkbalance_blockonomics(addresses):
       retval = {}
       for entry in balances:
         retval[entry['addr']] = int(entry['confirmed'])+int(entry['unconfirmed'])
-      return {"bal": retval, "error": None}
-    else:
-      return {"bal": None , "error": True}
-  except:
-    return {"bal": None , "error": True}
-
-def bc_getbulkbalance_blockr(addresses):
-  formatted=""
-  for address in addresses:
-    if formatted=="":
-      formatted=address
-    else:
-      formatted=formatted+","+address
-
-  try:
-    r= requests.get(BLOCKR_API_URL + '/address/balance/'+formatted)
-    if r.status_code == 200:
-      balances = r.json()['data']
-      retval = {}
-      for entry in balances:
-        retval[entry['address']] = int(entry['balance']*1e8)
       return {"bal": retval, "error": None}
     else:
       return {"bal": None , "error": True}
