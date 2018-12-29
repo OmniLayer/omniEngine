@@ -6,6 +6,7 @@ from datetime import datetime
 from sqltools import *
 from common import *
 from decimal import Decimal
+from config import *
 import urllib3.contrib.pyopenssl
 urllib3.contrib.pyopenssl.inject_into_urllib3()
 
@@ -95,30 +96,31 @@ def fiat2propertyid(abv):
 
 def getSource(sp):
   try:
-    #convert={1:"https://masterxchange.com/api/trades.php",
-    #         1:"https://poloniex.com/public?command=returnTradeHistory&currencyPair=BTC_OMNI",
-    #         3:"https://masterxchange.com/api/v2/trades.php?currency=maid"
-    #         3:"https://poloniex.com/public?command=returnTradeHistory&currencyPair=BTC_MAID",
-    #         39:"https://bittrex.com/api/v1.1/public/getmarkethistory?market=BTC-AMP&count=100",
-    #         56:"https://bittrex.com/api/v1.1/public/getmarkethistory?market=BTC-SAFEX&count=100",
-    #         58:"https://bittrex.com/api/v1.1/public/getmarkethistory?market=BTC-AGRS&count=100",
-    #         59:"https://bittrex.com/api/v1.1/public/getmarkethistory?market=BTC-PDC&count=100",             
-    #         89:"https://api.livecoin.net/exchange/last_trades?currencyPair=DIBC/BTC",
-    #        }
-    convert={1:{"id":"OMNI","source":"coinmarketcap"},
-             3:{"id":"MAID","source":"coinmarketcap"},
-             31:{"id":"USDt","source":"fixed","value":1,"base":0},
-             39:{"id":"AMP","source":"coinmarketcap"},
-             41:{"id":"EURt","source":"fixed","value":1,"base":2},
-             56:{"id":"SAFEX","source":"coinmarketcap"},
-             58:{"id":"AGRS","source":"coinmarketcap"},
-             59:{"id":"PDC","source":"coinmarketcap"},
-             66:{"id":"GARY","source":"coinmarketcap"},
-             89:{"id":"DIBC","source":"coinmarketcap"},
+    convert={0:{"cmcid":"1","name":"BTC","source":"coinmarketcap"},
+             1:{"cmcid":"83","name":"OMNI","source":"coinmarketcap"},
+             3:{"cmcid":"291","name":"MAID","source":"coinmarketcap"},
+             31:{"cmcid":"825","id":"USDt","name":"Tether USD","source":"fixed","value":1,"base":0},
+             39:{"cmcid":"1125","name":"AMP","source":"coinmarketcap"},
+             41:{"id":"EURt","name":"Tether EUR","source":"fixed","value":1,"base":2},
+             56:{"cmcid":"1172","name":"SAFEX","source":"coinmarketcap"},
+             #58:{"id":"AGRS","source":"coinmarketcap"},
+             #59:{"id":"PDC","source":"coinmarketcap"},
+             66:{"cmcid":"1352","name":"GARY","source":"coinmarketcap"},
+             #89:{"id":"DIBC","source":"coinmarketcap"},
              90:"https://market.bitsquare.io/api/trades?market=sfsc_btc",
-             149:{"id":"ALT","source":"coinmarketcap"}
+             149:{"cmcid":"1642","name":"ALT","source":"coinmarketcap"}
             }
-    return convert[sp]
+    if sp == 'cmcids':
+      q=[]
+      for key in convert.keys():
+        try:
+          q.append(convert[key]['cmcid'])
+        except:
+          pass
+      q = ','.join(map(str, q))
+      return q
+    else:
+      return convert[sp]
   except KeyError:
     return None
 
@@ -191,7 +193,12 @@ def updateBTC():
 
 def formatData(sp, source):
   trades=[]
-  r = requests.get( source, timeout=15 )
+  if 'coinmarketcap' in source:
+    headers = {'X-CMC_PRO_API_KEY': CMCKEY}
+    payload = { 'id' : getSource('cmcids') }
+    r = requests.get( source, headers=headers, params=payload, timeout=15 )
+  else:
+    r = requests.get( source, timeout=15 )
 
   try:
     trades=r.json()
@@ -200,10 +207,11 @@ def formatData(sp, source):
 
   try:
     if 'coinmarketcap' in source:
-      tmap={}
-      for x in trades:
-        tmap[x['symbol']]=x
-      trades=tmap 
+      #tmap={}
+      #for x in trades:
+      #  tmap[x['symbol']]=x
+      #trades=tmap
+      trades=trades['data']
     else:
       if sp in [39,58,59]:
         trades=trades['result']
@@ -230,7 +238,8 @@ def updateOMNISP():
     #get list of smart properties we know about
     ROWS=dbSelect("select propertyid from smartproperties where propertyid >0 and Protocol='Omni' order by propertyid")
     #get Coinmarket Cap data
-    cmcSource="https://api.coinmarketcap.com/v1/ticker/?limit=0"
+    #cmcSource="https://api.coinmarketcap.com/v1/ticker/?limit=0"
+    cmcSource="https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest"
     cmcData=formatData(0, cmcSource)
 
     for x in ROWS:
@@ -239,8 +248,10 @@ def updateOMNISP():
       if src != None:
         try:
           if 'source' in src and src['source'] == 'coinmarketcap':
-            value=Decimal(cmcData[src['id']]['price_btc'])
-            source=str(cmcSource)+str("&symbol=")+str(src['id'])
+            value_usd=Decimal(cmcData[src['cmcid']]['quote']['USD']['price'])
+            btc_usd = Decimal(cmcData['1']['quote']['USD']['price'])
+            source=str(cmcSource)+str("?id=")+str(src['cmcid'])
+            value = value_usd / btc_usd
           elif 'source' in src and src['source'] == 'fixed':
             #Fix sp value
             source='Fixed'
