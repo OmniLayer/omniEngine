@@ -1674,7 +1674,7 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
             else:
               value=int(rawtx['result']['amount'])
           except:
-            printdebug(f"Invalid amount, continuing (Amount: {rawtx['result']['amount']})", 0)
+            printdebug(("Invalid Amount: ",rawtx['result']['amount'], "continuing"), 0)
             value = 0
           value_neg=(value*-1)
 
