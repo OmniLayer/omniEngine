@@ -184,7 +184,7 @@ else:
       #Run these after we processes the tx's in the block as tx in the current block would be valid
       #expire the current active offers if block time has passed
       expireAccepts(height)
-      #check any active crowdsales and update json if the endtime has passed (based on block time)
+      #check active crowdsales and update json if the endtime has passed (based on block time)
       expireCrowdsales(block_data['result']['time'], Protocol)
       #exodus address generates dev msc, sync our balance to match the generated balanace
       if config.TESTNET:
@@ -214,6 +214,7 @@ else:
 
     try:
       #Also make sure we update the txstats data per block
+      printdebug("TxStats update started",0)
       updateTxStats()
       dbCommit()
       printdebug("TxStats updated",0)
