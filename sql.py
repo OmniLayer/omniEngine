@@ -2203,12 +2203,18 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
         
         ROWS=dbSelect("select BalanceAvailable,BalanceFrozen from addressbalances where address=%s and propertyid=%s", (Address, PropertyID))
 
-        if txtype == 185:
-          BalanceAvailableCreditDebit = -int(ROWS[0][0])
-          BalanceFrozenCreditDebit = (BalanceAvailableCreditDebit*-1)
-        elif txtype == 186:
-          BalanceAvailableCreditDebit = int(ROWS[0][1])
-          BalanceFrozenCreditDebit = (BalanceAvailableCreditDebit*-1)
+        #check to ensure the destination address actually had a balance that could be frozen (only gets updated if tx is valid below)
+        if len(ROWS) > 0:
+          if txtype == 185:
+            BalanceAvailableCreditDebit = -int(ROWS[0][0])
+            BalanceFrozenCreditDebit = (BalanceAvailableCreditDebit*-1)
+          elif txtype == 186:
+            BalanceAvailableCreditDebit = int(ROWS[0][1])
+            BalanceFrozenCreditDebit = (BalanceAvailableCreditDebit*-1)
+        else:
+          BalanceAvailableCreditDebit = 0
+          BalanceFrozenCreditDebit = 0
+
 
         dbExecute("insert into addressesintxs "
                   "(Address, PropertyID, Protocol, TxDBSerialNum, AddressTxIndex, AddressRole, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit, BalanceFrozenCreditDebit, linkedtxdbserialnum)"
