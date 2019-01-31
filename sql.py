@@ -2294,7 +2294,7 @@ def insertTx(rawtx, Protocol, blockheight, seq, TxDBSerialNum):
             except:
               #default is main
               Ecosystem=getEcosystem("main")
-        if TxType in [28]:
+        elif TxType in [28]:
           Ecosystem=getEcosystem(rawtx['result']['ecosystem'])
         elif TxType in [25,26,27]:
           Ecosystem=getEcosystem(rawtx['result']['propertyidforsale'])
