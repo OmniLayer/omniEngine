@@ -1755,7 +1755,14 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
       elif txtype == 4:
         #Send all
         Valid=rawtx['result']['valid']
-        Ecosystem=getEcosystem(rawtx['result']['ecosystem'])
+        try:
+          Ecosystem=getEcosystem(rawtx['result']['ecosystem'])
+        except:
+          try:
+            Ecosystem=getEcosystem(rawtx['result']['subsends'][0]['propertyid'])
+          except:
+            #default is main
+            Ecosystem=getEcosystem("main")
         RecvAddress = rawtx['result']['referenceaddress']
         RecvRole="recipient"
 
