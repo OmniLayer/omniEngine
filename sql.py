@@ -2285,7 +2285,16 @@ def insertTx(rawtx, Protocol, blockheight, seq, TxDBSerialNum):
       else:
         valid=rawtx['result']['valid']
         TxState= getTxState(valid)
-        if TxType in [4,28]:
+        if TxType in [4]:
+          try:
+            Ecosystem=getEcosystem(rawtx['result']['ecosystem'])
+          except:
+            try:
+              Ecosystem=getEcosystem(rawtx['result']['subsends'][0]['propertyid'])
+            except:
+              #default is main
+              Ecosystem=getEcosystem("main")
+        if TxType in [28]:
           Ecosystem=getEcosystem(rawtx['result']['ecosystem'])
         elif TxType in [25,26,27]:
           Ecosystem=getEcosystem(rawtx['result']['propertyidforsale'])
