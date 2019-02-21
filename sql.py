@@ -1761,8 +1761,8 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
           try:
             Ecosystem=getEcosystem(rawtx['result']['subsends'][0]['propertyid'])
           except:
-            #default is main
-            Ecosystem=getEcosystem("main")
+            #default is all
+            Ecosystem=getEcosystem("all")
         RecvAddress = rawtx['result']['referenceaddress']
         RecvRole="recipient"
 

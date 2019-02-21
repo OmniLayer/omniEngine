@@ -27,7 +27,7 @@
  */
 create type AddressRole as enum ('buyer', 'issuer', 'participant', 'payee', 'recipient', 'seller', 'sender', 'payer', 'feepayer');
 create type Protocol as enum ('Fiat', 'Bitcoin', 'Omni');
-create type Ecosystem as enum ('Production', 'Test');
+create type Ecosystem as enum ('Production', 'Test', 'All');
 create type ObjectType as enum ('address', 'property', 'tx_version_type');
 create type TxState as enum ('pending', 'valid', 'not valid');
 create type WalletState as enum ('Active', 'Inactive', 'Suspended');
@@ -120,12 +120,12 @@ create table if not exists AddressStats (
 create table if not exists AddressesInWallets (		/* many-to-many */
 	Address varchar(64) not null		/* Address must exist in the AddressBalances table */
 	, WalletID uuid	not null		/* WalletID must exist in the Wallets table */
-    , Protocol Protocol not null default 'Bitcoin'  /* initially 'Bitcoin' or 'Omni' */
-    , PropertyID bigint not null default 0 /* Bitcoin */
+	, Protocol Protocol not null default 'Bitcoin'  /* initially 'Bitcoin' or 'Omni' */
+	, PropertyID bigint not null default 0 /* Bitcoin */
 
 	, primary key (WalletID, Address, protocol, propertyid)
 	, foreign key (WalletID) references Wallets on delete CASCADE on update CASCADE 	/* del/upd rows here if corresponding row is deleted/updated */
-    , foreign key (address, protocol, propertyid) references addressbalances
+	, foreign key (address, protocol, propertyid) references addressbalances
 )
 ;
 

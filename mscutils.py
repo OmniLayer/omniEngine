@@ -13,6 +13,8 @@ def getEcosystem(propertyid):
        return "Test"
     elif propertyid == 1 or ( propertyid >= 3 and propertyid <= 2147483650) or propertyid == "main":
        return "Production"
+    elif propertyid == "all":
+      return "All"
     else:
        return None
 
