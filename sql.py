@@ -218,6 +218,12 @@ def reorgRollback(block):
     dbExecute("select setval('transactions_txdbserialnum_seq', %s)",[newTxDBSerialNum])
 
 
+def updateLastRun():
+    dbExecute("with upsert as "
+              "(update settings set updated_at=DEFAULT where key='parserLastRun' returning *) "
+              "insert into settings (key,value) select 'parserLastRun','see updated_at timestamp' "
+              "where not exists (select * from upsert)")
+
 def updateTxStats():
     ROWS=dbSelect("select blocknumber,blocktime from blocks order by blocknumber desc limit 1")
     curblock=ROWS[0][0]
