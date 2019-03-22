@@ -22,7 +22,7 @@ def updateBalancesCache():
 
       except Exception as e:
         printmsg("error updating balances: "+str(space)+' '+str(e))
-    dbCommit()
+    #dbCommit()
     time.sleep(30)
 
 
