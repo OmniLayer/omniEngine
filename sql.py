@@ -1337,6 +1337,14 @@ def updateBalance(Address, Protocol, PropertyID, Ecosystem, BalanceAvailable, Ba
           except (ValueError, TypeError):
             BalanceFrozen=0
 
+        #frozen address can receive but not send. so if it receives anything make sure to update frozen tally
+        try:
+          if dbFrzn > 0 and BalanceAvailable != dbFrzn:
+            BalanceFrozen=int(BalanceFrozen)+int(BalanceAvailable)
+            BalanceAvailable=0
+        except (ValueError, TypeError):
+          pass
+
         dbExecute("UPDATE AddressBalances set BalanceAvailable=%s, BalanceReserved=%s, BalanceAccepted=%s, BalanceFrozen=%s, LastTxDBSerialNum=%s where address=%s and PropertyID=%s and Protocol=%s",
                   (BalanceAvailable, BalanceReserved, BalanceAccepted, BalanceFrozen, LastTxDBSerialNum, Address, PropertyID, Protocol) )
 
