@@ -1537,7 +1537,7 @@ def getFlags(Protocol,name,data,url,PropertyID):
       sdata='%'+str(data)+'%'
       rdata=dbSelect("select count(*) from smartproperties where Protocol=%s and (LOWER(PropertyName) like LOWER(%s) or LOWER(PropertyData->>'data') like LOWER(%s) or LOWER(PropertyData->>'url') like LOWER(%s))", (Protocol, sdata,sdata,sdata))
     else:
-      rdata[[0]]
+      rdata=[[0]]
     if len(url) > 0:
       surl='%'+str(url)+'%'
       rurl=dbSelect("select count(*) from smartproperties where Protocol=%s and (LOWER(PropertyName) like LOWER(%s) or LOWER(PropertyData->>'data') like LOWER(%s) or LOWER(PropertyData->>'url') like LOWER(%s))", (Protocol, surl,surl,surl))
