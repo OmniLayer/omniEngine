@@ -359,6 +359,22 @@ create table if not exists Following (
 
 /* directional exchange rates between pairs of properties; can work with fiat currencies as well */
 /* rate for 1 --> 2 not necessarily the same as the reciprocal of rate for 2 --> 1 */
+create table if not exists ExchangeRatesHistory (
+	Protocol1 Protocol		/* see Protocols */
+	, PropertyID1 bigint		/* need exchange rates for fiat currencies */
+	, Protocol2 Protocol
+	, PropertyID2 bigint
+	, Rate1For2 float		/* (1 for 2) */
+	, AsOf timestamp(0) DEFAULT now()
+	, Source varchar(256)		/* URL */
+	, Id serial
+
+	, primary key (Id, PropertyID1, PropertyID2, Protocol1, Protocol2)
+)
+;
+
+/* directional exchange rates between pairs of properties; can work with fiat currencies as well */
+/* rate for 1 --> 2 not necessarily the same as the reciprocal of rate for 2 --> 1 */
 create table if not exists ExchangeRates (
 	Protocol1 Protocol		/* see Protocols */
 	, PropertyID1 bigint		/* need exchange rates for fiat currencies */

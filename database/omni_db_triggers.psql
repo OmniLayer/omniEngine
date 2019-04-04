@@ -9,3 +9,18 @@ $wallet_backups$ LANGUAGE plpgsql;
 CREATE TRIGGER backup_wallet BEFORE DELETE or UPDATE of WalletBlob ON Wallets
 FOR EACH ROW EXECUTE PROCEDURE backupwallet();
 
+
+/* create trigger to backup exchangerate data everytime it's modified */
+CREATE OR REPLACE FUNCTION backupprices() RETURNS TRIGGER AS $prices_backups$
+    BEGIN
+        INSERT INTO ExchangeratesHistory(protocol1,propertyid1,protocol2,propertyid2,rate1for2,asof,source) VALUES (old.protocol1,old.propertyid1,old.protocol2,old.propertyid2,old.rate1for2,old.asof,old.source);
+        RETURN NEW;
+    END;
+$prices_backups$ LANGUAGE plpgsql;
+
+CREATE TRIGGER backup_prices BEFORE DELETE or UPDATE of rate1for2 ON exchangerates
+FOR EACH ROW EXECUTE PROCEDURE backupprices();
+
+
+
+
