@@ -148,20 +148,36 @@ def upsertRate(protocol1, propertyid1, protocol2, propertyid2, rate, source, tim
 
   if timestamp==None:
     # if we have a record with the same exchangerate / source just update timestamp, otherwise insert new record
-    dbExecute("with upsert as "
-                "(update exchangerates set asof=DEFAULT where protocol1=%s and propertyid1=%s and "
-                " protocol2=%s and propertyid2=%s and rate1for2::numeric=%s and source=%s  returning *) "
-              "insert into exchangerates (protocol1, propertyid1, protocol2, propertyid2, rate1for2, source) select %s,%s,%s,%s,%s,%s "
-              "where not exists (select * from upsert)",
-              (protocol1, propertyid1, protocol2, propertyid2, rate, source, protocol1, propertyid1, protocol2, propertyid2, rate, source))
+    ROWS=dbSelect("select rate1for2, asof from exchangerates where protocol1=%s and propertyid1=%s and protocol2=%s and propertyid2=%s",
+                  (protocol1, propertyid1, protocol2, propertyid2))
+    if len(ROWS)>0:
+      dbrate=ROWS[0][0]
+      dbtime=ROWS[0][1]
+      if dbrate==rate:
+        dbExecute("update exchangerates set asof=DEFAULT where protocol1=%s and propertyid1=%s and protocol2=%s and propertyid2=%s",
+                  (protocol1, propertyid1, protocol2, propertyid2))
+      else:
+        dbExecute("update exchangerates set rate1for2=%s, asof=DEFAULT where protocol1=%s and propertyid1=%s and protocol2=%s and propertyid2=%s",
+                  (rate, protocol1, propertyid1, protocol2, propertyid2))
+    else:
+      dbExecute("insert into exchangerates (protocol1, propertyid1, protocol2, propertyid2, rate1for2, source) select %s,%s,%s,%s,%s,%s",
+              (protocol1, propertyid1, protocol2, propertyid2, rate, source))
   else:
     # if we have a record with the same exchangerate / source just update timestamp, otherwise insert new record
-    dbExecute("with upsert as "
-                "(update exchangerates set asof=%s where protocol1=%s and propertyid1=%s and "
-                " protocol2=%s and propertyid2=%s and rate1for2::numeric=%s and source=%s  returning *) "
-              "insert into exchangerates (protocol1, propertyid1, protocol2, propertyid2, rate1for2, source, asof) select %s,%s,%s,%s,%s,%s,%s "
-              "where not exists (select * from upsert)",
-              (timestamp, protocol1, propertyid1, protocol2, propertyid2, rate, source, protocol1, propertyid1, protocol2, propertyid2, rate, source, timestamp))
+    ROWS=dbSelect("select rate1for2, asof from exchangerates where protocol1=%s and propertyid1=%s and protocol2=%s and propertyid2=%s",
+                  (protocol1, propertyid1, protocol2, propertyid2))
+    if len(ROWS)>0:
+      dbrate=ROWS[0][0]
+      dbtime=ROWS[0][1]
+      if dbrate==rate:
+        dbExecute("update exchangerates set asof=%s where protocol1=%s and propertyid1=%s and protocol2=%s and propertyid2=%s",
+                  (timestamp, protocol1, propertyid1, protocol2, propertyid2))
+      else:
+        dbExecute("update exchangerates set rate1for2=%s, asof=%s where protocol1=%s and propertyid1=%s and protocol2=%s and propertyid2=%s",
+                  (rate, timestamp, protocol1, propertyid1, protocol2, propertyid2))
+    else:
+      dbExecute("insert into exchangerates (protocol1, propertyid1, protocol2, propertyid2, rate1for2, source, asof) select %s,%s,%s,%s,%s,%s,%s",
+              (protocol1, propertyid1, protocol2, propertyid2, rate, source, timestamp))
 
 def updateBTC():
     try:
