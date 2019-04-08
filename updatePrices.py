@@ -103,7 +103,7 @@ def getSource(sp):
              39:{"cmcid":"1125","name":"AMP","source":"coinmarketcap"},
              41:{"id":"EURt","name":"Tether EUR","source":"fixed","value":1,"base":2},
              56:{"cmcid":"1172","name":"SAFEX","source":"coinmarketcap"},
-             #58:{"id":"AGRS","source":"coinmarketcap"},
+             58:{"cmcid":"1037","id":"AGRS","name":"IDNO Agoras","source":"coinmarketcap"},
              #59:{"id":"PDC","source":"coinmarketcap"},
              66:{"cmcid":"1352","name":"GARY","source":"coinmarketcap"},
              #89:{"id":"DIBC","source":"coinmarketcap"},
