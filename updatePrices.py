@@ -108,7 +108,8 @@ def getSource(sp):
              66:{"cmcid":"1352","name":"GARY","source":"coinmarketcap"},
              #89:{"id":"DIBC","source":"coinmarketcap"},
              90:"https://market.bitsquare.io/api/trades?market=sfsc_btc",
-             149:{"cmcid":"1642","name":"ALT","source":"coinmarketcap"}
+             149:{"cmcid":"1642","name":"ALT","source":"coinmarketcap"},
+             701:{"cmcid":"3850","id":"OTO","name":"OTOCash","source":"coinmarketcap"}
             }
     if sp == 'cmcids':
       q=[]
