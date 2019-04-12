@@ -1408,6 +1408,10 @@ def updateProperty(PropertyID, Protocol, LastTxDBSerialNum=None):
 
       if PropertyID in [1,2]:
         rawprop['blocktime']=1377994675
+        if PropertyID == 1:
+          rawprop['name']=u'Omni Token'
+        elif PropertyID == 2:
+          rawprop['name']=u'Test Omni Token'
 
       #if TxType == 51 or TxType == 53:
       try:
@@ -1436,15 +1440,17 @@ def updateProperty(PropertyID, Protocol, LastTxDBSerialNum=None):
       except Exception:
         printdebug("Updating Property. Not a Managed Property", 8)
 
+    PropertyName = rawprop['name']
+
     #if we where called with a tx update that otherwise just update json (expired by time update)
     if LastTxDBSerialNum == None:
-      dbExecute("update smartproperties set PropertyData=%s, Issuer=%s "
+      dbExecute("update smartproperties set PropertyData=%s, Issuer=%s, PropertyName=$s "
                 "where Protocol=%s and PropertyID=%s",
-                (json.dumps(rawprop), Issuer, Protocol, PropertyID))
+                (json.dumps(rawprop), Issuer, PropertyName, Protocol, PropertyID))
     else:
-      dbExecute("update smartproperties set LastTxDBSerialNum=%s, PropertyData=%s, Issuer=%s "
+      dbExecute("update smartproperties set LastTxDBSerialNum=%s, PropertyData=%s, Issuer=%s, PropertyName=%s "
                 "where Protocol=%s and PropertyID=%s",
-                (LastTxDBSerialNum, json.dumps(rawprop), Issuer, Protocol, PropertyID))
+                (LastTxDBSerialNum, json.dumps(rawprop), Issuer, PropertyName, Protocol, PropertyID))
 
 
 def insertProperty(rawtx, Protocol, PropertyID=None):
