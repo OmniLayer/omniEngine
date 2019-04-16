@@ -40,21 +40,20 @@ def updateFEES():
     printdebug(("Error getting BitGo fees",e),3)
     pass
   #Get Blockcypher Fee's
-  try:
-    source='http://api.blockcypher.com/v1/btc/main'
-    r= requests.get( source, timeout=15 )
-    feelist=r.json()
-    faster.append(feelist['high_fee_per_kb'])
-    fast.append(feelist['medium_fee_per_kb'])
-    normal.append(feelist['low_fee_per_kb'])
-  except Exception as e:
-    #error or timeout, skip for now
-    printdebug(("Error getting Blockcypher fees",e),3)
-    pass
+  #try:
+  #  source='http://api.blockcypher.com/v1/btc/main'
+  #  r= requests.get( source, timeout=15 )
+  #  feelist=r.json()
+  #  faster.append(feelist['high_fee_per_kb'])
+  #  fast.append(feelist['medium_fee_per_kb'])
+  #  normal.append(feelist['low_fee_per_kb'])
+  #except Exception as e:
+  #  #error or timeout, skip for now
+  #  printdebug(("Error getting Blockcypher fees",e),3)
+  #  pass
   #Get Bitcoinfees21 Fee's
   try:
-    #source='https://bitcoinfees.21.co/api/v1/fees/list'
-    source='https://bitcoinfees.21.co/api/v1/fees/recommended'
+    source='https://bitcoinfees.earn.com/api/v1/fees/recommended'
     r= requests.get( source, timeout=15 )
     feelist=r.json()
     #for x in feelist['fees']:
