@@ -1786,16 +1786,18 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
         RecvAddress = rawtx['result']['referenceaddress']
         RecvRole="recipient"
 
-        if 'subsends' not in rawtx['result']:
-          rawtx['result']['subsends']=[]
+        if 'subsends' not in rawtx['result'] or len(rawtx['result']['subsends']==0:
+          rawtx['result']['subsends']=[{"amount": None, "divisible": False, "propertyid": -1 }]
 
         for send in rawtx['result']['subsends']:
           PropertyID=send['propertyid']
-          if send['divisible']:
-            BalanceAvailableCreditDebit=int(decimal.Decimal(str(send['amount']))*decimal.Decimal(1e8))
-          else:
-            BalanceAvailableCreditDebit=int(send['amount'])
-
+          try:
+            if send['divisible']:
+              BalanceAvailableCreditDebit=int(decimal.Decimal(str(send['amount']))*decimal.Decimal(1e8))
+            else:
+              BalanceAvailableCreditDebit=int(send['amount'])
+          except TypeError:
+            BalanceAvailableCreditDebit=None
 
           #debit the sender
           dbExecute("insert into addressesintxs "
