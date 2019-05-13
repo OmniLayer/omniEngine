@@ -1786,7 +1786,7 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
         RecvAddress = rawtx['result']['referenceaddress']
         RecvRole="recipient"
 
-        if 'subsends' not in rawtx['result'] or len(rawtx['result']['subsends']==0:
+        if 'subsends' not in rawtx['result'] or len(rawtx['result']['subsends'])==0:
           rawtx['result']['subsends']=[{"amount": None, "divisible": False, "propertyid": -1 }]
 
         for send in rawtx['result']['subsends']:
