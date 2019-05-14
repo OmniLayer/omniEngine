@@ -1791,8 +1791,8 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
           rawtx['result']['subsends']=[{"amount": None, "divisible": False, "propertyid": -1 }]
 
         for send in rawtx['result']['subsends']:
-          printdebug("processing subsend", 9)
-          printdebug((send,"\n"), 9)
+          printdebug("processing subsend", 8)
+          printdebug((send,"\n"), 8)
           PropertyID=send['propertyid']
           try:
             if send['divisible']:
