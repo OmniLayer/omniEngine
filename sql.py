@@ -1787,23 +1787,28 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
         RecvRole="recipient"
 
         if 'subsends' not in rawtx['result'] or len(rawtx['result']['subsends'])==0:
+          printdebug("no subsend in tx setting default", 9)
           rawtx['result']['subsends']=[{"amount": None, "divisible": False, "propertyid": -1 }]
 
         for send in rawtx['result']['subsends']:
+          printdebug("processing subsend", 8)
+          printdebug((send,"\n"), 8)
           PropertyID=send['propertyid']
           try:
             if send['divisible']:
               BalanceAvailableCreditDebit=int(decimal.Decimal(str(send['amount']))*decimal.Decimal(1e8))
             else:
               BalanceAvailableCreditDebit=int(send['amount'])
+            BalanceAvailableCreditDebitNEG=-BalanceAvailableCreditDebit
           except TypeError:
             BalanceAvailableCreditDebit=None
+            BalanceAvailableCreditDebitNEG=None
 
           #debit the sender
           dbExecute("insert into addressesintxs "
                     "(Address, PropertyID, Protocol, TxDBSerialNum, AddressTxIndex, AddressRole, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit)"
                     "values(%s, %s, %s, %s, %s, %s, %s, %s, %s)",
-                    (Address, PropertyID, Protocol, TxDBSerialNum, AddressTxIndex, AddressRole, -BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit))
+                    (Address, PropertyID, Protocol, TxDBSerialNum, AddressTxIndex, AddressRole, BalanceAvailableCreditDebitNEG, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit))
 
           #credit the receiver
           dbExecute("insert into addressesintxs "
@@ -1814,7 +1819,7 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
 
           if Valid:
             #if valid debit sender
-            updateBalance(Address, Protocol, PropertyID, Ecosystem, -BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit, TxDBSerialNum)
+            updateBalance(Address, Protocol, PropertyID, Ecosystem, BalanceAvailableCreditDebitNEG, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit, TxDBSerialNum)
             #then credit receiver
             updateBalance(RecvAddress, Protocol, PropertyID, Ecosystem, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit, TxDBSerialNum)
 
