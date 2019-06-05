@@ -253,10 +253,11 @@ def updateTxStatsBlock(blocknumber):
       txs=TROWS[0][0]
       BROWS=dbSelect("select count(*) from transactions where txblocknumber=%s",[curblock])
       btxs=BROWS[0][0]
-      txfsum=dbSelect("select atx.propertyid, sum(atx.balanceavailablecreditdebit), sp.propertydata->>'divisible' as divisible, count(atx.propertyid) as count "
-                     "from addressesintxs atx, transactions tx, smartproperties sp "
-                     "where atx.txdbserialnum=tx.txdbserialnum and atx.propertyid=sp.propertyid and sp.protocol='Omni' and tx.txstate='valid' and "
-                     "tx.txblocknumber=%s and atx.addressrole='recipient' group by atx.propertyid, sp.propertydata->>'divisible'",[curblock])
+      txfsum=dbSelect("select atx.propertyid, sum(atx.balanceavailablecreditdebit) FILTER (WHERE tx.txstate = 'valid'), sp.propertydata->>'divisible' as divisible, "
+                      "count(atx.propertyid) FILTER (WHERE tx.txstate = 'valid') as count, count(atx.propertyid) FILTER (WHERE tx.txstate = 'not valid') AS invalid "
+                      "from addressesintxs atx, transactions tx, smartproperties sp "
+                      "where atx.txdbserialnum=tx.txdbserialnum and atx.propertyid=sp.propertyid and sp.protocol='Omni' and "
+                      "tx.txblocknumber=%s and atx.addressrole='recipient' group by atx.propertyid, sp.propertydata->>'divisible'",[curblock])
       try:
         VROWS=dbSelect("select sum(cast(value->>'total_usd' as numeric)) from txstats where blocktime >= %s - '1 day'::INTERVAL and blocktime <= %s",(btime,btime))
         tval_day=int(VROWS[0][0])
@@ -274,6 +275,7 @@ def updateTxStatsBlock(blocknumber):
         volume=decimal.Decimal(t[1])
         divisible=t[2]
         count=t[3]
+        invalid=t[4]
         if divisible in ['true','True',True]:
           volume=decimal.Decimal(volume)/decimal.Decimal(1e8)
         rawrate=dbSelect("select rate1for2 from exchangerates where protocol1='Bitcoin' and protocol2='Omni' and propertyid1=0 and propertyid2=%s order by asof desc limit 1",[pid])
@@ -287,7 +289,7 @@ def updateTxStatsBlock(blocknumber):
         prate=decimal.Decimal(srate[0]+'.'+srate[1][:8])
         value=int(round(value))
         total+=value
-        valuelist[pid]={'rate_usd':str(prate),'volume':str(volume),'value_usd_rounded':value, 'tx_count': count}
+        valuelist[pid]={'rate_usd':str(prate),'volume':str(volume),'value_usd_rounded':value, 'tx_count': count , 'invalid': invalid}
       fvalue={'total_usd':total, 'details':valuelist, 'value_24hr':tval_day}
       dbExecute("insert into txstats (blocknumber,blocktime,txcount,blockcount,value) values(%s,%s,%s,%s,%s)",
                 (curblock, btime, txs, btxs, json.dumps(fvalue)))
