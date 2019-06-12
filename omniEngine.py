@@ -32,7 +32,7 @@ else:
   #start/create our lock file
   file = open(lockFile, "w")
   file.write(str(os.getpid())+','+str(now))
-  file.close() 
+  file.close()
 
   #set our debug level, all outputs will be controlled by this
   try:
@@ -51,7 +51,10 @@ else:
   printdebug(("Processing started at",now), 0)
 
   #block with first MP transaction
-  firstMPtxBlock=252317
+  if config.TESTNET:
+    firstMPtxBlock=263137
+  else:
+    firstMPtxBlock=252317
 
   #get last known block processed from db
   currentBlock=dbSelect("select max(blocknumber) from blocks", None)[0][0]
@@ -164,7 +167,7 @@ else:
       #MP tx processing
       for tx in block_data_MP['result']:
         rawtx=gettransaction_MP(tx)
-  
+
         #Process the bare tx and insert it into the db
         #TxDBSerialNum can be specified for explit insert or left out to auto assign from next value in db
         serial=insertTx(rawtx, Protocol, height, x, TxDBSerialNum)
@@ -178,7 +181,7 @@ else:
         TxDBSerialNum+=1
 
         #increment tx sequence number in block
-        x+=1    
+        x+=1
 
       #Clean up any offers/crowdsales that expired in this block
       #Run these after we processes the tx's in the block as tx in the current block would be valid
@@ -231,6 +234,14 @@ else:
     dbCommit()
   except:
     pass
+
+  if config.TESTNET:
+    try:
+      #Reset omni balances on testnet to account for moneyman transactions
+      resetbalances_MP([1,2])
+      dbCommit()
+    except:
+      pass
 
   #check/add/update and pending tx in the database
   try:

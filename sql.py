@@ -1073,7 +1073,7 @@ def syncAddress(Address, Protocol):
 
 
 
-def resetbalances_MP():
+def resetbalances_MP(pidlist=None):
     printdebug(("Starting resetbalances_MP"),8)
     #for now sync / reset balance data from omnicore balance list
     Protocol="Omni"
@@ -1086,7 +1086,11 @@ def resetbalances_MP():
     printdebug(("resetbalances_MP: caching balances"),0)
     for property in listproperties_MP()['result']:
       PropertyID = property['propertyid']
-      listlookup[PropertyID]={'property':property, 'baldata': getallbalancesforid_MP(PropertyID)}
+      #partial reset for specific property ids
+      if (pidlist!=None and PropertyID not in pidlist):
+        pass
+      else:
+        listlookup[PropertyID]={'property':property, 'baldata': getallbalancesforid_MP(PropertyID)}
 
     printdebug(("resetbalances_MP: processing cache"),0)
     for PropertyID in listlookup:
@@ -1140,7 +1144,7 @@ def resetbalances_MP():
           dbExecute("UPDATE AddressBalances set BalanceAvailable=%s, BalanceReserved=%s, BalanceAccepted=%s, BalanceFrozen=%s where address=%s and PropertyID=%s",
                     (BalanceAvailable, BalanceReserved, BalanceAccepted, BalanceFrozen, Address, PropertyID) )
 
-def checkbalances_MP():
+def checkbalances_MP(pidlist=None):
     printdebug(("Starting checkbalances_MP"),8)
 
     #for now sync / reset balance data from omnicore balance list
@@ -1153,7 +1157,11 @@ def checkbalances_MP():
 
     #Find all known properties in omnicore
     for property in listproperties_MP()['result']:
-      PropertyID = property['propertyid']
+     PropertyID = property['propertyid']
+     #allow partial checks
+     if (pidlist!=None and PropertyID not in pidlist):
+      pass
+     else:
       Ecosystem=getEcosystem(PropertyID)
       #if PropertyID == 2 or ( PropertyID >= 2147483651 and PropertyID <= 4294967295 ):
       #  Ecosystem= "Test"
