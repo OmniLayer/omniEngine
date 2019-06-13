@@ -95,8 +95,10 @@ else:
 
   if currentBlock > endBlock:
     printdebug("Already up to date",0)
+    updateRan=False
   else:
     rExpireAllBalBTC()
+    updateRan=True
 
   #get highest TxDBSerialNum (number of rows in the Transactions table)
   #22111443 btc tx's before block 252317
@@ -115,18 +117,17 @@ else:
       else:
         block_data_MP = {"error": None, "id": None, "result": []}
 
-      #Status update every 10 blocks
-      if height % 10 == 0 or currentBlock:
-        if lastStatusUpdateTime == None:
-          printdebug(("Block",height,"of",endBlock),1)
-          lastStatusUpdateTime=datetime.now()
-        else:
-          statusUpdateTime=datetime.now()
-          timeDelta = statusUpdateTime - lastStatusUpdateTime
-          blocksLeft = endBlock - currentBlock
-          projectedTime = str(timedelta(microseconds=timeDelta.microseconds * blocksLeft))
-          printdebug(("Block",height,"of",endBlock, "(took", timeDelta.microseconds, "microseconds, blocks left:", blocksLeft, ", eta", projectedTime,")"),1)
-          lastStatusUpdateTime=statusUpdateTime
+      #status update
+      if lastStatusUpdateTime == None:
+        printdebug(("Block",height,"of",endBlock),1)
+        lastStatusUpdateTime=datetime.now()
+      else:
+        statusUpdateTime=datetime.now()
+        timeDelta = statusUpdateTime - lastStatusUpdateTime
+        blocksLeft = endBlock - currentBlock
+        projectedTime = str(timedelta(microseconds=timeDelta.microseconds * blocksLeft))
+        printdebug(("Block",height,"of",endBlock, "(took", timeDelta.microseconds, "microseconds, blocks left:", blocksLeft, ", eta", projectedTime,")"),1)
+        lastStatusUpdateTime=statusUpdateTime
 
       #Process Bitcoin Transacations
       Protocol="Bitcoin"
@@ -235,7 +236,7 @@ else:
   except:
     pass
 
-  if config.TESTNET:
+  if config.TESTNET and updateRan:
     try:
       #Reset omni balances on testnet to account for moneyman transactions
       resetbalances_MP([1,2])
