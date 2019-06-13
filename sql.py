@@ -245,10 +245,10 @@ def updateTxStatsBlock(blocknumber):
       _block=int(blocknumber)
     except:
       return False
-    ROWS=dbSelect("select blocknumber,blocktime from blocks where blocknumber=%s order by blocknumber desc limit 1",[_block])
-    curblock=ROWS[0][0]
-    btime=ROWS[0][1]
     try:
+      ROWS=dbSelect("select blocknumber,blocktime from blocks where blocknumber=%s order by blocknumber desc limit 1",[_block])
+      curblock=ROWS[0][0]
+      btime=ROWS[0][1]
       TROWS=dbSelect("select count(*) from transactions where txrecvtime >= %s - '1 day'::INTERVAL and txrecvtime <= %s and txdbserialnum>0",(btime,btime))
       txs=TROWS[0][0]
       BROWS=dbSelect("select count(*) from transactions where txblocknumber=%s",[curblock])
