@@ -1534,10 +1534,10 @@ def insertProperty(rawtx, Protocol, PropertyID=None):
         flags=getFlags(Protocol,PropertyName,PropertyData,PropertyURL,PropertyID)
         dbExecute("insert into SmartProperties"
                   "(Issuer, Ecosystem, CreateTxDBSerialNum, LastTxDBSerialNum, PropertyName, PropertyType, "
-                  "PropertyCategory, PropertySubcategory, PropertyData, Protocol, PropertyID )"
-                  "values(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
+                  "PropertyCategory, PropertySubcategory, PropertyData, Protocol, PropertyID, Flags )"
+                  "values(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
                   (Issuer, Ecosystem, CreateTxDBSerialNum, LastTxDBSerialNum, PropertyName, PropertyType, PropertyCategory,
-                   PropertySubcategory, json.dumps(rawprop), Protocol, PropertyID))
+                   PropertySubcategory, json.dumps(rawprop), Protocol, PropertyID, json.dumps(flags)))
         #insert this tx into the history table
         dbExecute("insert into PropertyHistory (Protocol, PropertyID, TxDBSerialNum) Values(%s, %s, %s)", (Protocol, PropertyID, LastTxDBSerialNum))
 
@@ -1560,7 +1560,7 @@ def getFlags(Protocol,name,data,url,PropertyID):
     else:
       rurl=[[0]]
     if int(rname[0][0]) + int(rdata[0][0]) + int(rurl[0][0]) > 0:
-      flags=flags={"duplicate": True}
+      flags={"duplicate": True}
   except:
     printdebug(("Error finding flags",Protocol,PropertyID,name,data,url,"\n"), 8)
   return flags
