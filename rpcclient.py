@@ -68,7 +68,12 @@ host=RPCHost()
 
 #Bitcoin Generic RPC calls
 def getinfo():
-    return host.call("getinfo")
+    try:
+      #support omnicore v0.5
+      return host.call("getinfo")
+    except:
+      #support omnicore v0.6
+      return host.call("getblockchaininfo")
 
 def getrawtransaction(txid):
     return host.call("getrawtransaction", txid , 1)
