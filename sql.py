@@ -1407,7 +1407,7 @@ def updateProperty(PropertyID, Protocol, LastTxDBSerialNum=None):
       try:
         r = requests.get('https://blockchain.info/q/totalbc')
         amt=int(r.text)
-        rawprop['totaltokens'] = str(int(amt/1e8))
+        rawprop['totaltokens'] = str(int(amt/1e8))+".00000000"
       except:
         pass
     else:
