@@ -12,7 +12,7 @@ except:
   expTime=600
 
 try:
-  TESTNET = (config.TESTNET == 1)
+  TESTNET = config.TESTNET
 else:
   TESTNET = False
 
