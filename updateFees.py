@@ -10,6 +10,17 @@ from config import *
 import urllib3.contrib.pyopenssl
 urllib3.contrib.pyopenssl.inject_into_urllib3()
 
+try:
+  TESTNET = config.TESTNET
+except:
+  TESTNET = False
+
+if TESTNET:
+  BITGO_API_URL = "https://test.bitgo.com/api/v1"
+else:
+  BITGO_API_URL = "https://www.bitgo.com/api/v1"
+
+
 def updatePrices():
   updateFEES()
   dbCommit()
@@ -21,7 +32,7 @@ def updateFEES():
   normal=[]
   #Get BitGo Fee's
   try:
-    source='https://www.bitgo.com/api/v1/tx/fee'
+    source = BITGO_API_URL + '/tx/fee'
     r= requests.get( source, timeout=15 )
     feelist=r.json()
     q=[]
@@ -37,40 +48,23 @@ def updateFEES():
     #error or timeout, skip for now
     printdebug(("Error getting BitGo fees",e),3)
     pass
-  #Get Blockcypher Fee's
-  #try:
-  #  source='http://api.blockcypher.com/v1/btc/main'
-  #  r= requests.get( source, timeout=15 )
-  #  feelist=r.json()
-  #  faster.append(feelist['high_fee_per_kb'])
-  #  fast.append(feelist['medium_fee_per_kb'])
-  #  normal.append(feelist['low_fee_per_kb'])
-  #except Exception as e:
-  #  #error or timeout, skip for now
-  #  printdebug(("Error getting Blockcypher fees",e),3)
-  #  pass
-  #Get Bitcoinfees21 Fee's
-  try:
-    source='https://bitcoinfees.earn.com/api/v1/fees/recommended'
-    r= requests.get( source, timeout=15 )
-    feelist=r.json()
-    #for x in feelist['fees']:
-    #  if x['maxDelay']>0 and x['maxDelay']<=7:
-    #    fr=int(((x['minFee']+x['maxFee'])/2)*1000)
-    #  if x['maxDelay']>7 and x['maxDelay']<=20:
-    #    f=int(((x['minFee']+x['maxFee'])/2)*1000)
-    #  if x['maxDelay']>20 and x['maxDelay']<=40:
-    #    n=int(((x['minFee']+x['maxFee'])/2)*1000)
-    fr=int(feelist['fastestFee']*1000)
-    f=int(feelist['halfHourFee']*1000)
-    n=int(feelist['hourFee']*1000)
-    faster.append(fr)
-    fast.append(f)
-    normal.append(n)
-  except Exception as e:
-    #error or timeout, skip for now
-    printdebug(("Error getting bitcoinfees21 fees",e),3)
-    pass
+
+  if not TESTNET:
+    #Get Bitcoinfees21 Fee's
+    try:
+      source='https://bitcoinfees.earn.com/api/v1/fees/recommended'
+      r= requests.get( source, timeout=15 )
+      feelist=r.json()
+      fr=int(feelist['fastestFee']*1000)
+      f=int(feelist['halfHourFee']*1000)
+      n=int(feelist['hourFee']*1000)
+      faster.append(fr)
+      fast.append(f)
+      normal.append(n)
+    except Exception as e:
+      #error or timeout, skip for now
+      printdebug(("Error getting bitcoinfees21 fees",e),3)
+      pass
   fr=int(sum(faster)/len(faster))
   ff=int(sum(fast)/len(fast))
   nf=int(sum(normal)/len(normal))
