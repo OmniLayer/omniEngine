@@ -103,7 +103,12 @@ def omni_decodetransaction(rawtx):
     return host.call("omni_decodetransaction", rawtx)
 
 def estimateFee(blocks=4):
-    return host.call("estimatefee", blocks)
+    try:
+      #support omnicore v0.6+
+      return host.call("estimatesmartfee", blocks)
+    except:
+      #support omnicore up to v0.5
+      return host.call("estimatefee", blocks)
 
 def gettxout(txid,vout,unconfirmed=True):
     return host.call("gettxout",txid,vout,unconfirmed)
@@ -201,5 +206,5 @@ def createrawtx_input(txhash, index, rawtx=None):
 def createrawtx_reference(destination, rawtx=None):
     return host.call("omni_createrawtx_reference", rawtx, destination)
 def createrawtx_change(rawtx, previnputs, destination, fee):
-    return host.call("omni_createrawtx_change", rawtx, previnputs, destination, fee)
+    return host.call("omni_createrawtx_change", rawtx, previnputs, destination, str(fee))
  
