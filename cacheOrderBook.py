@@ -26,9 +26,9 @@ def updateOrderbookCache():
         rSet("omniwallet:omnidex:lasttrade",ret['lasttrade'])
         rSet("omniwallet:omnidex:lastpending",ret['lastpending'])
         rSet("omniwallet:omnidex:book",json.dumps(ret['book']))
+      dbCommit()
     except Exception as e:
       printmsg("Error updating orderbook cache "+str(e))
-    dbCommit()
   
 def main():
   updateOrderbookCache()
