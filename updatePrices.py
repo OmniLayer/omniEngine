@@ -60,7 +60,7 @@ def getfixedprice(desiredvalue, base):
   #  4 | IDR       #  5 | ILS       #  6 | GBP       #  7 | RON
   #  8 | SEK       #  9 | SGD       # 10 | HKD       # 11 | CHF
   # 12 | CNY       # 13 | TRY       # 14 | NZD       # 15 | NOK
-  # 16 | RUB       # 17 | MXN       # 18 | BRL       # 19 | PLN       
+  # 16 | RUB       # 17 | MXN       # 18 | BRL       # 19 | PLN
   # 20 | ZAR       # 21 | JPY
 
   ROWS=dbSelect("select rate1for2 from exchangerates where protocol1='Fiat' and propertyid1=%s and protocol2='Bitcoin' and propertyid2=0 "
@@ -111,10 +111,9 @@ def upsertRate(protocol1, propertyid1, protocol2, propertyid2, rate, source, tim
 
 def updateBTC():
     try:
-      source='https://apiv2.bitcoinaverage.com/constants/exchangerates/global'
+      source='https://apiv2.bitcoinaverage.com/frontend/constants/exchangerates/global'
       r= requests.get( source, timeout=15 )
       curlist=r.json()
-      #timestamp=curlist.pop('timestamp')
       if 'ignored_exchanges' in curlist:
         curlist.pop('ignored_exchanges')
       btc=curlist['rates']['BTC']['rate']
@@ -163,13 +162,13 @@ def formatData(sp, source):
         trades=trades['result']
         for trade in trades:
           trade['rate']=trade['Price']
-          trade['amount']=trade['Quantity']  
-      
+          trade['amount']=trade['Quantity']
+
       if sp in [89]:
         for trade in trades:
           trade['rate']=trade['price']
           trade['amount']=trade['quantity']
-      
+
       if sp in [90]:
         for trade in trades:
           trade['rate']=trade['price']
@@ -189,7 +188,7 @@ def updateOMNISP():
     cmcData=formatData(0, cmcSource)
 
     for x in ROWS:
-      sp=x[0]  
+      sp=x[0]
       src=getSource(sp)
       if src != None:
         try:
