@@ -33,7 +33,7 @@ def reparsetx_MP(txhash):
     txstate = tx[3]
     txtype = tx[4]
 
-    if txtype not in [0,3,25,-1]:
+    if txtype not in [0,3,4,25,-1]:
       printdebug(("Can't Reparse txtype",txtype,"in middle of data, try running reorg rollback code"),4)
       exit(1)
 
