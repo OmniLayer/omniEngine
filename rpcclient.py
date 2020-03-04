@@ -114,6 +114,10 @@ def gettxout(txid,vout,unconfirmed=True):
     return host.call("gettxout",txid,vout,unconfirmed)
 
 ## Omni Specific RPC calls
+
+def omni_getcurrentconsensushash():
+    return host.call("omni_getcurrentconsensushash")
+
 def getbalance_MP(addr, propertyid):
     return host.call("getbalance_MP", addr, propertyid)
 

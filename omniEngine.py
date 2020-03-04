@@ -236,6 +236,13 @@ else:
   except:
     pass
 
+  try:
+    #Try to update consensushash of last block
+    updateConsensusHash()
+    dbCommit()
+  except:
+    pass
+
   if config.TESTNET and updateRan:
     try:
       #Reset omni balances on testnet to account for moneyman transactions

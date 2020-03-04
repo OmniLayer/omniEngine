@@ -218,6 +218,17 @@ def reorgRollback(block):
     dbExecute("select setval('transactions_txdbserialnum_seq', %s)",[newTxDBSerialNum])
 
 
+def updateConsensusHash():
+    data=omni_getcurrentconsensushash()
+    if 'result' in data:
+      data=data['result']
+      block = data['block']
+      bhash = data['blockhash']
+      chash = data['consensushash']
+      dbExecute("update blocks set consensushash=%s where blocknumber=%s and blockhash=%s",
+                (chash,block,bhash))
+
+
 def updateLastRun():
     dbExecute("with upsert as "
               "(update settings set updated_at=DEFAULT where key='parserLastRun' returning *) "

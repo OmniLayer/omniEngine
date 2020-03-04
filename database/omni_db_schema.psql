@@ -146,6 +146,7 @@ create table if not exists Blocks (
 	, Nonce bigint null		/* The nonce used to generate this block… to allow variations of the header and compute different hashes */
 	, Size integer null
 	, TxCount integer null		/* Number of transaction entries */
+	, Consensushash varchar(64) null	/* reference to a Merkle tree collection which is a hash of all transactions related to this block */
 
 	, primary key (Protocol, BlockNumber)
 )
