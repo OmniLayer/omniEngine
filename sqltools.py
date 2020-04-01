@@ -1,12 +1,12 @@
 import psycopg2, psycopg2.extras
 import sys
 import getpass
-
+import os
 def sql_connect(OUSER=None,OPASS=None):
     global con
     USER=getpass.getuser()
     try:
-      with open('/home/'+USER+'/.omni/sql.conf') as fp:
+      with open(os.getenv("HOME") + '/.omni/sql.conf') as fp:
         DBPORT="5432"
         for line in fp:
           #print line
@@ -49,6 +49,7 @@ def dbInit(ouser=None,opass=None ):
 def dbSelect(statement, values=None):
     dbInit()
     try:
+        print "dbc=", dbc
         dbc.execute(statement, values)
         ROWS = dbc.fetchall()
         return ROWS
