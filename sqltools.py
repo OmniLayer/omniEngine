@@ -49,7 +49,6 @@ def dbInit(ouser=None,opass=None ):
 def dbSelect(statement, values=None):
     dbInit()
     try:
-        print "dbc=", dbc
         dbc.execute(statement, values)
         ROWS = dbc.fetchall()
         return ROWS
