@@ -510,3 +510,17 @@ create table if not exists Markets(
 )
 ;
 
+/*
+ * Feature Activation tracking table
+ */
+create table if not exists FeatureActivations(
+        FeatureID bigint not null
+        , FeatureName varchar(64) not null
+        , ActivationBlock bigint not null
+        , MinimumVersion bigint not null
+        , Pending boolean not null default TRUE
+        , LastTxDBSerialNum int8 not null
+        , updated_at timestamp(0) DEFAULT now()
+        , primary key (FeatureID)
+)
+;

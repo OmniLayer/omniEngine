@@ -1,7 +1,6 @@
 import requests
 import json
-import os.path
-import getpass
+import os
 from datetime import datetime
 from sqltools import *
 from common import *
@@ -76,7 +75,7 @@ def updateFEES():
               (data, data))
 
 def main():
-  USER=getpass.getuser()
+  USER=os.getenv("USER")
   lockFile='/tmp/updateFees.lock'+str(USER)
   now=datetime.now()
 

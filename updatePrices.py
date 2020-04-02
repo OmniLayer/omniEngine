@@ -1,7 +1,6 @@
 import requests
 import json
-import os.path
-import getpass
+import os
 from datetime import datetime
 from sqltools import *
 from common import *
@@ -36,7 +35,7 @@ def getSource(sp):
              #59:{"id":"PDC","source":"coinmarketcap"},
              #66:{"cmcid":"1352","name":"GARY","source":"coinmarketcap"},
              #89:{"id":"DIBC","source":"coinmarketcap"},
-             90:"https://market.bitsquare.io/api/trades?market=sfsc_btc",
+             #90:"https://market.bitsquare.io/api/trades?market=sfsc_btc",
              #149:{"cmcid":"1642","name":"ALT","source":"coinmarketcap"},
              701:{"cmcid":"3850","id":"OTO","name":"OTOCash","source":"coinmarketcap"}
             }
@@ -229,7 +228,7 @@ def updateOMNISP():
 
 
 def main():
-  USER=getpass.getuser()
+  USER=os.getenv("USER")
   lockFile='/tmp/updatePrices.lock'+str(USER)
   now=datetime.now()
 
