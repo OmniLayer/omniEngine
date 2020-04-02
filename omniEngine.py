@@ -1,12 +1,13 @@
 from sql import *
-import os.path
+import os
 import sys
 from datetime import datetime
 from datetime import timedelta
 from cacher import *
 import config
 
-USER=getpass.getuser()
+USER=os.getenv("USER")
+
 lockFile='/tmp/omniEngine.lock.'+str(USER)
 now=datetime.now()
 sys.argv.pop(0)
