@@ -1105,10 +1105,10 @@ def updateFeatureActivations(featureid, txdbserialnum=None):
           pending = f['pending']
 
         dbExecute("with upsert as "
-              "(update FeatureActivations set featurename=%s, activationblock=%s, minimumversion=%s, pending=%s, LastTxDBSerialNum=%s, LastUpdate=(SELECT CURRENT_TIMESTAMP(0) "
+              "(update FeatureActivations set featurename=%s, activationblock=%s, minimumversion=%s, pending=%s, LastTxDBSerialNum=%s, updated_at=(SELECT CURRENT_TIMESTAMP(0)) "
               "where featureid=%s returning *) "
               "insert into FeatureActivations (featureid, featurename, activationblock, minimumversion, pending, LastTxDBSerialNum) "
-              "select %s, %s, %s, %s, %s "
+              "select %s, %s, %s, %s, %s, %s "
               "where not exists (select * from upsert)",
               (featurename, activationblock, minimumversion, pending, txdbserialnum, featureid, featureid, featurename, activationblock, minimumversion, pending, txdbserialnum) )
         break
