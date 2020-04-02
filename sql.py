@@ -1086,6 +1086,32 @@ def syncAddress(Address, Protocol):
                   (Available, Reserved, Accepted, Address, PropertyID) )
 
 
+def updateFeatureActivations(featureid, txdbserialnum=None):
+    features=omni_getactivations()
+    pending   = features['result']['pendingactivations']
+    completed = features['result']['completedactivations']
+
+    for f in pending:
+      f['pending'] = True
+      completed.append(f)
+
+    for f in completed:
+      pending = False
+      if f['featureid']==featureid:
+        featurename = f['featurename']
+        activationblock = f['activationblock']
+        minimumversion = f['minimumversion']
+        if 'pending' in f:
+          pending = f['pending']
+
+        dbExecute("with upsert as "
+              "(update FeatureActivations set featurename=%s, activationblock=%s, minimumversion=%s, pending=%s, LastTxDBSerialNum=%s, LastUpdate=(SELECT CURRENT_TIMESTAMP(0) "
+              "where featureid=%s returning *) "
+              "insert into FeatureActivations (featureid, featurename, activationblock, minimumversion, pending, LastTxDBSerialNum) "
+              "select %s, %s, %s, %s, %s "
+              "where not exists (select * from upsert)",
+              (featurename, activationblock, minimumversion, pending, txdbserialnum, featureid, featureid, featurename, activationblock, minimumversion, pending, txdbserialnum) )
+        break
 
 def resetbalances_MP(pidlist=None):
     printdebug(("Starting resetbalances_MP"),8)
@@ -2291,7 +2317,11 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
             updateBalance(Address, Protocol, PropertyID, Ecosystem, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit, TxDBSerialNum, BalanceFrozenCreditDebit)
         #don't process anything else
         return
-
+      elif txtype == 65534:
+        #Feature Activations
+        if Valid:
+          featureid = rawtx['result']['featureid']
+          updateFeatureActivations(featureid, TxDBSerialNum)
 
       #end if/elif txtype switch
 

@@ -115,6 +115,9 @@ def gettxout(txid,vout,unconfirmed=True):
 
 ## Omni Specific RPC calls
 
+def omni_getactivations():
+    return host.call("omni_getactivations")
+
 def omni_getcurrentconsensushash():
     return host.call("omni_getcurrentconsensushash")
 
