@@ -1,9 +1,9 @@
-import requests, getpass
+import requests
 import time, json
 import os
+
 class RPCHost():
     def __init__(self):
-        USER=getpass.getuser()
         self._session = requests.Session()
         try:
             with open( os.getenv("HOME") +'/.bitcoin/bitcoin.conf') as fp:
