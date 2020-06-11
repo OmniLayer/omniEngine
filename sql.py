@@ -267,11 +267,11 @@ def updateTxStatsBlock(blocknumber):
       txs=TROWS[0][0]
       BROWS=dbSelect("select count(*) from transactions where txblocknumber=%s",[curblock])
       btxs=BROWS[0][0]
-      txfsum=dbSelect("select atx.propertyid, sum(atx.balanceavailablecreditdebit) FILTER (WHERE tx.txstate = 'valid'), sp.propertydata->>'divisible' as divisible, "
+      txfsum=dbSelect("select atx.propertyid, sum(abs(atx.balanceavailablecreditdebit)) FILTER (WHERE tx.txstate = 'valid'), sp.propertydata->>'divisible' as divisible, "
                       "count(atx.propertyid) FILTER (WHERE tx.txstate = 'valid') as count, count(atx.propertyid) FILTER (WHERE tx.txstate = 'not valid') AS invalid "
                       "from addressesintxs atx, transactions tx, smartproperties sp "
                       "where atx.txdbserialnum=tx.txdbserialnum and atx.propertyid=sp.propertyid and sp.protocol='Omni' and "
-                      "tx.txblocknumber=%s and atx.addressrole='recipient' group by atx.propertyid, sp.propertydata->>'divisible'",[curblock])
+                      "tx.txblocknumber=%s and (atx.addressrole!='buyer' and atx.addressrole!='recipient') group by atx.propertyid, sp.propertydata->>'divisible'",[curblock])
       try:
         VROWS=dbSelect("select sum(cast(value->>'total_usd' as numeric)) from txstats where blocktime >= %s - '1 day'::INTERVAL and blocktime <= %s",(btime,btime))
         tval_day=int(VROWS[0][0])
@@ -1397,7 +1397,7 @@ def updateBalance(Address, Protocol, PropertyID, Ecosystem, BalanceAvailable, Ba
 
         dbExecute("UPDATE AddressBalances set BalanceAvailable=%s, BalanceReserved=%s, BalanceAccepted=%s, BalanceFrozen=%s, LastTxDBSerialNum=%s where address=%s and PropertyID=%s and Protocol=%s",
                   (BalanceAvailable, BalanceReserved, BalanceAccepted, BalanceFrozen, LastTxDBSerialNum, Address, PropertyID, Protocol) )
-
+      #return {'BalanceAvailable':BalanceAvailable, 'BalanceReserved':BalanceReserved, 'BalanceAccepted':BalanceAccepted, 'BalanceFrozen':BalanceFrozen}
 
 def expireCrowdsales(BlockTime, Protocol):
     printdebug("Starting expireCrowdsales:", 8)
@@ -1637,6 +1637,11 @@ def updateAddrStats(Address,Protocol,TxDBSerialNum,Block):
               "where not exists (select * from upsert) and not exists (select * from cexist)",
               (TxDBSerialNum, Block, Address, Protocol, TxDBSerialNum, Address, Protocol, Address, Protocol, TxDBSerialNum, Block) )
 
+def finalizeAfterBalances(TxDBSerialNum):
+    dbExecute("update addressesintxs atx "
+              "set afterbalanceavailable=balanceavailable, afterbalancereserved=balancereserved,afterbalanceaccepted=balanceaccepted,afterbalancefrozen=balancefrozen "
+              "from addressbalances ab "
+              "where atx.address=ab.address and atx.propertyid=ab.propertyid and atx.protocol=ab.protocol and atx.txdbserialnum=%s",[TxDBSerialNum])
 
 def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
     printdebug("Starting insertTxAddr:", 8)
@@ -2186,6 +2191,7 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
 
         #If there is an amount to issuer > 0 insert into db otherwise skip
         if IssuerCreditDebit > 0:
+          AddressRole = 'issuer'
           dbExecute("insert into addressesintxs "
                     "(Address, PropertyID, Protocol, TxDBSerialNum, AddressTxIndex, AddressRole, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit)"
                     "values(%s, %s, %s, %s, %s, %s, %s, %s, %s)",
@@ -2334,6 +2340,7 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
       if Valid:
         updateBalance(Address, Protocol, PropertyID, Ecosystem, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit, TxDBSerialNum)
 
+    finalizeAfterBalances(TxDBSerialNum)
 
 def insertTx(rawtx, Protocol, blockheight, seq, TxDBSerialNum):
     printdebug("Starting insertTx:", 8)

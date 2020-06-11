@@ -257,6 +257,10 @@ create table if not exists AddressesInTxs (					/* many-to-many */
 	, BalanceReservedCreditDebit numeric(19) null		/* how much the balance changed */
 	, BalanceAcceptedCreditDebit numeric(19) null		/* how much the balance changed */
 	, BalanceFrozenCreditDebit numeric(19) null		/* how much the balance changed */
+	, AfterBalanceAvailable numeric(19) null		/* running balance after tx */
+	, AfterBalanceReserved numeric(19) null			/* running balance after tx */
+	, AfterBalanceAccepted numeric(19) null			/* running balance after tx */
+	, AfterBalanceFrozen numeric(19) null			/* running balance after tx */
 	, LinkedTxDBSerialNum int8 not null default -1	/* tx with the associated output for inputs, or with the associated input for outputs */
 
 	, primary key (Address, TxDBSerialNum, PropertyID, AddressRole, addresstxindex)
