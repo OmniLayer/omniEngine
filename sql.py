@@ -1878,7 +1878,7 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
             #then credit receiver
             updateBalance(RecvAddress, Protocol, PropertyID, Ecosystem, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit, TxDBSerialNum)
 
-
+        finalizeAfterBalances(TxDBSerialNum)
         #Finished processing all sends, return as nothing more to add to db
         return
 
@@ -1909,6 +1909,7 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
 
       elif txtype == 21:
         #DEx Phase II: Offer/Accept one Master Protocol Coins for another
+        finalizeAfterBalances(TxDBSerialNum)
         return
 
       elif txtype == 22:
@@ -1940,6 +1941,7 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
         if Valid:
           updateBalance(Address, Protocol, PropertyID, Ecosystem, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit, TxDBSerialNum)
 
+        finalizeAfterBalances(TxDBSerialNum)
         #we processed everything for this tx, return
         return
 
@@ -2005,6 +2007,7 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
 
           #end //for payment in rawtx['result']['purchases']
 
+        finalizeAfterBalances(TxDBSerialNum)
         #We've updated all the records in the DEx payment, don't let the last write command run, not needed
         return
 
@@ -2102,6 +2105,7 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
           #Finally, make sure to update markets table after all other matches are processed
           updatemarkets(PropertyIdForSale,PropertyIdDesired,TxDBSerialNum, rawtx)
 
+        finalizeAfterBalances(TxDBSerialNum)
         return
 
       elif txtype in [26,27,28]:
@@ -2140,6 +2144,7 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
             PropertyIdDesired=oldtx['result']['propertyiddesired']
             updatemarkets(PropertyIdForSale,PropertyIdDesired,TxDBSerialNum, rawtx)
 
+        finalizeAfterBalances(TxDBSerialNum)
         return
 
       elif txtype == 50:
@@ -2321,6 +2326,7 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
         else:
           if Valid:
             updateBalance(Address, Protocol, PropertyID, Ecosystem, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit, TxDBSerialNum, BalanceFrozenCreditDebit)
+        finalizeAfterBalances(TxDBSerialNum)
         #don't process anything else
         return
       elif txtype == 65534:
