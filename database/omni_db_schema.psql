@@ -147,6 +147,7 @@ create table if not exists Blocks (
 	, Size integer null
 	, TxCount integer null		/* Number of transaction entries */
 	, Consensushash varchar(64) null	/* reference to a Merkle tree collection which is a hash of all transactions related to this block */
+        , TxClass integer null          /* The decoded Transaction Encoding Class */
 
 	, primary key (Protocol, BlockNumber)
 )

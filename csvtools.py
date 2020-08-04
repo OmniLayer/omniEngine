@@ -3,7 +3,7 @@ import datetime
 import decimal
 import sys
 from rpcclient import *
-from mscutils import *
+from omniutils import *
 
 def dumpblocks_csv(csvwb, block_data, Protocol, block_height, txcount):
     BlockTime = datetime.datetime.utcfromtimestamp(block_data['result']['time'])
