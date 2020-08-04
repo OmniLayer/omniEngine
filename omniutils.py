@@ -30,28 +30,32 @@ def getTxClass(txid):
     #Class B = 2 , exodus marker + multisig
     #Class C = 3 , opreturn
     exodus_array = ['1EXoDusjGwvnjZUyKkxZ4UHEf77z6A5S4P','mpexoDuSkGGqvqrkrjiFng38QPkJQVFyqv']
-    rawtx = getrawtransaction(txid)
     exodus = False
     opreturn = False
     multisig = False
-    for output in rawtx['result']['vout']:
-      data = output['scriptPubKey']
-      type = data['type']
-      if type == 'nulldata':
-        opreturn = True
-      elif type == 'multisig':
-        multisig = True
+    try:
+      rawtx = getrawtransaction(txid)
+      for output in rawtx['result']['vout']:
+        data = output['scriptPubKey']
+        type = data['type']
+        if type == 'nulldata':
+          opreturn = True
+        elif type == 'multisig':
+          multisig = True
+        else:
+          for addr in data['addresses']:
+            if addr in exodus_array:
+              exodus = True
+      if opreturn:
+        return 3
+      elif exodus and multisig:
+        return 2
+      elif exodus:
+        return 1
       else:
-        for addr in data['addresses']:
-          if addr in exodus_array:
-            exodus = True
-    if opreturn:
-      return 3
-    elif exodus and multisig:
-      return 2
-    elif exodus:
-      return 1
-    else:
+        return 0
+    except Exception as e:
+      print('DEBUG: error determining transaction class:', err)
       return 0
 
 def get_TxType(text_type):
