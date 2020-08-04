@@ -371,6 +371,7 @@ def updateAddPending():
     txtype = rawtx['type_int']
     txversion = rawtx['version']
     txhash = rawtx['txid']
+    TxClass = getTxClass(txhash)
 
     #check if tx is already in db and skip
     existing=dbSelect("select * from transactions where txhash=%s and protocol='Omni'",[txhash])
@@ -437,8 +438,8 @@ def updateAddPending():
         #update pending balance
         #dbExecute("update addressbalances set balancepending=balancepending+%s::numeric where address=%s and propertyid=%s and protocol=%s", (recvamount,address,propertyid,protocol))
 
-    dbExecute("insert into transactions (txhash,protocol,txdbserialnum,txtype,txversion) values(%s,%s,%s,%s,%s)",
-             (txhash,protocol,txdbserialnum,txtype,txversion))
+    dbExecute("insert into transactions (txhash,protocol,txdbserialnum,txtype,txversion,TxClass) values(%s,%s,%s,%s,%s,%s)",
+             (txhash,protocol,txdbserialnum,txtype,txversion,TxClass))
 
     #store decoded omni data until tx confirms
     dbExecute("insert into txjson (txdbserialnum, protocol, txdata) values (%s,%s,%s)", (txdbserialnum, protocol, json.dumps(rawtx)) )
