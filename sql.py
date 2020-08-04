@@ -4,7 +4,7 @@ import math
 import sys
 import requests
 from rpcclient import *
-from mscutils import *
+from omniutils import *
 from sqltools import *
 from common import *
 
@@ -2367,25 +2367,25 @@ def insertTx(rawtx, Protocol, blockheight, seq, TxDBSerialNum):
       TxState= "valid"
       Ecosystem= None
       TxSubmitTime = datetime.datetime.utcfromtimestamp(rawtx['result']['time'])
+      TxClass = 0
 
     elif Protocol == "Omni":
       #currently type a text output from omnicore 'Simple Send' and version is unknown
       TxType= get_TxType(rawtx['result']['type'])
       TxVersion=0
+
       #!!temp workaround, Need to update for DEx Purchases after conversation with omnicore team
       if TxType == -22:
-        TxState=getTxState(rawtx['result']['purchases'][0]['valid'])
+        valid=rawtx['result']['purchases'][0]['valid']
         Ecosystem=getEcosystem(rawtx['result']['purchases'][0]['propertyid'])
       elif TxType == 21:
         valid=rawtx['result']['valid']
-        TxState= getTxState(valid)
         if valid:
           Ecosystem=getEcosystem(rawtx['result']['propertyoffered'])
         else:
           Ecosystem=None
       else:
         valid=rawtx['result']['valid']
-        TxState= getTxState(valid)
         if TxType in [4]:
           try:
             Ecosystem=getEcosystem(rawtx['result']['ecosystem'])
@@ -2417,13 +2417,12 @@ def insertTx(rawtx, Protocol, blockheight, seq, TxDBSerialNum):
             else:
               Ecosystem=getEcosystem(0)
 
+      TxState = getTxState(valid)
+      TxClass = getTxClass(TxHash)
+
       #Use block time - 10 minutes to approx
       #TxSubmitTime = TxBlockTime-datetime.timedelta(minutes=10)
       TxSubmitTime=None
-      #if rawtx['result']['propertyid'] == 2 or ( rawtx['result']['propertyid'] >= 2147483651 and rawtx['result']['propertyid'] <= 4294967295 ):
-      #  Ecosystem= "Test"
-      #else:
-      #  Ecosystem= "Production"
 
     else:
       print "Wrong Protocol? Exiting, goodbye."
@@ -2431,14 +2430,14 @@ def insertTx(rawtx, Protocol, blockheight, seq, TxDBSerialNum):
 
     if TxDBSerialNum == -1:
         dbExecute("INSERT into transactions "
-                  "(TxHash, Protocol, TxType, TxVersion, Ecosystem, TxState, TxErrorCode, TxBlockNumber, TxSeqInBlock, TxRecvTime ) "
-                  "VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",
-                  (TxHash, Protocol, TxType, TxVersion, Ecosystem, TxState, TxErrorCode, TxBlockNumber, TxSeqInBlock, TxBlockTime))
+                  "(TxHash, Protocol, TxType, TxVersion, Ecosystem, TxState, TxErrorCode, TxBlockNumber, TxSeqInBlock, TxRecvTime, TxClass ) "
+                  "VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",
+                  (TxHash, Protocol, TxType, TxVersion, Ecosystem, TxState, TxErrorCode, TxBlockNumber, TxSeqInBlock, TxBlockTime, TxClass))
     else:
         dbExecute("INSERT into transactions "
-                  "(TxHash, Protocol, TxType, TxVersion, Ecosystem, TxState, TxErrorCode, TxBlockNumber, TxSeqInBlock, TxDBSerialNum, TxRecvTime ) "
-                  "VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",
-                  (TxHash, Protocol, TxType, TxVersion, Ecosystem, TxState, TxErrorCode, TxBlockNumber, TxSeqInBlock, TxDBSerialNum, TxBlockTime))
+                  "(TxHash, Protocol, TxType, TxVersion, Ecosystem, TxState, TxErrorCode, TxBlockNumber, TxSeqInBlock, TxDBSerialNum, TxRecvTime, TxClass ) "
+                  "VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",
+                  (TxHash, Protocol, TxType, TxVersion, Ecosystem, TxState, TxErrorCode, TxBlockNumber, TxSeqInBlock, TxDBSerialNum, TxBlockTime, TxClass))
 
     serial=dbSelect("Select TxDBSerialNum from transactions where txhash=%s and protocol=%s", (TxHash, Protocol))
     dbExecute("insert into txjson (txdbserialnum, protocol, txdata) values (%s,%s,%s)", (serial[0]['txdbserialnum'], Protocol, json.dumps(rawtx['result'])) )
