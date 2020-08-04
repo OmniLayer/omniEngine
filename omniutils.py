@@ -55,7 +55,7 @@ def getTxClass(txid):
       else:
         return 0
     except Exception as e:
-      print('DEBUG: error determining transaction class:', err)
+      print('DEBUG: error determining transaction class:', e)
       return 0
 
 def get_TxType(text_type):
