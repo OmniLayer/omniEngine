@@ -1,3 +1,6 @@
+from common import *
+from rpcclient import getrawtransaction
+
 def getDivisible(rawtx):
   try:
     divisible=rawtx['result']['divisible']
@@ -55,7 +58,7 @@ def getTxClass(txid):
       else:
         return 0
     except Exception as e:
-      print('DEBUG: error determining transaction class:', e)
+      printdebug(('DEBUG: error determining transaction class:', e),4)
       return 0
 
 def get_TxType(text_type):
