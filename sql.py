@@ -353,6 +353,11 @@ def checkPending(blocktxs):
         dbExecute("delete from transactions where txdbserialnum=%s and protocol=%s", (txdbserialnum,protocol))
         dbExecute("delete from txjson where txdbserialnum=%s and protocol=%s", (txdbserialnum,protocol))
 
+def clearPending():
+  dbExecute("delete from addressesintxs where txdbserialnum < 0")
+  dbExecute("delete from transactions where txdbserialnum < 0")
+  dbExecute("delete from txjson where txdbserialnum < 0")
+
 def updateAddPending():
   pendingList=omni_listpendingtransactions()
   printdebug(("processing ",len(pendingList['result'])," pending transactions"),0)
