@@ -18,7 +18,7 @@ except:
 
 if TESTNET:
   # neither blockchain.info nor blockonomics support testnet
-  BLOCKCHAININFO_API_URL = "https://blockchain.info"
+  BLOCKCHAININFO_API_URL = "https://api.blockchain.info/haskoin-store/btc"
   BLOCKONOMICS_API_URL = "https://www.blockonomics.co/api"
 
   BLOCKTRAIL_API_URL = "https://api.blocktrail.com/v1/tbtc"
@@ -26,7 +26,7 @@ if TESTNET:
   BITGO_API_URL = "https://test.bitgo.com/api/v1"
   BTCCOM_API_URL = "https://chain.api.btc.com/v3"
 else:
-  BLOCKCHAININFO_API_URL = "https://blockchain.info"
+  BLOCKCHAININFO_API_URL = "https://api.blockchain.info/haskoin-store/btc-testnet"
   BLOCKTRAIL_API_URL = "https://api.blocktrail.com/v1/btc"
   BLOCKCYPHER_API_URL = "https://api.blockcypher.com/v1/btc/main"
   BITGO_API_URL = "https://www.bitgo.com/api/v1"
@@ -36,22 +36,26 @@ else:
 
 def bc_getutxo(address, ramount):
   try:
-    r = requests.get(BLOCKCHAININFO_API_URL + '/unspent?active='+address)
+    #r = requests.get(BLOCKCHAININFO_API_URL + '/unspent?active='+address)
+    r = requests.get(BLOCKCHAININFO_API_URL + '/address/'+address+'/unspent')
     if r.status_code == 200:
       avail=0
       retval=[]
       response = r.json()
-      unspents = response['unspent_outputs']
+      #unspents = response['unspent_outputs']
+      unspents = response
       print "got unspent list (blockchain)", response
       for tx in sorted(unspents, key = lambda i: i['value'],reverse=True):
-        txUsed=gettxout(tx['tx_hash_big_endian'],tx['tx_output_n'])['result']
+        #txUsed=gettxout(tx['tx_hash_big_endian'],tx['tx_output_n'])['result']
+        txUsed=gettxout(tx['txid'],tx['index'])['result']
         isUsed = txUsed==None
         if not isUsed:
           coinbaseHold = (txUsed['coinbase'] and txUsed['confirmations'] < 100)
           multisigSkip = ("scriptPubKey" in txUsed and txUsed['scriptPubKey']['type'] == "multisig")
           if not coinbaseHold and txUsed['confirmations'] > 0 and not multisigSkip:
             avail += tx['value']
-            retval.append([ tx['tx_hash_big_endian'], tx['tx_output_n'], tx['value'] ])
+            #retval.append([ tx['tx_hash_big_endian'], tx['tx_output_n'], tx['value'] ])
+            retval.append([ tx['txid'], tx['index'], tx['value'] ])
             if avail >= ramount:
               return {"avail": avail, "utxos": retval, "error": "none"}
       if ('notice' in response and 'Ignoring' in response['notice']):
@@ -131,16 +135,16 @@ def bc_getutxo_blockcypher(address, ramount):
       return {"error": "Connection error", "code": e.message}
 
 
-def bc_getpubkey(address):
-  try:
-    r = requests.get(BLOCKCHAININFO_API_URL + '/q/pubkeyaddr/'+address)
-
-    if r.status_code == 200:
-      return str(r.text)
-    else:
-      return "error"
-  except:
-    return "error"
+#def bc_getpubkey(address):
+#  try:
+#    r = requests.get(BLOCKCHAININFO_API_URL + '/q/pubkeyaddr/'+address)
+#
+#    if r.status_code == 200:
+#      return str(r.text)
+#    else:
+#      return "error"
+#  except:
+#    return "error"
 
 def bc_getbalance(address):
   try:
@@ -277,14 +281,17 @@ def bc_getbulkbalance_blockchain(addresses):
     if formatted=="":
       formatted=address
     else:
-      formatted=formatted+"|"+address
+      #formatted=formatted+"|"+address
+      formatted=formatted+","+address
   try:
-    r= requests.get(BLOCKCHAININFO_API_URL + '/balance?active='+formatted)
+    #r= requests.get(BLOCKCHAININFO_API_URL + '/balance?active='+formatted)
+    r= requests.get(BLOCKCHAININFO_API_URL + '/address/balances?addresses='+formatted)
     if r.status_code == 200:
       balances = r.json()
       retval = {}
       for entry in balances:
-        retval[entry] = int(balances[entry]['final_balance'])
+        #retval[entry] = int(balances[entry]['final_balance'])
+        retval[entry['address']] = int(entry['confirmed'])
       return {"bal": retval, "error": None}
     else:
       return {"bal": None , "error": True}
@@ -309,5 +316,5 @@ def bc_getbulkbalance_btccom(addresses):
     else:
       return {"bal": None , "error": True}
   except Exception as e:
-    print_debug(("error getting btccom bulk",e),4)
+    print "error getting btccom bulk",e
     return {"bal": None , "error": True}
