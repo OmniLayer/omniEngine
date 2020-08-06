@@ -213,17 +213,25 @@ def bc_getbulkbalance(addresses):
   else:
     if TESTNET:
       try:
-        data=bc_getbulkbalance_btccom(split)
+        data=bc_getbulkbalance_blockchain(split)
         if data['error']:
-          raise Exception("issue getting btccom baldata","data",data,"split",split)
+          raise Exception("issue getting blockchain baldata",data)
         else:
           retval={'bal':dict(data['bal'],**cbdata), 'fresh':split}
       except Exception as e:
         print e
-        if len(cbdata) > 0:
-          retval={'bal':cbdata, 'fresh':None}
-        else:
-          retval={'bal':{}, 'fresh':None}
+        try:
+          data=bc_getbulkbalance_btccom(split)
+          if data['error']:
+            raise Exception("issue getting btccom baldata","data",data,"split",split)
+          else:
+            retval={'bal':dict(data['bal'],**cbdata), 'fresh':split}
+        except Exception as e:
+          print e
+          if len(cbdata) > 0:
+            retval={'bal':cbdata, 'fresh':None}
+          else:
+            retval={'bal':{}, 'fresh':None}
     else:
       try:
         data=bc_getbulkbalance_blockonomics(split)
