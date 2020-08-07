@@ -18,7 +18,7 @@ except:
 
 if TESTNET:
   # neither blockchain.info nor blockonomics support testnet
-  BLOCKCHAININFO_API_URL = "https://api.blockchain.info/haskoin-store/btc"
+  BLOCKCHAININFO_API_URL = "https://api.blockchain.info/haskoin-store/btc-testnet"
   BLOCKONOMICS_API_URL = "https://www.blockonomics.co/api"
 
   BLOCKTRAIL_API_URL = "https://api.blocktrail.com/v1/tbtc"
@@ -26,7 +26,7 @@ if TESTNET:
   BITGO_API_URL = "https://test.bitgo.com/api/v1"
   BTCCOM_API_URL = "https://chain.api.btc.com/v3"
 else:
-  BLOCKCHAININFO_API_URL = "https://api.blockchain.info/haskoin-store/btc-testnet"
+  BLOCKCHAININFO_API_URL = "https://api.blockchain.info/haskoin-store/btc"
   BLOCKTRAIL_API_URL = "https://api.blocktrail.com/v1/btc"
   BLOCKCYPHER_API_URL = "https://api.blockcypher.com/v1/btc/main"
   BITGO_API_URL = "https://www.bitgo.com/api/v1"

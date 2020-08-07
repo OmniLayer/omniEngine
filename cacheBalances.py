@@ -19,7 +19,6 @@ def updateBalancesCache():
           rSet("omniwallet:balances:balbook"+str(space[29:]),json.dumps(balances))
           #expire balance data after 10 minutes (prevent stale data in case we crash)
           rExpire("omniwallet:balances:balbook"+str(space[29:]),600)
-
       except Exception as e:
         printmsg("error updating balances: "+str(space)+' '+str(e))
     #dbCommit()
