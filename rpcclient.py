@@ -37,7 +37,7 @@ class RPCHost():
         self._headers = {'content-type': 'application/json'}
     def call(self, rpcMethod, *params):
         payload = json.dumps({"method": rpcMethod, "params": list(params), "jsonrpc": "2.0"})
-        tries = 10
+        tries = 2
         hadConnectionFailures = False
         while True:
             try:
@@ -69,11 +69,11 @@ host=RPCHost()
 #Bitcoin Generic RPC calls
 def getinfo():
     try:
-      #support omnicore v0.5
-      return host.call("getinfo")
-    except:
       #support omnicore v0.6
       return host.call("getblockchaininfo")
+    except:
+      #support omnicore v0.5
+      return host.call("getinfo")
 
 def getrawtransaction(txid):
     return host.call("getrawtransaction", txid , 1)
@@ -157,9 +157,6 @@ def getdivisible_MP(propertyid):
 def getgrants_MP(propertyid):
     return host.call("getgrants_MP", propertyid)
 
-def gettradessince_MP():
-    return host.call("gettradessince_MP")
-
 def gettrade(txhash):
     return host.call("omni_gettrade", txhash)
 
@@ -211,7 +208,58 @@ def createrawtx_multisig(payload, seed, pubkey, rawtx=None):
 def createrawtx_input(txhash, index, rawtx=None):
     return host.call("omni_createrawtx_input", rawtx, txhash, index)
 def createrawtx_reference(destination, rawtx=None):
-    return host.call("omni_createrawtx_reference", rawtx, destination)
+    return host.call("omni_createrawtx_reference", rawtx, destination, "0.00000546")
 def createrawtx_change(rawtx, previnputs, destination, fee):
     return host.call("omni_createrawtx_change", rawtx, previnputs, destination, str(fee))
  
+#bitcore calls
+
+def getaddresstxids(address):
+    #Returns the txids for an address(es)
+    if isinstance(address,list):
+      payload = {"addresses": address}
+    else:
+      payload = {"addresses": [address]}
+    return host.call("getaddresstxids", payload)
+
+def getaddressdeltas(address):
+    #Returns all changes for an address
+    if isinstance(address,list):
+      payload = {"addresses": address}
+    else:
+      payload = {"addresses": [address]}
+    return host.call("getaddressdeltas", payload)
+
+
+def getaddressbalance(address):
+    #Returns the balance for an address(es)
+    if isinstance(address,list):
+      payload = {"addresses": address}
+    else:
+      payload = {"addresses": [address]}
+    return host.call("getaddressbalance", payload)
+
+def getaddressutxos(address):
+    #Returns all unspent outputs for an address
+    if isinstance(address,list):
+      payload = {"addresses": address}
+    else:
+      payload = {"addresses": [address]}
+    return host.call("getaddressutxos", payload)
+
+def getaddressmempool(address):
+    #Returns all mempool deltas for an address
+    if isinstance(address,list):
+      payload = {"addresses": address}
+    else:
+      payload = {"addresses": [address]}
+    return host.call("getaddressmempool", payload)
+
+def getblockhashes(start,end):
+    #Returns array of hashes of blocks within the timestamp range provided
+    return host.call("getblockhashes", start, end)
+
+def getspentinfo(txid,index):
+    #Returns the txid and index where an output is spent
+    payload = {"txid":txid,"index":index}
+    return host.call("getspentinfo", payload)
