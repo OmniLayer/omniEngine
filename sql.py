@@ -1091,8 +1091,17 @@ def syncAddress(Address, Protocol):
         dbExecute("UPDATE AddressBalances set BalanceAvailable=%s, BalanceReserved=%s, BalanceAccepted=%s where address=%s and PropertyID=%s",
                   (Available, Reserved, Accepted, Address, PropertyID) )
 
+def checkPendingActivations()
+    printdebug(("Starting checkPendingActivations"),8)
+    fList=dbSelect("select featureid, LastTxDBSerialNum from FeatureActivations where pending='True'")
+    printdebug((len(fList),"pending activations"),4)
+    for fa in fList:
+      featureid = int(fa[0])
+      txdbserialnum = int(fa[1])
+      updateFeatureActivations(featureid, txdbserialnum)
 
 def updateFeatureActivations(featureid, txdbserialnum=None):
+    printdebug(("Starting updateFeatureActivations",featureid,txdbserialnum),8)
     features=omni_getactivations()
     pending   = features['result']['pendingactivations']
     completed = features['result']['completedactivations']
@@ -1109,6 +1118,9 @@ def updateFeatureActivations(featureid, txdbserialnum=None):
         minimumversion = f['minimumversion']
         if 'pending' in f:
           pending = f['pending']
+
+        if txdbserialnum==None:
+          txdbserialnum=dbSelect("select LastTxDBSerialNum from FeatureActivations where featureid=%s",[featureid])[0][0]
 
         dbExecute("with upsert as "
               "(update FeatureActivations set featurename=%s, activationblock=%s, minimumversion=%s, pending=%s, LastTxDBSerialNum=%s, updated_at=(SELECT CURRENT_TIMESTAMP(0)) "
