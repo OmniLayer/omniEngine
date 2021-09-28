@@ -1756,7 +1756,7 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
 
         Ecosystem=getEcosystem(PropertyID)
 
-        if txtype in [53,70,-1,25,26,27,28,185,186,65534,65535]:
+        if txtype in [53,70,-1,25,26,27,28,73,74,185,186,65534,65535]:
           value=0
           value_neg=0
         else:
@@ -2302,6 +2302,29 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
           Address = rawtx['result']['referenceaddress']
           AddressRole = 'recipient'
           updateAddrStats(Address,Protocol,TxDBSerialNum,Block)
+
+      elif txtype in [73,74]:
+        #update managed token delegate
+        AddressRole = "issuer"
+        BalanceAvailableCreditDebit=None
+        BalanceReservedCreditDebit=None
+        BalanceAcceptedCreditDebit=None
+
+        try:
+          Receiver = rawtx['result']['referenceaddress']
+          ReceiveRole = 'recipient'
+          updateAddrStats(Receiver,Protocol,TxDBSerialNum,Block)
+        except KeyError:
+          Receiver = None
+        #check if the reference address is defined and its not the same as the sender
+        if Receiver != None and Receiver != Address and Receiver != "":
+          dbExecute("insert into addressesintxs "
+                    "(Address, PropertyID, Protocol, TxDBSerialNum, AddressTxIndex, AddressRole, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit)"
+                    "values(%s, %s, %s, %s, %s, %s, %s, %s, %s)",
+                    (Receiver, PropertyID, Protocol, TxDBSerialNum, AddressTxIndex, ReceiveRole, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit))
+
+        #update smart property table
+        insertProperty(rawtx, Protocol)
 
       elif txtype in [185,186]:
         #update freeze info/balances
