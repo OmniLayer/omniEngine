@@ -95,6 +95,7 @@ def get_TxType(text_type):
              "Remove delegate": 74,
              "Freeze Property Tokens": 185,
              "Unfreeze Property Tokens": 186,
+             "Embed any data": 200,
              "Set Non-Fungible Token Data": 201,
              "Notification": -1,
              "Feature Activation": 65534,
