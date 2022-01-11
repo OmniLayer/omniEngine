@@ -33,7 +33,7 @@ def reparsetx_MP(txhash):
     txstate = tx[3]
     txtype = tx[4]
 
-    if txtype not in [0,3,4,25,-1]:
+    if txtype not in [0,3,4,25,-1,200]:
       printdebug(("Can't Reparse txtype",txtype,"in middle of data, try running reorg rollback code"),4)
       exit(1)
 
@@ -1091,8 +1091,17 @@ def syncAddress(Address, Protocol):
         dbExecute("UPDATE AddressBalances set BalanceAvailable=%s, BalanceReserved=%s, BalanceAccepted=%s where address=%s and PropertyID=%s",
                   (Available, Reserved, Accepted, Address, PropertyID) )
 
+def checkPendingActivations()
+    printdebug(("Starting checkPendingActivations"),8)
+    fList=dbSelect("select featureid, LastTxDBSerialNum from FeatureActivations where pending='True'")
+    printdebug((len(fList),"pending activations"),4)
+    for fa in fList:
+      featureid = int(fa[0])
+      txdbserialnum = int(fa[1])
+      updateFeatureActivations(featureid, txdbserialnum)
 
 def updateFeatureActivations(featureid, txdbserialnum=None):
+    printdebug(("Starting updateFeatureActivations",featureid,txdbserialnum),8)
     features=omni_getactivations()
     pending   = features['result']['pendingactivations']
     completed = features['result']['completedactivations']
@@ -1109,6 +1118,9 @@ def updateFeatureActivations(featureid, txdbserialnum=None):
         minimumversion = f['minimumversion']
         if 'pending' in f:
           pending = f['pending']
+
+        if txdbserialnum==None:
+          txdbserialnum=dbSelect("select LastTxDBSerialNum from FeatureActivations where featureid=%s",[featureid])[0][0]
 
         dbExecute("with upsert as "
               "(update FeatureActivations set featurename=%s, activationblock=%s, minimumversion=%s, pending=%s, LastTxDBSerialNum=%s, updated_at=(SELECT CURRENT_TIMESTAMP(0)) "
@@ -1736,7 +1748,7 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
           else:
             PropertyID = rawtx['result']['propertyid']
         except KeyError:
-          if Valid and txtype not in [25,65534,65535] :
+          if Valid and txtype not in [25,200,65534,65535] :
             #We should never see a valid tx where this didn't exist so let it throw error if its valid and this wasn't present.
             raise KeyError("InsertTxAddr: propertyid not in rawtx")
           else:
@@ -1744,7 +1756,7 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
 
         Ecosystem=getEcosystem(PropertyID)
 
-        if txtype in [53,70,-1,25,26,27,28,185,186,65534,65535]:
+        if txtype in [53,70,-1,25,26,27,28,73,74,185,186,200,65534,65535]:
           value=0
           value_neg=0
         else:
@@ -2291,6 +2303,29 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
           AddressRole = 'recipient'
           updateAddrStats(Address,Protocol,TxDBSerialNum,Block)
 
+      elif txtype in [73,74]:
+        #update managed token delegate
+        AddressRole = "issuer"
+        BalanceAvailableCreditDebit=None
+        BalanceReservedCreditDebit=None
+        BalanceAcceptedCreditDebit=None
+
+        try:
+          Receiver = rawtx['result']['referenceaddress']
+          ReceiveRole = 'recipient'
+          updateAddrStats(Receiver,Protocol,TxDBSerialNum,Block)
+        except KeyError:
+          Receiver = None
+        #check if the reference address is defined and its not the same as the sender
+        if Receiver != None and Receiver != Address and Receiver != "":
+          dbExecute("insert into addressesintxs "
+                    "(Address, PropertyID, Protocol, TxDBSerialNum, AddressTxIndex, AddressRole, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit)"
+                    "values(%s, %s, %s, %s, %s, %s, %s, %s, %s)",
+                    (Receiver, PropertyID, Protocol, TxDBSerialNum, AddressTxIndex, ReceiveRole, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit))
+
+        #update smart property table
+        insertProperty(rawtx, Protocol)
+
       elif txtype in [185,186]:
         #update freeze info/balances
         AddressRole = "issuer"
@@ -2335,6 +2370,25 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
         finalizeAfterBalances(TxDBSerialNum)
         #don't process anything else
         return
+      elif txtype == 200:
+        #Send Any Data
+        BalanceAvailableCreditDebit=None
+        BalanceReservedCreditDebit=None
+        BalanceAcceptedCreditDebit=None
+
+        try:
+          Receiver = rawtx['result']['referenceaddress']
+          ReceiveRole = 'recipient'
+          updateAddrStats(Receiver,Protocol,TxDBSerialNum,Block)
+        except KeyError:
+          Receiver = None
+        #check if the reference address is defined and its not the same as the sender
+        if Receiver != None and Receiver != Address and Receiver != "":
+          dbExecute("insert into addressesintxs "
+                    "(Address, PropertyID, Protocol, TxDBSerialNum, AddressTxIndex, AddressRole, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit)"
+                    "values(%s, %s, %s, %s, %s, %s, %s, %s, %s)",
+                    (Receiver, PropertyID, Protocol, TxDBSerialNum, AddressTxIndex, ReceiveRole, BalanceAvailableCreditDebit, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit))
+
       elif txtype == 65534:
         #Feature Activations
         if Valid:
@@ -2417,7 +2471,7 @@ def insertTx(rawtx, Protocol, blockheight, seq, TxDBSerialNum):
           try:
             Ecosystem=getEcosystem(rawtx['result']['propertyid'])
           except KeyError:
-            if valid and TxType not in [25,65534,65535]:
+            if valid and TxType not in [25,200,65534,65535]:
               #We should never see a valid tx where this didn't exist so let it throw error if its valid and this wasn't present.
               raise KeyError("InsertTx: propertyid not in rawtx")
             else:

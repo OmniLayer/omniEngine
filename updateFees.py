@@ -34,24 +34,42 @@ def updateFEES():
     source = BITGO_API_URL + '/tx/fee'
     r= requests.get( source, timeout=15 )
     feelist=r.json()
-    q=[]
-    for x in feelist['feeByBlockTarget']:
-      if feelist['feeByBlockTarget'][x] not in q:
-        q.append(feelist['feeByBlockTarget'][x])
+    #q=[]
+    #for x in feelist['feeByBlockTarget']:
+    #  if feelist['feeByBlockTarget'][x] not in q:
+    #    q.append(feelist['feeByBlockTarget'][x])
 
-    q.sort(reverse=True)
-    faster.append(q[0])
-    fast.append(q[1])
-    normal.append(q[2])
+    #q.sort(reverse=True)
+    #faster.append(q[0])
+    #fast.append(q[1])
+    #normal.append(q[2])
+    faster.append(feelist['feeByBlockTarget']['1'])
+    fast.append(feelist['feeByBlockTarget']['2'])
+    normal.append(feelist['feeByBlockTarget']['4'])
   except Exception as e:
     #error or timeout, skip for now
     printdebug(("Error getting BitGo fees",e),3)
     pass
 
   if not TESTNET:
-    #Get Bitcoinfees21 Fee's
+    ##Get Bitcoinfees21 Fee's
+    #try:
+    #  source='https://bitcoinfees.earn.com/api/v1/fees/recommended'
+    #  r= requests.get( source, timeout=15 )
+    #  feelist=r.json()
+    #  fr=int(feelist['fastestFee']*1000)
+    #  f=int(feelist['halfHourFee']*1000)
+    #  n=int(feelist['hourFee']*1000)
+    #  faster.append(fr)
+    #  fast.append(f)
+    #  normal.append(n)
+    #except Exception as e:
+    #  #error or timeout, skip for now
+    #  printdebug(("Error getting bitcoinfees21 fees",e),3)
+    #  pass
+    #Get mempool.space Fee's
     try:
-      source='https://bitcoinfees.earn.com/api/v1/fees/recommended'
+      source='https://mempool.space/api/v1/fees/recommended'
       r= requests.get( source, timeout=15 )
       feelist=r.json()
       fr=int(feelist['fastestFee']*1000)
