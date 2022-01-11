@@ -1091,7 +1091,7 @@ def syncAddress(Address, Protocol):
         dbExecute("UPDATE AddressBalances set BalanceAvailable=%s, BalanceReserved=%s, BalanceAccepted=%s where address=%s and PropertyID=%s",
                   (Available, Reserved, Accepted, Address, PropertyID) )
 
-def checkPendingActivations()
+def checkPendingActivations():
     printdebug(("Starting checkPendingActivations"),8)
     fList=dbSelect("select featureid, LastTxDBSerialNum from FeatureActivations where pending='True'")
     printdebug((len(fList),"pending activations"),4)
