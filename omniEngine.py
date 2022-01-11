@@ -202,6 +202,8 @@ else:
       #Also make sure we update the json data in SmartProperties table used by exchange view
       updateProperty(1,"Omni")
       updateProperty(2,"Omni")
+      #check any pending activations
+      checkPendingActivations()
       #make sure we store the last serialnumber used
       dbExecute("select setval('transactions_txdbserialnum_seq', %s)", [TxDBSerialNum-1])
       #write db changes for entire block
