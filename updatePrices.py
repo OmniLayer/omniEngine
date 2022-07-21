@@ -37,7 +37,8 @@ def getSource(sp):
              #89:{"id":"DIBC","source":"coinmarketcap"},
              #90:"https://market.bitsquare.io/api/trades?market=sfsc_btc",
              #149:{"cmcid":"1642","name":"ALT","source":"coinmarketcap"},
-             701:{"cmcid":"3850","id":"OTO","name":"OTOCash","source":"coinmarketcap"}
+             701:{"cmcid":"3850","id":"OTO","name":"OTOCash","source":"coinmarketcap"},
+             732:"https://api.dex-trade.com/v1/public/trades?pair=HTDBTC"
             }
     if sp == 'cmcids':
       q=[]
@@ -167,6 +168,12 @@ def formatData(sp, source):
         for trade in trades:
           trade['rate']=trade['price']
           trade['amount']=trade['quantity']
+
+      if sp in [732]:
+        trades=trades['data']
+        for trade in trades:
+          trade['amount']=trade['volume']
+
 
       if sp in [90]:
         for trade in trades:
