@@ -6,7 +6,7 @@
 #---Pip---
 #pip install urllib3[secure]
 argparse==1.2.1
-cryptography==2.6.1
+cryptography==39.0.1
 idna==2.8
 ipaddress==1.0.17
 jsonpatch==1.10
