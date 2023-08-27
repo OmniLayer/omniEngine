@@ -215,6 +215,12 @@ create index TxDbSerialNum on Transactions (Txdbserialnum)
 create index TxSeq on Transactions (TxBlockNumber, TxSeqInBlock)
 ;
 
+/* index so txstats process can search by date */
+CREATE INDEX transactions_txrecvtime_date_idx ON transactions ((txrecvtime::DATE));
+
+/* to find transactions by blocknumber only */
+CREATE INDEX transactions_txblocknumber_idx ON transactions ((txblocknumber));
+
 /* data that is specific to the particular transaction type, as a JSON object */
 create table if not exists TxJSON (
         ID Serial

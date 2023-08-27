@@ -5,11 +5,11 @@ def getDivisible(rawtx):
   try:
     divisible=rawtx['result']['divisible']
   except KeyError:
-    if rawtx['result']['propertytype'] == 'indivisible':
-      divisible=False
-    else:
+    if rawtx['result']['propertytype'] == 'divisible':
       divisible=True
-  return divisible  
+    else:
+      divisible=False
+  return divisible
 
 def getEcosystem(propertyid):
     if propertyid == 2 or ( propertyid >= 2147483651 and propertyid <= 4294967295 ) or propertyid == "test":
