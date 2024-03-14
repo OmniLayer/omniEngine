@@ -28,9 +28,9 @@ def getSource(sp):
              1:{"cmcid":"83","name":"OMNI","source":"coinmarketcap"},
              3:{"cmcid":"291","name":"MAID","source":"coinmarketcap"},
              31:{"cmcid":"825","id":"USDt","name":"Tether USD","source":"fixed","value":1,"base":0},
-             39:{"cmcid":"1125","name":"AMP","source":"coinmarketcap"},
+             #39:{"cmcid":"1125","name":"AMP","source":"coinmarketcap"},
              41:{"id":"EURt","name":"Tether EUR","source":"fixed","value":1,"base":2},
-             56:{"cmcid":"1172","name":"SAFEX","source":"coinmarketcap"},
+             #56:{"cmcid":"1172","name":"SAFEX","source":"coinmarketcap"},
              58:{"cmcid":"1037","id":"AGRS","name":"IDNO Agoras","source":"coinmarketcap"},
              #59:{"id":"PDC","source":"coinmarketcap"},
              #66:{"cmcid":"1352","name":"GARY","source":"coinmarketcap"},
@@ -39,7 +39,7 @@ def getSource(sp):
              #149:{"cmcid":"1642","name":"ALT","source":"coinmarketcap"},
              351:{"cmcid":"1612","id":"DIBC","name":"Dibcoin V2","source":"coinmarketcap"},
              701:{"cmcid":"3850","id":"OTO","name":"OTOCash","source":"coinmarketcap"},
-             732:"https://api.dex-trade.com/v1/public/trades?pair=HTDBTC"
+             #732:"https://api.dex-trade.com/v1/public/trades?pair=HTDBTC"
             }
     if sp == 'cmcids':
       q=[]
