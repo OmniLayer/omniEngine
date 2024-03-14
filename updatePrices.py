@@ -268,7 +268,7 @@ def main():
 
     try:
       updatePrices()
-       printdebug(("Update Complete",now),5)
+      printdebug(("Update Complete",now),5)
     except Exception as e:
       #Catch any issues and stop processing. Try to undo any incomplete changes
       print "updatePrices: Problem with ", e
