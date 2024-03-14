@@ -37,6 +37,7 @@ def getSource(sp):
              #89:{"id":"DIBC","source":"coinmarketcap"},
              #90:"https://market.bitsquare.io/api/trades?market=sfsc_btc",
              #149:{"cmcid":"1642","name":"ALT","source":"coinmarketcap"},
+             351:{"cmcid":"1612","id":"DIBC","name":"Dibcoin V2","source":"coinmarketcap"},
              701:{"cmcid":"3850","id":"OTO","name":"OTOCash","source":"coinmarketcap"},
              732:"https://api.dex-trade.com/v1/public/trades?pair=HTDBTC"
             }
@@ -129,7 +130,8 @@ def updateBTC():
         else:
           upsertRate('Fiat', fpid, 'Bitcoin', 0, value, source, timestamp)
       if len(new) > 0:
-        printdebug(("New Symbols not in db",new),5)
+        #printdebug(("New Symbols not in db",new),5)
+        printdebug(("New Symbols not in db"),5)
     except requests.exceptions.RequestException as e:
       #error or timeout, skip for now
       printdebug(("Error updating BTC Price",e),3)
@@ -266,6 +268,7 @@ def main():
 
     try:
       updatePrices()
+       printdebug(("Update Complete",now),5)
     except Exception as e:
       #Catch any issues and stop processing. Try to undo any incomplete changes
       print "updatePrices: Problem with ", e
