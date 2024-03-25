@@ -423,7 +423,7 @@ def updateAddPending():
         sendamount=None
         recvamount=None
       else:
-        #all other txs deduct from our balance and, where applicable, apply to the reciever
+        #all other txs deduct from our balance and, where applicable, apply to the receiver
         sendamount=-amount
         recvamount=amount
 
@@ -524,7 +524,7 @@ def sendToOwners(Sender, Amount, PropertyID, Protocol, TxDBSerialNum, owners=Non
 
       #/end if amountToSend > 0
 
-      #relative position of the recipiant
+      #relative position of the recipient
       AddressTxIndex+=1
 
       #no money left to distribute. Done
@@ -1820,7 +1820,7 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
                      (Address, feeid, Protocol, TxDBSerialNum, 1, AddressRole, stofee, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit))
            updateBalance(Address, Protocol, feeid, feeEco, stofee, BalanceReservedCreditDebit, BalanceAcceptedCreditDebit, TxDBSerialNum)
 
-           #process the list of STO recievers
+           #process the list of STO receivers
            txindex=0
            AddressRole='payee'
            isDivisible=getDivisible(rawtx)
@@ -2256,7 +2256,7 @@ def insertTxAddr(rawtx, Protocol, TxDBSerialNum, Block):
         AddressRole = "issuer"
         BalanceAvailableCreditDebit=value
         try:
-          #check if we have a reciever for the grant
+          #check if we have a receiver for the grant
           Receiver = rawtx['result']['referenceaddress']
           ReceiveRole = 'recipient'
           updateAddrStats(Receiver,Protocol,TxDBSerialNum,Block)
