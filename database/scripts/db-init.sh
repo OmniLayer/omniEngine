@@ -9,7 +9,7 @@ echo "Create Database..."
 createdb "${OMNIDB_DATABASE}" "Omniwallet wallet and transaction database"
 echo "Init Schema..."
 psql $OPTIONS -f ../omni_db_schema.psql ${OMNIDB_DATABASE}
-echo "Add intial data..."
+echo "Add initial data..."
 psql $OPTIONS -f ../omni_db_initialize_data.psql ${OMNIDB_DATABASE}
 echo "Configure users and permissions..."
 psql $OPTIONS -f ../omni_db_createusers.psql \

@@ -45,7 +45,7 @@ def processSTO(Sender, Amount, PropertyID, Protocol, TxDBSerialNum, owners=None)
          #make sure we keep track of how much was sent/left to send
          toDistribute-=amountSent
       #/end if amountToSend > 0
-      #relative position of the recipiant
+      #relative position of the recipient
       AddressTxIndex+=1
       #no money left to distribute. Done
       if toDistribute == 0:

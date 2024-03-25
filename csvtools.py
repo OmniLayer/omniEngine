@@ -227,7 +227,7 @@ def dumptxaddr_csv(csvwb, rawtx, Protocol, TxDBSerialNum):
         #Now start updating the crowdsale propertyid balance info
         PropertyID = rawtx['result']['purchasedpropertyid']
 
-        #add additional functionalty to check/credit the issue when there is a % bonus to issuer
+        #add additional functionality to check/credit the issue when there is a % bonus to issuer
         cstx = getcrowdsale_MP(PropertyID)
         if cstx['result']['percenttoissuer'] > 0:
           if getdivisible_MP(PropertyID):
